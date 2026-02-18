@@ -1,0 +1,2026 @@
+[15-Apr-2021 21:28:40 UTC] Starting ManiaControl...
+[15-Apr-2021 21:28:40 UTC] Checking for minimum required PHP-Version 5.4 ... 7.4.3 OK!
+[15-Apr-2021 21:28:40 UTC] Checking for installed MySQLi ... FOUND!
+[15-Apr-2021 21:28:40 UTC] Checking for installed cURL ... FOUND!
+[15-Apr-2021 21:28:40 UTC] Checking for installed PHP ZIP ... FOUND!
+[15-Apr-2021 21:28:40 UTC] Checking for installed Zlib ... FOUND!
+[15-Apr-2021 21:28:40 UTC] Checking for installed mbstring ... FOUND!
+[15-Apr-2021 21:28:40 UTC] Loading ManiaControl v0.256 ...
+[15-Apr-2021 21:28:41 UTC] Starting ManiaControl v0.256!
+[15-Apr-2021 21:28:41 UTC] Connecting to Server at 127.0.0.1:5001...
+[15-Apr-2021 21:28:41 UTC] Server Connection successfully established!
+[15-Apr-2021 21:28:41 UTC] [INFO] Script Callbacks successfully enabled!
+[15-Apr-2021 21:28:41 UTC] [INFO] Server Options successfully loaded!
+[15-Apr-2021 21:28:41 UTC] Checking Plugins for newer Versions...
+[15-Apr-2021 21:28:41 UTC] Loading completed!
+[15-Apr-2021 21:28:41 UTC] Link: maniaplanet://#join=crunkserver8@SMStormElite@nadeolabs
+[15-Apr-2021 21:28:41 UTC] Plugins Update Check completed: All Plugins are up-to-date!
+[15-Apr-2021 21:59:02 UTC] [INFO] Player joined: be1209 / D Nation: Italy IP: 151.64.150.1:2350
+[15-Apr-2021 21:59:14 UTC] [PHP NOTICE]: Undefined variable: chatMessage
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Players/PlayerActions.php: 232
+Trace: 
+#0: ManiaControl\Players\PlayerActions->forcePlayerToTeam(string(onepiece2000), string(onepiece2000), integer(0)) in File core/Players/PlayerList.php on Line 683
+#1: ManiaControl\Players\PlayerList->handleManialinkPageAnswer(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(237), string(onepiece2000), string(PlayerList.ForceBlue.onepiece2000), array())))
+#2: call_user_func_array(array(object(ManiaControl\Players\PlayerList), string(handleManialinkPageAnswer)), array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(237), string(onepiece2000), string(PlayerList.ForceBlue.onepiece2000), array())))...) in File core/Callbacks/Listening.php on Line 68
+#3: ManiaControl\Callbacks\Listening->triggerCallbackWithParams(array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(237), string(onepiece2000), string(PlayerList.ForceBlue.onepiece2000), array())))...) in File core/Callbacks/CallbackManager.php on Line 366
+#4: ManiaControl\Callbacks\CallbackManager->triggerCallback(string(ManiaPlanet.PlayerManialinkPageAnswer), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(237), string(onepiece2000), string(PlayerList.ForceBlue.onepiece2000), array()))...) in File core/Callbacks/CallbackManager.php on Line 346
+#5: ManiaControl\Callbacks\CallbackManager->handleCallback(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(237), string(onepiece2000), string(PlayerList.ForceBlue.onepiece2000), array()))) in File core/Callbacks/CallbackManager.php on Line 293
+#6: ManiaControl\Callbacks\CallbackManager->manageCallbacks() in File core/ManiaControl.php on Line 781
+#7: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#8: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[15-Apr-2021 21:59:14 UTC] [INFO] 
+[15-Apr-2021 21:59:14 UTC] Error-Report successful!
+[15-Apr-2021 22:00:10 UTC] [INFO] D restarted the current Map!
+[15-Apr-2021 22:00:18 UTC] [PHP NOTICE]: Undefined variable: chat
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Server/Commands.php: 195
+Trace: 
+#0: ManiaControl\Server\Commands->commandExtendWarmup(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())), object(ManiaControl\Players\Player)...)
+#1: call_user_func(array(object(ManiaControl\Server\Commands), string(commandExtendWarmup)), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())), ...) in File core/Manialinks/ManialinkManager.php on Line 208
+#2: ManiaControl\Manialinks\ManialinkManager->handleManialinkPageAnswer(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))
+#3: call_user_func_array(array(object(ManiaControl\Manialinks\ManialinkManager), string(handleManialinkPageAnswer)), array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))...) in File core/Callbacks/Listening.php on Line 68
+#4: ManiaControl\Callbacks\Listening->triggerCallbackWithParams(array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))) in File core/Callbacks/CallbackManager.php on Line 366
+#5: ManiaControl\Callbacks\CallbackManager->triggerCallback(string(ManiaPlanet.PlayerManialinkPageAnswer), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array()))...) in File core/Callbacks/CallbackManager.php on Line 346
+#6: ManiaControl\Callbacks\CallbackManager->handleCallback(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array()))) in File core/Callbacks/CallbackManager.php on Line 293
+#7: ManiaControl\Callbacks\CallbackManager->manageCallbacks() in File core/ManiaControl.php on Line 781
+#8: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#9: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[15-Apr-2021 22:00:18 UTC] [PHP NOTICE]: Trying to access array offset on value of type null
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Server/Commands.php: 195
+Trace: 
+#0: ManiaControl\Server\Commands->commandExtendWarmup(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())), object(ManiaControl\Players\Player)...)
+#1: call_user_func(array(object(ManiaControl\Server\Commands), string(commandExtendWarmup)), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())), ...) in File core/Manialinks/ManialinkManager.php on Line 208
+#2: ManiaControl\Manialinks\ManialinkManager->handleManialinkPageAnswer(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))
+#3: call_user_func_array(array(object(ManiaControl\Manialinks\ManialinkManager), string(handleManialinkPageAnswer)), array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))...) in File core/Callbacks/Listening.php on Line 68
+#4: ManiaControl\Callbacks\Listening->triggerCallbackWithParams(array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))) in File core/Callbacks/CallbackManager.php on Line 366
+#5: ManiaControl\Callbacks\CallbackManager->triggerCallback(string(ManiaPlanet.PlayerManialinkPageAnswer), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array()))...) in File core/Callbacks/CallbackManager.php on Line 346
+#6: ManiaControl\Callbacks\CallbackManager->handleCallback(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array()))) in File core/Callbacks/CallbackManager.php on Line 293
+#7: ManiaControl\Callbacks\CallbackManager->manageCallbacks() in File core/ManiaControl.php on Line 781
+#8: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#9: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[15-Apr-2021 22:00:18 UTC] [PHP NOTICE]: Trying to access array offset on value of type null
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Server/Commands.php: 195
+Trace: 
+#0: ManiaControl\Server\Commands->commandExtendWarmup(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())), object(ManiaControl\Players\Player)...)
+#1: call_user_func(array(object(ManiaControl\Server\Commands), string(commandExtendWarmup)), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())), ...) in File core/Manialinks/ManialinkManager.php on Line 208
+#2: ManiaControl\Manialinks\ManialinkManager->handleManialinkPageAnswer(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))
+#3: call_user_func_array(array(object(ManiaControl\Manialinks\ManialinkManager), string(handleManialinkPageAnswer)), array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))...) in File core/Callbacks/Listening.php on Line 68
+#4: ManiaControl\Callbacks\Listening->triggerCallbackWithParams(array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array())))) in File core/Callbacks/CallbackManager.php on Line 366
+#5: ManiaControl\Callbacks\CallbackManager->triggerCallback(string(ManiaPlanet.PlayerManialinkPageAnswer), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array()))...) in File core/Callbacks/CallbackManager.php on Line 346
+#6: ManiaControl\Callbacks\CallbackManager->handleCallback(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(236), string(be1209), string(ServerCommands.ExtendWarmup), array()))) in File core/Callbacks/CallbackManager.php on Line 293
+#7: ManiaControl\Callbacks\CallbackManager->manageCallbacks() in File core/ManiaControl.php on Line 781
+#8: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#9: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[15-Apr-2021 22:00:18 UTC] Error-Report successful!
+[15-Apr-2021 22:00:18 UTC] Error-Report successful!
+[15-Apr-2021 22:00:18 UTC] Error-Report successful!
+[15-Apr-2021 22:01:56 UTC] [INFO] Player left: be1209 / D Playtime: 00:02:54
+[15-Apr-2021 22:20:33 UTC] [INFO] Player left: onepiece2000 / Yogurt chocker Playtime: 00:51:52
+[16-Apr-2021 08:51:58 UTC] [INFO] Player joined: koo / pizzaboykoo Nation: Italy IP: 5.63.174.167:2350
+[16-Apr-2021 08:56:22 UTC] [INFO] Player left: koo / pizzaboykoo Playtime: 00:04:24
+[16-Apr-2021 12:17:18 UTC] [INFO] Player joined: koo / P Nation: Italy IP: 5.63.174.167:2350
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 20000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [PHP WARNING]: count(): Parameter must be an array or an object that implements Countable
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 358
+Trace: 
+#0: count(NULL()) in File core/Statistics/StatisticManager.php on Line 358
+#1: ManiaControl\Statistics\StatisticManager->getTotalStatsPlayerCount(integer(-1)) in File core/Statistics/SimpleStatsList.php on Line 142
+#2: ManiaControl\Statistics\SimpleStatsList->showStatsList(object(ManiaControl\Players\Player)) in File core/Statistics/SimpleStatsList.php on Line 121
+#3: ManiaControl\Statistics\SimpleStatsList->command_ShowStatsList(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())), object(ManiaControl\Players\Player)...)
+#4: call_user_func(array(object(ManiaControl\Statistics\SimpleStatsList), string(command_ShowStatsList)), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())), ...) in File core/Manialinks/ManialinkManager.php on Line 208
+#5: ManiaControl\Manialinks\ManialinkManager->handleManialinkPageAnswer(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))
+#6: call_user_func_array(array(object(ManiaControl\Manialinks\ManialinkManager), string(handleManialinkPageAnswer)), array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))...) in File core/Callbacks/Listening.php on Line 68
+#7: ManiaControl\Callbacks\Listening->triggerCallbackWithParams(array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))) in File core/Callbacks/CallbackManager.php on Line 366
+#8: ManiaControl\Callbacks\CallbackManager->triggerCallback(string(ManiaPlanet.PlayerManialinkPageAnswer), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array()))...) in File core/Callbacks/CallbackManager.php on Line 346
+#9: ManiaControl\Callbacks\CallbackManager->handleCallback(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array()))) in File core/Callbacks/CallbackManager.php on Line 293
+#10: ManiaControl\Callbacks\CallbackManager->manageCallbacks() in File core/ManiaControl.php on Line 781
+#11: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#12: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+...
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 2000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 2000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 2000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 2000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 2000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 2000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'AND `value` >= 2000 ORDER BY `value` DESC LIMIT 200' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'AND `value` >= 2000 ORDER BY `value` DESC LIMIT 200' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'AND `value` >= 2000 ORDER BY `value` DESC LIMIT 200' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'AND `value` >= 2000 ORDER BY `value` DESC LIMIT 200' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'AND `value` >= 2000 ORDER BY `value` DESC LIMIT 200' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:46 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'AND `value` >= 2000 ORDER BY `value` DESC LIMIT 200' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:48 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 20000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:48 UTC] [PHP WARNING]: count(): Parameter must be an array or an object that implements Countable
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 358
+Trace: 
+#0: count(NULL()) in File core/Statistics/StatisticManager.php on Line 358
+#1: ManiaControl\Statistics\StatisticManager->getTotalStatsPlayerCount(integer(-1)) in File core/Statistics/SimpleStatsList.php on Line 142
+#2: ManiaControl\Statistics\SimpleStatsList->showStatsList(object(ManiaControl\Players\Player)) in File core/Statistics/SimpleStatsList.php on Line 121
+#3: ManiaControl\Statistics\SimpleStatsList->command_ShowStatsList(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())), object(ManiaControl\Players\Player)...)
+#4: call_user_func(array(object(ManiaControl\Statistics\SimpleStatsList), string(command_ShowStatsList)), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())), ...) in File core/Manialinks/ManialinkManager.php on Line 208
+#5: ManiaControl\Manialinks\ManialinkManager->handleManialinkPageAnswer(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))
+#6: call_user_func_array(array(object(ManiaControl\Manialinks\ManialinkManager), string(handleManialinkPageAnswer)), array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))...) in File core/Callbacks/Listening.php on Line 68
+#7: ManiaControl\Callbacks\Listening->triggerCallbackWithParams(array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))) in File core/Callbacks/CallbackManager.php on Line 366
+#8: ManiaControl\Callbacks\CallbackManager->triggerCallback(string(ManiaPlanet.PlayerManialinkPageAnswer), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array()))...) in File core/Callbacks/CallbackManager.php on Line 346
+#9: ManiaControl\Callbacks\CallbackManager->handleCallback(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array()))) in File core/Callbacks/CallbackManager.php on Line 293
+#10: ManiaControl\Callbacks\CallbackManager->manageCallbacks() in File core/ManiaControl.php on Line 781
+#11: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#12: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+...
+[16-Apr-2021 12:22:48 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 20000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:48 UTC] [PHP WARNING]: count(): Parameter must be an array or an object that implements Countable
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 358
+Trace: 
+#0: count(NULL()) in File core/Statistics/StatisticManager.php on Line 358
+#1: ManiaControl\Statistics\StatisticManager->getTotalStatsPlayerCount(integer(-1)) in File core/Statistics/SimpleStatsList.php on Line 142
+#2: ManiaControl\Statistics\SimpleStatsList->showStatsList(object(ManiaControl\Players\Player)) in File core/Statistics/SimpleStatsList.php on Line 121
+#3: ManiaControl\Statistics\SimpleStatsList->command_ShowStatsList(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())), object(ManiaControl\Players\Player)...)
+#4: call_user_func(array(object(ManiaControl\Statistics\SimpleStatsList), string(command_ShowStatsList)), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())), ...) in File core/Manialinks/ManialinkManager.php on Line 208
+#5: ManiaControl\Manialinks\ManialinkManager->handleManialinkPageAnswer(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))
+#6: call_user_func_array(array(object(ManiaControl\Manialinks\ManialinkManager), string(handleManialinkPageAnswer)), array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))...) in File core/Callbacks/Listening.php on Line 68
+#7: ManiaControl\Callbacks\Listening->triggerCallbackWithParams(array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))) in File core/Callbacks/CallbackManager.php on Line 366
+#8: ManiaControl\Callbacks\CallbackManager->triggerCallback(string(ManiaPlanet.PlayerManialinkPageAnswer), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array()))...) in File core/Callbacks/CallbackManager.php on Line 346
+#9: ManiaControl\Callbacks\CallbackManager->handleCallback(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array()))) in File core/Callbacks/CallbackManager.php on Line 293
+#10: ManiaControl\Callbacks\CallbackManager->manageCallbacks() in File core/ManiaControl.php on Line 781
+#11: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#12: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+...
+[16-Apr-2021 12:22:48 UTC] [ManiaControl NOTICE]: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ORDER BY `value` DESC LIMIT 20000' at line 2
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 229
+[16-Apr-2021 12:22:48 UTC] [PHP WARNING]: count(): Parameter must be an array or an object that implements Countable
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/Statistics/StatisticManager.php: 358
+Trace: 
+#0: count(NULL()) in File core/Statistics/StatisticManager.php on Line 358
+#1: ManiaControl\Statistics\StatisticManager->getTotalStatsPlayerCount(integer(-1)) in File core/Statistics/SimpleStatsList.php on Line 142
+#2: ManiaControl\Statistics\SimpleStatsList->showStatsList(object(ManiaControl\Players\Player)) in File core/Statistics/SimpleStatsList.php on Line 121
+#3: ManiaControl\Statistics\SimpleStatsList->command_ShowStatsList(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())), object(ManiaControl\Players\Player)...)
+#4: call_user_func(array(object(ManiaControl\Statistics\SimpleStatsList), string(command_ShowStatsList)), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())), ...) in File core/Manialinks/ManialinkManager.php on Line 208
+#5: ManiaControl\Manialinks\ManialinkManager->handleManialinkPageAnswer(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))
+#6: call_user_func_array(array(object(ManiaControl\Manialinks\ManialinkManager), string(handleManialinkPageAnswer)), array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))...) in File core/Callbacks/Listening.php on Line 68
+#7: ManiaControl\Callbacks\Listening->triggerCallbackWithParams(array(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array())))) in File core/Callbacks/CallbackManager.php on Line 366
+#8: ManiaControl\Callbacks\CallbackManager->triggerCallback(string(ManiaPlanet.PlayerManialinkPageAnswer), array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array()))...) in File core/Callbacks/CallbackManager.php on Line 346
+#9: ManiaControl\Callbacks\CallbackManager->handleCallback(array(string(ManiaPlanet.PlayerManialinkPageAnswer), array(integer(234), string(koo), string(SimpleStatsList.OpenStatsList), array()))) in File core/Callbacks/CallbackManager.php on Line 293
+#10: ManiaControl\Callbacks\CallbackManager->manageCallbacks() in File core/ManiaControl.php on Line 781
+#11: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#12: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+...
+[16-Apr-2021 12:22:48 UTC] Error-Report successful!
+[16-Apr-2021 12:22:48 UTC] Error-Report successful!
+[16-Apr-2021 12:22:48 UTC] Error-Report successful!
+[16-Apr-2021 12:22:50 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":39911,"UserID":14..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":39911,"UserID":14..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:51 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:52 UTC] Error-Report successful!
+[16-Apr-2021 12:22:54 UTC] Error-Report successful!
+[16-Apr-2021 12:22:54 UTC] Error-Report successful!
+[16-Apr-2021 12:22:54 UTC] Error-Report successful!
+[16-Apr-2021 12:23:00 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":19948,"UserID":16..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":19948,"UserID":16..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:23:00 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":19948,"UserID":16..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":19948,"UserID":16..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:23:00 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":19948,"UserID":16..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":19948,"UserID":16..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:23:00 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":19948,"UserID":16..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":19948,"UserID":16..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:23:00 UTC] [PHP NOTICE]: Undefined property: stdClass::$MapID
+File&Line: /home/smserv02_2000/ServsSM-Backup/ElitePizzaBoysPrivate/ManiaControl/core/ManiaExchange/MXMapInfo.php: 46
+Trace: 
+#0: ManiaControl\ManiaExchange\MXMapInfo->__construct(string(sm), object(stdClass)) in File core/ManiaExchange/ManiaExchangeMapSearch.php on Line 248
+#1: ManiaControl\ManiaExchange\ManiaExchangeMapSearch->ManiaControl\ManiaExchange\{closure}(string({"results":[{"TrackID":19948,"UserID":16..), NULL())
+#2: call_user_func(object(Closure), string({"results":[{"TrackID":19948,"UserID":16..), NULL()) in File core/Files/AsyncHttpRequest.php on Line 125
+#3: ManiaControl\Files\AsyncHttpRequest->ManiaControl\Files\{closure}(object(cURL\Event), string(complete), object(cURL\Request))
+#4: call_user_func()
+#5: Symfony\Component\EventDispatcher\EventDispatcher->doDispatch()
+#6: Symfony\Component\EventDispatcher\EventDispatcher->dispatch()
+#7: cURL\RequestsQueue->read()
+#8: cURL\RequestsQueue->socketPerform() in File core/Files/AsynchronousFileReader.php on Line 54
+#9: ManiaControl\Files\AsynchronousFileReader->appendData() in File core/ManiaControl.php on Line 787
+#10: ManiaControl\ManiaControl->loop() in File core/ManiaControl.php on Line 672
+#11: ManiaControl\ManiaControl->run() in File ManiaControl.php on Line 56
+
+[16-Apr-2021 12:23:00 UTC] Error-Report successful!
+[16-Apr-2021 12:23:00 UTC] Error-Report successful!
+[16-Apr-2021 12:23:00 UTC] Error-Report successful!
+[16-Apr-2021 12:23:00 UTC] Error-Report successful!
+[16-Apr-2021 12:23:00 UTC] Error-Report successful!
+[16-Apr-2021 12:23:31 UTC] [INFO] Player joined: be1209 / D Nation: Italy IP: 151.64.150.1:2350
+[16-Apr-2021 12:23:55 UTC] [INFO] Player left: be1209 / D Playtime: 00:00:24
+[16-Apr-2021 12:23:59 UTC] [INFO] Player joined: be1209 / D Nation: Italy IP: 151.64.150.1:2350
+[16-Apr-2021 12:24:50 UTC] [INFO] P skipped to Map EPS - Wilderness' (by cartoonlink)!
+[16-Apr-2021 12:25:05 UTC] [INFO] P removed EPS - Wilderness‹ (by instayy)!
+[16-Apr-2021 12:28:48 UTC] [INFO] Player left: koo / P Playtime: 00:11:30
+[16-Apr-2021 12:29:02 UTC] [INFO] Player left: be1209 / D Playtime: 00:05:05
+[16-Apr-2021 22:11:15 UTC] [INFO] Player joined: be1209 / D Nation: Italy IP: 151.64.150.1:2350
+[16-Apr-2021 22:13:21 UTC] [INFO] Player joined: legoomi / legoomi Nation: Italy IP: 151.66.246.68:2350
+[16-Apr-2021 22:15:13 UTC] [INFO] Player joined: remixks / remixks Nation: Italy IP: 151.30.149.200:2350
+[16-Apr-2021 22:15:32 UTC] [INFO] Player joined: its_bob34 / its_bob34 Nation: Italy IP: 93.35.55.131:2350
+[16-Apr-2021 22:16:26 UTC] [INFO] Player left: legoomi / legoomi Playtime: 00:03:05
+[16-Apr-2021 22:16:45 UTC] [INFO] Player joined: legoomi / legoomi Nation: Italy IP: 151.66.246.68:2350
+[16-Apr-2021 22:19:46 UTC] [INFO] D restarted the current Map!
+[16-Apr-2021 22:21:17 UTC] [INFO] D skipped the current Map!
+[16-Apr-2021 22:22:25 UTC] [INFO] D skipped the current Map!
+[16-Apr-2021 22:23:07 UTC] [INFO] Player left: be1209 / D Playtime: 00:11:52
+[16-Apr-2021 22:23:13 UTC] [INFO] Player left: its_bob34 / its_bob34 Playtime: 00:07:42
+[16-Apr-2021 22:23:15 UTC] [INFO] Player left: remixks / remixks Playtime: 00:08:02
+[16-Apr-2021 22:25:41 UTC] [INFO] Player left: legoomi / legoomi Playtime: 00:09:00
+[18-Apr-2021 21:00:34 UTC] [INFO] Player joined: remixks / remixks Nation: Italy IP: 151.30.149.200:2350
+[18-Apr-2021 21:00:37 UTC] [INFO] Player joined: legoomi / legoomi Nation: Italy IP: 151.66.246.68:2350
+[18-Apr-2021 21:00:47 UTC] [INFO] Player joined: its_bob34 / its_bob34 Nation: Italy IP: 93.35.55.131:2350
+[18-Apr-2021 21:01:06 UTC] [INFO] Player joined: be1209 / Daniele Nation: Italy IP: 151.64.143.128:2350
+[18-Apr-2021 21:01:08 UTC] [INFO] Player joined: crunchydead / crunchydead Nation: Italy IP: 151.66.246.68:2350
+[18-Apr-2021 21:04:48 UTC] [INFO] Player joined: mulumbu / mulumbu Nation: Italy IP: 93.45.89.195:2350
+[18-Apr-2021 21:04:48 UTC] [INFO] Player joined: onepiece2000 / Yogurt chocker Nation: France IP: 176.130.130.30:2350
+[18-Apr-2021 21:05:38 UTC] [INFO] MasterAdmin Yogurt chocker set GameMode-Setting Mode to 1!
+[18-Apr-2021 21:06:21 UTC] [INFO] Player left: onepiece2000 / Yogurt chocker Playtime: 00:01:33
+[18-Apr-2021 21:19:44 UTC] [INFO] Player left: its_bob34 / its_bob34 Playtime: 00:18:57
+[18-Apr-2021 21:32:37 UTC] [INFO] Player left: mulumbu / mulumbu Playtime: 00:27:49
+[18-Apr-2021 21:41:27 UTC] [INFO] Player left: remixks / remixks Playtime: 00:40:53
+[18-Apr-2021 21:41:39 UTC] [INFO] Player left: be1209 / Daniele Playtime: 00:40:34
+[18-Apr-2021 21:42:10 UTC] [INFO] Player left: legoomi / legoomi Playtime: 00:41:33
+[18-Apr-2021 21:42:42 UTC] [INFO] Player left: crunchydead / crunchydead Playtime: 00:41:35
+[21-Apr-2021 20:40:04 UTC] [INFO] Player joined: koo / pizzaboykoo Nation: Italy IP: 5.63.174.167:2350
+[21-Apr-2021 20:47:00 UTC] [INFO] pizzaboykoo skipped the current Map!
+[21-Apr-2021 20:47:46 UTC] [INFO] pizzaboykoo skipped the current Map!
+[21-Apr-2021 20:59:53 UTC] [INFO] Player left: koo / pizzaboykoo Playtime: 00:19:50
+[21-Apr-2021 20:59:54 UTC] [INFO] Player joined: onepiece2000 / pizzaboyop Nation: France IP: 176.130.130.30:2350
+[21-Apr-2021 21:00:06 UTC] [INFO] Player left: onepiece2000 / pizzaboyop Playtime: 00:00:12
+[21-Apr-2021 21:41:54 UTC] [INFO] Player joined: koo / pizzaboykoo Nation: Italy IP: 5.63.174.167:2350
+[21-Apr-2021 21:42:26 UTC] [INFO] pizzaboykoo restarted the current Map!
+[21-Apr-2021 21:43:09 UTC] [INFO] pizzaboykoo restarted the current Map!
+[21-Apr-2021 21:43:43 UTC] [INFO] pizzaboykoo skipped the current Map!
+[21-Apr-2021 21:44:31 UTC] [INFO] pizzaboykoo skipped the current Map!
+[21-Apr-2021 21:44:59 UTC] [INFO] Player left: koo / pizzaboykoo Playtime: 00:03:08
+[21-Apr-2021 21:47:50 UTC] [INFO] Player joined: koo / pizzaboykoo Nation: Italy IP: 5.63.174.167:2350
+[21-Apr-2021 21:48:39 UTC] [INFO] pizzaboykoo skipped the current Map!
+[21-Apr-2021 21:51:55 UTC] [INFO] pizzaboykoo skipped the current Map!
+[21-Apr-2021 21:58:25 UTC] [INFO] pizzaboykoo skipped the current Map!
+[21-Apr-2021 21:59:59 UTC] [INFO] pizzaboykoo skipped the current Map!
+[21-Apr-2021 22:02:05 UTC] [INFO] Player left: koo / pizzaboykoo Playtime: 00:14:17

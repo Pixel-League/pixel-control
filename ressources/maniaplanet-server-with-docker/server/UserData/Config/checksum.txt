@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<cache version="5.0">
+	<packdesc>
+		<name>Maps\My Maps\39623_EPS_-_Survival.Map.Gbx</name>
+		<root>user</root>
+		<file>Maps\My Maps\39623_EPS_-_Survival.Map.Gbx</file>
+		<checksum>0x04165830520C1D5112EA568159ABDAAE9F9B380B120B7B7B91ED9F108D5BDF91</checksum>
+		<size>1065382</size>
+		<lastuse>25/05/2022 10:02</lastuse>
+	</packdesc>
+</cache>
