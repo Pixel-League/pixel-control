@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixel-control.dev/schema/lifecycle-payload-2026-02-19.1.schema.json",
+  "title": "Pixel Control lifecycle payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "variant",
+    "phase",
+    "state",
+    "source_channel",
+    "raw_source_callback",
+    "raw_callback_summary"
+  ],
+  "properties": {
+    "variant": {
+      "type": "string",
+      "enum": [
+        "warmup.start",
+        "warmup.end",
+        "warmup.status",
+        "match.begin",
+        "match.end",
+        "map.begin",
+        "map.end",
+        "round.begin",
+        "round.end",
+        "lifecycle.unknown"
+      ]
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "warmup",
+        "match",
+        "map",
+        "round",
+        "lifecycle"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "start",
+        "end",
+        "status",
+        "begin",
+        "unknown"
+      ]
+    },
+    "source_channel": {
+      "type": "string",
+      "enum": [
+        "maniaplanet",
+        "script"
+      ]
+    },
+    "raw_source_callback": {
+      "type": "string",
+      "minLength": 1
+    },
+    "raw_callback_summary": {
+      "$ref": "#/$defs/callbackSummary"
+    },
+    "script_callback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload_summary": {
+          "$ref": "#/$defs/callbackSummary"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "callbackSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "arguments_count",
+        "arguments"
+      ],
+      "properties": {
+        "arguments_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "value"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "value": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source_channel": {
+            "const": "script"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "script_callback"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "warmup.start"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "warmup"
+          },
+          "state": {
+            "const": "start"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "warmup.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "warmup"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "warmup.status"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "warmup"
+          },
+          "state": {
+            "const": "status"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "match.begin"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "match"
+          },
+          "state": {
+            "const": "begin"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "match.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "match"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "map.begin"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "map"
+          },
+          "state": {
+            "const": "begin"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "map.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "map"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "round.begin"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "round"
+          },
+          "state": {
+            "const": "begin"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "round.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "round"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "lifecycle.unknown"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "lifecycle"
+          },
+          "state": {
+            "const": "unknown"
+          }
+        }
+      }
+    }
+  ]
+}

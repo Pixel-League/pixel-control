@@ -1,0 +1,9 @@
+.env
+runtime/server/*
+!runtime/server/.gitkeep
+TitlePacks/*
+!TitlePacks/.gitkeep
+logs/qa/*
+!logs/qa/.gitkeep
+logs/dev/*
+!logs/dev/.gitkeep

@@ -1,0 +1,536 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixel-control.dev/schema/envelope-2026-02-19.1.schema.json",
+  "title": "Pixel Control event envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_name",
+    "schema_version",
+    "event_id",
+    "event_category",
+    "source_callback",
+    "source_sequence",
+    "source_time",
+    "idempotency_key",
+    "payload",
+    "metadata"
+  ],
+  "properties": {
+    "event_name": {
+      "type": "string",
+      "pattern": "^pixel_control\\.(connectivity|lifecycle|player|combat|mode)\\.[a-z0-9]+(?:_[a-z0-9]+)*$"
+    },
+    "schema_version": {
+      "const": "2026-02-19.1"
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^pc-evt-(connectivity|lifecycle|player|combat|mode)-[a-z0-9]+(?:_[a-z0-9]+)*-[1-9][0-9]*$"
+    },
+    "event_category": {
+      "type": "string",
+      "enum": [
+        "connectivity",
+        "lifecycle",
+        "player",
+        "combat",
+        "mode"
+      ]
+    },
+    "source_callback": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source_time": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "idempotency_key": {
+      "type": "string",
+      "pattern": "^pc-idem-[a-f0-9]{40}$"
+    },
+    "payload": {
+      "type": "object"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "connectivityEventName": {
+      "type": "string",
+      "enum": [
+        "pixel_control.connectivity.plugin_registration",
+        "pixel_control.connectivity.plugin_heartbeat"
+      ]
+    },
+    "lifecycleEventName": {
+      "type": "string",
+      "enum": [
+        "pixel_control.lifecycle.maniaplanet_beginmatch",
+        "pixel_control.lifecycle.maniaplanet_endmatch",
+        "pixel_control.lifecycle.maniaplanet_beginmap",
+        "pixel_control.lifecycle.maniaplanet_endmap",
+        "pixel_control.lifecycle.maniaplanet_beginround",
+        "pixel_control.lifecycle.maniaplanet_endround",
+        "pixel_control.lifecycle.maniaplanet_warmup_start",
+        "pixel_control.lifecycle.maniaplanet_warmup_end",
+        "pixel_control.lifecycle.maniaplanet_warmup_status",
+        "pixel_control.lifecycle.maniaplanet_startmatch_start",
+        "pixel_control.lifecycle.maniaplanet_startmatch_end",
+        "pixel_control.lifecycle.maniaplanet_endmatch_start",
+        "pixel_control.lifecycle.maniaplanet_endmatch_end",
+        "pixel_control.lifecycle.maniaplanet_loadingmap_start",
+        "pixel_control.lifecycle.maniaplanet_loadingmap_end",
+        "pixel_control.lifecycle.maniaplanet_unloadingmap_start",
+        "pixel_control.lifecycle.maniaplanet_unloadingmap_end",
+        "pixel_control.lifecycle.maniaplanet_startround_start",
+        "pixel_control.lifecycle.maniaplanet_startround_end",
+        "pixel_control.lifecycle.maniaplanet_endround_start",
+        "pixel_control.lifecycle.maniaplanet_endround_end"
+      ]
+    },
+    "playerEventName": {
+      "type": "string",
+      "enum": [
+        "pixel_control.player.playermanagercallback_playerconnect",
+        "pixel_control.player.playermanagercallback_playerdisconnect",
+        "pixel_control.player.playermanagercallback_playerinfochanged",
+        "pixel_control.player.playermanagercallback_playerinfoschanged"
+      ]
+    },
+    "combatEventName": {
+      "type": "string",
+      "enum": [
+        "pixel_control.combat.shootmania_event_onshoot",
+        "pixel_control.combat.shootmania_event_onhit",
+        "pixel_control.combat.shootmania_event_onnearmiss",
+        "pixel_control.combat.shootmania_event_onarmorempty",
+        "pixel_control.combat.shootmania_event_oncapture",
+        "pixel_control.combat.shootmania_event_scores"
+      ]
+    },
+    "modeEventName": {
+      "type": "string",
+      "enum": [
+        "pixel_control.mode.shootmania_elite_startturn",
+        "pixel_control.mode.shootmania_elite_endturn",
+        "pixel_control.mode.shootmania_joust_onreload",
+        "pixel_control.mode.shootmania_joust_selectedplayers",
+        "pixel_control.mode.shootmania_joust_roundresult",
+        "pixel_control.mode.shootmania_royal_points",
+        "pixel_control.mode.shootmania_royal_playerspawn",
+        "pixel_control.mode.shootmania_royal_roundwinner"
+      ]
+    },
+    "lifecycleVariant": {
+      "type": "string",
+      "enum": [
+        "warmup.start",
+        "warmup.end",
+        "warmup.status",
+        "match.begin",
+        "match.end",
+        "map.begin",
+        "map.end",
+        "round.begin",
+        "round.end",
+        "lifecycle.unknown"
+      ]
+    },
+    "runtimeContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "server",
+        "players"
+      ],
+      "properties": {
+        "server": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "login": {
+              "type": "string"
+            },
+            "title_id": {
+              "type": "string"
+            },
+            "game_port": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "p2p_port": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "name": {
+              "type": "string"
+            },
+            "game_mode": {
+              "type": "string"
+            },
+            "configured_mode": {
+              "type": "string"
+            },
+            "configured_matchsettings": {
+              "type": "string"
+            },
+            "configured_title_pack": {
+              "type": "string"
+            },
+            "current_map": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "uid": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "file": {
+                  "type": "string"
+                },
+                "environment": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "players": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "active",
+            "total",
+            "spectators"
+          ],
+          "properties": {
+            "active": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "spectators": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "callbackSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "arguments_count",
+        "arguments"
+      ],
+      "properties": {
+        "arguments_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "value"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "value": {}
+            }
+          }
+        }
+      }
+    },
+    "connectivityPayload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "type",
+            "plugin",
+            "capabilities",
+            "context",
+            "timestamp"
+          ],
+          "properties": {
+            "type": {
+              "const": "plugin_registration"
+            },
+            "plugin": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "name",
+                "version"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              }
+            },
+            "capabilities": {
+              "type": "object"
+            },
+            "context": {
+              "$ref": "#/$defs/runtimeContext"
+            },
+            "timestamp": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "type",
+            "queue_depth",
+            "context",
+            "timestamp"
+          ],
+          "properties": {
+            "type": {
+              "const": "plugin_heartbeat"
+            },
+            "queue_depth": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "context": {
+              "$ref": "#/$defs/runtimeContext"
+            },
+            "timestamp": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "callbackMetadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "plugin_version",
+        "schema_version",
+        "mode_family",
+        "signal_kind"
+      ],
+      "properties": {
+        "plugin_version": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "2026-02-19.1"
+        },
+        "mode_family": {
+          "const": "multi-mode"
+        },
+        "signal_kind": {
+          "const": "callback"
+        }
+      }
+    },
+    "connectivityMetadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "plugin_version",
+        "schema_version",
+        "mode_family",
+        "signal_kind",
+        "context"
+      ],
+      "properties": {
+        "plugin_version": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "2026-02-19.1"
+        },
+        "mode_family": {
+          "const": "multi-mode"
+        },
+        "signal_kind": {
+          "const": "connectivity"
+        },
+        "context": {
+          "$ref": "#/$defs/runtimeContext"
+        }
+      }
+    },
+    "lifecycleMetadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "plugin_version",
+        "schema_version",
+        "mode_family",
+        "signal_kind",
+        "lifecycle_variant",
+        "context"
+      ],
+      "properties": {
+        "plugin_version": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "2026-02-19.1"
+        },
+        "mode_family": {
+          "const": "multi-mode"
+        },
+        "signal_kind": {
+          "const": "callback"
+        },
+        "lifecycle_variant": {
+          "$ref": "#/$defs/lifecycleVariant"
+        },
+        "context": {
+          "$ref": "#/$defs/runtimeContext"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_category": {
+            "const": "connectivity"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "event_name": {
+            "$ref": "#/$defs/connectivityEventName"
+          },
+          "payload": {
+            "$ref": "#/$defs/connectivityPayload"
+          },
+          "metadata": {
+            "$ref": "#/$defs/connectivityMetadata"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_category": {
+            "const": "lifecycle"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "event_name": {
+            "$ref": "#/$defs/lifecycleEventName"
+          },
+          "payload": {
+            "$ref": "lifecycle-payload-2026-02-19.1.schema.json"
+          },
+          "metadata": {
+            "$ref": "#/$defs/lifecycleMetadata"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_category": {
+            "const": "player"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "event_name": {
+            "$ref": "#/$defs/playerEventName"
+          },
+          "payload": {
+            "$ref": "#/$defs/callbackSummary"
+          },
+          "metadata": {
+            "$ref": "#/$defs/callbackMetadata"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_category": {
+            "const": "combat"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "event_name": {
+            "$ref": "#/$defs/combatEventName"
+          },
+          "payload": {
+            "$ref": "#/$defs/callbackSummary"
+          },
+          "metadata": {
+            "$ref": "#/$defs/callbackMetadata"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_category": {
+            "const": "mode"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "event_name": {
+            "$ref": "#/$defs/modeEventName"
+          },
+          "payload": {
+            "$ref": "#/$defs/callbackSummary"
+          },
+          "metadata": {
+            "$ref": "#/$defs/callbackMetadata"
+          }
+        }
+      }
+    }
+  ]
+}

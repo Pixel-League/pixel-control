@@ -1,0 +1,84 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_APP_USER}
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  shootmania:
+    platform: ${PIXEL_SM_RUNTIME_PLATFORM:-linux/amd64}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: ["/opt/pixel-sm/scripts/bootstrap.sh"]
+    environment:
+      PIXEL_SM_SERVER_ROOT: /opt/pixel-sm/runtime/server
+      PIXEL_SM_PLUGIN_SOURCE_ROOT: /opt/pixel-sm/pixel-control-plugin-src
+      PIXEL_SM_DB_HOST: mysql
+      PIXEL_SM_DB_PORT: 3306
+      PIXEL_SM_DB_NAME: ${MYSQL_DATABASE}
+      PIXEL_SM_DB_USER: ${MYSQL_APP_USER}
+      PIXEL_SM_DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+      PIXEL_SM_XMLRPC_PORT: ${PIXEL_SM_XMLRPC_PORT}
+      PIXEL_SM_SERVER_NAME: ${PIXEL_SM_SERVER_NAME}
+      PIXEL_SM_DEDICATED_LOGIN: ${PIXEL_SM_DEDICATED_LOGIN}
+      PIXEL_SM_DEDICATED_PASSWORD: ${PIXEL_SM_DEDICATED_PASSWORD}
+      PIXEL_SM_TITLE_PACK: ${PIXEL_SM_TITLE_PACK}
+      PIXEL_SM_GAME_PORT: ${PIXEL_SM_GAME_PORT}
+      PIXEL_SM_P2P_PORT: ${PIXEL_SM_P2P_PORT}
+      PIXEL_SM_MODE: ${PIXEL_SM_MODE}
+      PIXEL_SM_MATCHSETTINGS: ${PIXEL_SM_MATCHSETTINGS}
+      PIXEL_SM_MANIACONTROL_SUPERADMIN_PASSWORD: ${PIXEL_SM_MANIACONTROL_SUPERADMIN_PASSWORD}
+      PIXEL_SM_MANIACONTROL_ADMIN_PASSWORD: ${PIXEL_SM_MANIACONTROL_ADMIN_PASSWORD}
+      PIXEL_SM_MANIACONTROL_USER_PASSWORD: ${PIXEL_SM_MANIACONTROL_USER_PASSWORD}
+      PIXEL_SM_MANIACONTROL_LOG_LEVEL: ${PIXEL_SM_MANIACONTROL_LOG_LEVEL}
+      PIXEL_SM_BOOTSTRAP_TIMEOUT_SECONDS: ${PIXEL_SM_BOOTSTRAP_TIMEOUT_SECONDS}
+      PIXEL_SM_START_MANIACONTROL: ${PIXEL_SM_START_MANIACONTROL}
+      PIXEL_CONTROL_AUTO_ENABLE: ${PIXEL_CONTROL_AUTO_ENABLE}
+      PIXEL_CONTROL_API_BASE_URL: ${PIXEL_CONTROL_API_BASE_URL:-}
+      PIXEL_CONTROL_API_EVENT_PATH: ${PIXEL_CONTROL_API_EVENT_PATH:-}
+      PIXEL_CONTROL_API_TIMEOUT_SECONDS: ${PIXEL_CONTROL_API_TIMEOUT_SECONDS:-}
+      PIXEL_CONTROL_API_MAX_RETRY_ATTEMPTS: ${PIXEL_CONTROL_API_MAX_RETRY_ATTEMPTS:-}
+      PIXEL_CONTROL_API_RETRY_BACKOFF_MS: ${PIXEL_CONTROL_API_RETRY_BACKOFF_MS:-}
+      PIXEL_CONTROL_QUEUE_MAX_SIZE: ${PIXEL_CONTROL_QUEUE_MAX_SIZE:-}
+      PIXEL_CONTROL_DISPATCH_BATCH_SIZE: ${PIXEL_CONTROL_DISPATCH_BATCH_SIZE:-}
+      PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS: ${PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS:-}
+      PIXEL_CONTROL_AUTH_MODE: ${PIXEL_CONTROL_AUTH_MODE:-}
+      PIXEL_CONTROL_AUTH_VALUE: ${PIXEL_CONTROL_AUTH_VALUE:-}
+      PIXEL_CONTROL_AUTH_HEADER: ${PIXEL_CONTROL_AUTH_HEADER:-}
+    ports:
+      - "${PIXEL_SM_GAME_PORT}:${PIXEL_SM_GAME_PORT}/tcp"
+      - "${PIXEL_SM_GAME_PORT}:${PIXEL_SM_GAME_PORT}/udp"
+      - "${PIXEL_SM_P2P_PORT}:${PIXEL_SM_P2P_PORT}/tcp"
+      - "${PIXEL_SM_P2P_PORT}:${PIXEL_SM_P2P_PORT}/udp"
+      - "${PIXEL_SM_XMLRPC_PORT}:${PIXEL_SM_XMLRPC_PORT}/tcp"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/pixel-sm/scripts/healthcheck.sh"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 35s
+    volumes:
+      - ${PIXEL_SM_RUNTIME_SOURCE}:/opt/pixel-sm/runtime/server
+      - ${PIXEL_SM_TITLEPACKS_SOURCE}:/opt/pixel-sm/titlepacks
+      - ${PIXEL_SM_MAPS_SOURCE:-./maps}:/opt/pixel-sm/mode-maps:ro
+      - ${PIXEL_CONTROL_PLUGIN_SOURCE}:/opt/pixel-sm/pixel-control-plugin-src:ro
+
+volumes:
+  mysql_data:

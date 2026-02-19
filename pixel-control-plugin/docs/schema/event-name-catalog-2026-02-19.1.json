@@ -1,0 +1,77 @@
+{
+  "catalog_version": "2026-02-19.1",
+  "schema_version": "2026-02-19.1",
+  "event_name_pattern": "pixel_control.<event_category>.<normalized_source_callback>",
+  "event_categories": [
+    "connectivity",
+    "lifecycle",
+    "player",
+    "combat",
+    "mode"
+  ],
+  "events": {
+    "connectivity": [
+      "pixel_control.connectivity.plugin_registration",
+      "pixel_control.connectivity.plugin_heartbeat"
+    ],
+    "lifecycle": [
+      "pixel_control.lifecycle.maniaplanet_beginmatch",
+      "pixel_control.lifecycle.maniaplanet_endmatch",
+      "pixel_control.lifecycle.maniaplanet_beginmap",
+      "pixel_control.lifecycle.maniaplanet_endmap",
+      "pixel_control.lifecycle.maniaplanet_beginround",
+      "pixel_control.lifecycle.maniaplanet_endround",
+      "pixel_control.lifecycle.maniaplanet_warmup_start",
+      "pixel_control.lifecycle.maniaplanet_warmup_end",
+      "pixel_control.lifecycle.maniaplanet_warmup_status",
+      "pixel_control.lifecycle.maniaplanet_startmatch_start",
+      "pixel_control.lifecycle.maniaplanet_startmatch_end",
+      "pixel_control.lifecycle.maniaplanet_endmatch_start",
+      "pixel_control.lifecycle.maniaplanet_endmatch_end",
+      "pixel_control.lifecycle.maniaplanet_loadingmap_start",
+      "pixel_control.lifecycle.maniaplanet_loadingmap_end",
+      "pixel_control.lifecycle.maniaplanet_unloadingmap_start",
+      "pixel_control.lifecycle.maniaplanet_unloadingmap_end",
+      "pixel_control.lifecycle.maniaplanet_startround_start",
+      "pixel_control.lifecycle.maniaplanet_startround_end",
+      "pixel_control.lifecycle.maniaplanet_endround_start",
+      "pixel_control.lifecycle.maniaplanet_endround_end"
+    ],
+    "player": [
+      "pixel_control.player.playermanagercallback_playerconnect",
+      "pixel_control.player.playermanagercallback_playerdisconnect",
+      "pixel_control.player.playermanagercallback_playerinfochanged",
+      "pixel_control.player.playermanagercallback_playerinfoschanged"
+    ],
+    "combat": [
+      "pixel_control.combat.shootmania_event_onshoot",
+      "pixel_control.combat.shootmania_event_onhit",
+      "pixel_control.combat.shootmania_event_onnearmiss",
+      "pixel_control.combat.shootmania_event_onarmorempty",
+      "pixel_control.combat.shootmania_event_oncapture",
+      "pixel_control.combat.shootmania_event_scores"
+    ],
+    "mode": [
+      "pixel_control.mode.shootmania_elite_startturn",
+      "pixel_control.mode.shootmania_elite_endturn",
+      "pixel_control.mode.shootmania_joust_onreload",
+      "pixel_control.mode.shootmania_joust_selectedplayers",
+      "pixel_control.mode.shootmania_joust_roundresult",
+      "pixel_control.mode.shootmania_royal_points",
+      "pixel_control.mode.shootmania_royal_playerspawn",
+      "pixel_control.mode.shootmania_royal_roundwinner"
+    ]
+  },
+  "lifecycle_variants": [
+    "warmup.start",
+    "warmup.end",
+    "warmup.status",
+    "match.begin",
+    "match.end",
+    "map.begin",
+    "map.end",
+    "round.begin",
+    "round.end",
+    "lifecycle.unknown"
+  ]
+}

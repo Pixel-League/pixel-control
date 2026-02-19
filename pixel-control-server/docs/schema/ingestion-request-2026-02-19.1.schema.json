@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixel-control.dev/schema/ingestion-request-2026-02-19.1.schema.json",
+  "title": "Pixel Control plugin ingestion request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "transport"
+  ],
+  "properties": {
+    "envelope": {
+      "$ref": "../../../pixel-control-plugin/docs/schema/envelope-2026-02-19.1.schema.json"
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempt",
+        "max_attempts",
+        "retry_backoff_ms",
+        "auth_mode"
+      ],
+      "properties": {
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retry_backoff_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "auth_mode": {
+          "type": "string",
+          "enum": [
+            "none",
+            "bearer",
+            "api_key"
+          ]
+        }
+      }
+    }
+  }
+}

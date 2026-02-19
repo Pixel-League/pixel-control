@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<maniacontrol>
+  <server>
+    <host>127.0.0.1</host>
+    <port>${PIXEL_SM_XMLRPC_PORT}</port>
+    <user>SuperAdmin</user>
+    <pass>${PIXEL_SM_MANIACONTROL_SUPERADMIN_PASSWORD}</pass>
+  </server>
+
+  <database>
+    <host>${PIXEL_SM_DB_HOST}</host>
+    <port>${PIXEL_SM_DB_PORT}</port>
+    <user>${PIXEL_SM_DB_USER}</user>
+    <pass>${PIXEL_SM_DB_PASSWORD}</pass>
+    <name>${PIXEL_SM_DB_NAME}</name>
+  </database>
+
+  <masteradmins>
+  </masteradmins>
+</maniacontrol>

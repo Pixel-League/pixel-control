@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<dedicated>
+  <authorization_levels>
+    <level>
+      <name>SuperAdmin</name>
+      <password>${PIXEL_SM_MANIACONTROL_SUPERADMIN_PASSWORD}</password>
+    </level>
+    <level>
+      <name>Admin</name>
+      <password>${PIXEL_SM_MANIACONTROL_ADMIN_PASSWORD}</password>
+    </level>
+    <level>
+      <name>User</name>
+      <password>${PIXEL_SM_MANIACONTROL_USER_PASSWORD}</password>
+    </level>
+  </authorization_levels>
+
+  <server_options>
+    <name>${PIXEL_SM_SERVER_NAME}</name>
+    <comment>Pixel SM local dev baseline</comment>
+    <hide_server>2</hide_server>
+    <max_players>16</max_players>
+    <password></password>
+    <max_spectators>16</max_spectators>
+    <password_spectator></password_spectator>
+    <ladder_mode>inactive</ladder_mode>
+    <enable_p2p_upload>True</enable_p2p_upload>
+    <enable_p2p_download>False</enable_p2p_download>
+  </server_options>
+
+  <system_config>
+    <server_port>${PIXEL_SM_GAME_PORT}</server_port>
+    <server_p2p_port>${PIXEL_SM_P2P_PORT}</server_p2p_port>
+    <xmlrpc_port>${PIXEL_SM_XMLRPC_PORT}</xmlrpc_port>
+    <xmlrpc_allowremote>False</xmlrpc_allowremote>
+    <title>${PIXEL_SM_TITLE_PACK}</title>
+  </system_config>
+</dedicated>

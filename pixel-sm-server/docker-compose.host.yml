@@ -1,0 +1,9 @@
+services:
+  mysql:
+    network_mode: host
+
+  shootmania:
+    network_mode: host
+    ports: []
+    environment:
+      PIXEL_SM_DB_HOST: 127.0.0.1
