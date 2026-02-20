@@ -32,6 +32,7 @@ trait MatchDomainTrait {
 			return null;
 		}
 
+		$this->resetCombatStatsWindowIfNeeded($variant, $sourceCallback);
 		$currentCounters = $this->playerCombatStatsStore->snapshotAll();
 		$observedAt = time();
 
@@ -386,6 +387,31 @@ trait MatchDomainTrait {
 			'rockets' => 0,
 			'lasers' => 0,
 			'accuracy' => 0.0,
+		);
+	}
+
+	private function resetCombatStatsWindowIfNeeded($variant, $sourceCallback) {
+		if ($variant !== 'match.begin' && $variant !== 'map.begin') {
+			return;
+		}
+
+		if (!$this->playerCombatStatsStore) {
+			return;
+		}
+
+		$this->playerCombatStatsStore->reset();
+		$this->latestScoresSnapshot = null;
+		$this->roundAggregateBaseline = null;
+		$this->roundAggregateStartedAt = 0;
+		$this->roundAggregateStartedBy = 'unknown';
+		$this->mapAggregateBaseline = null;
+		$this->mapAggregateStartedAt = 0;
+		$this->mapAggregateStartedBy = 'unknown';
+
+		Logger::log(
+			'[PixelControl][combat][window_reset] variant=' . (string) $variant
+			. ', source_callback=' . (string) $sourceCallback
+			. ', retention=match_map_window.'
 		);
 	}
 

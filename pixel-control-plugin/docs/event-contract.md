@@ -157,7 +157,8 @@ Wave-4 lifecycle payloads include additive map/stats context on existing lifecyc
 
 ## Combat stats payload contract
 
-- Combat callbacks continue to emit runtime counters under `player_counters`.
+- Combat callbacks continue to emit in-memory counters under `player_counters`.
+- Counter retention is intentionally bounded to the active match/map window (store reset on `match.begin` and `map.begin`), so plugin-side combat counters are not long-lived runtime history.
 - Required counters per tracked player:
   - `kills`, `deaths`, `hits`, `shots`, `misses`, `rockets`, `lasers`, `accuracy`
 - Combat dimensions continue under `dimensions` with field fallback markers:

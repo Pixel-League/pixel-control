@@ -147,6 +147,11 @@
 - Outage/recovery QA is reproducible by toggling that local ACK stub: stop stub -> observe `outage_entered`/`retry_scheduled` markers; restart stub -> observe `outage_recovered` + `recovery_flush_complete` in `pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log`.
 - `connectFakePlayer` + forced map transitions (`restartMap`/`nextMap`) can trigger admin-flow callbacks and at least `OnScores` combat envelope shape validation, but real client gameplay is still required for non-zero shot/hit/miss/kill counters.
 - Manual combat observability logs are now emitted with prefix `[Pixel Plugin]` for `OnShoot`/`OnHit`/`OnNearMiss`/`OnArmorEmpty`/`OnCapture`/`OnScores`; monitor with `tail -f pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log | grep --line-buffered -E '\[Pixel Plugin\]'`.
+- Incident memory (2026-02-20, long-lived in-memory combat stats retention):
+  - symptom: concern that combat counters persisted in plugin memory for the full server uptime and could accumulate unnecessary player rows.
+  - root cause: `PlayerCombatStatsStore` was runtime-only but reset only on plugin reload/restart, so retention window matched long-lived process lifetime.
+  - fix: reset combat counter store + aggregate baselines on `match.begin` and `map.begin` lifecycle boundaries to keep retention bounded to active match/map windows.
+  - validation: `MatchDomainTrait::buildLifecycleAggregateTelemetry()` now calls reset helper on `match.begin|map.begin`, and `FEATURES.md`/`docs/event-contract.md` describe bounded non-persistent retention.
 
 ## Current execution status (2026-02-20)
 - Active execution direction: plugin-first and dev-server-first; backend/API implementation is paused by user for now.
