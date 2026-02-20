@@ -134,6 +134,7 @@
 - Plugin fast-sync helper (`pixel-sm-server/scripts/dev-plugin-sync.sh`) supports multi-file compose selection through `PIXEL_SM_DEV_COMPOSE_FILES` (CSV, default `docker-compose.yml`) and leaves stack running for iteration.
 - Plugin hot-sync helper (`pixel-sm-server/scripts/dev-plugin-hot-sync.sh`) now supports plugin-only refresh without shootmania container restart: it copies plugin source into runtime and restarts ManiaControl process only (dedicated server PID should remain unchanged).
 - Plugin transport runtime now also supports queue/dispatch/heartbeat knobs through `PIXEL_CONTROL_QUEUE_MAX_SIZE`, `PIXEL_CONTROL_DISPATCH_BATCH_SIZE`, and `PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS`.
+- In bridge-network local dev, ManiaControl communication socket may fail if it binds to external published IP; for reliable plugin communication-method QA, ensure runtime `CommunicationManager` listens on `0.0.0.0` (runtime compatibility patch currently applied in `pixel-sm-server/runtime/server/ManiaControl/core/Communication/CommunicationManager.php`).
 - If default local ports are occupied during dev fast sync, override runtime ports inline (for example `PIXEL_SM_XMLRPC_PORT=57000 PIXEL_SM_GAME_PORT=57100 PIXEL_SM_P2P_PORT=57200 bash scripts/dev-plugin-sync.sh`).
 - For LAN peer-play sessions where login-based join URLs resolve to public IP and fail/hang, use local server list join and, if needed, restart with legacy gameplay ports (`PIXEL_SM_GAME_PORT=2350 PIXEL_SM_P2P_PORT=3450`) for compatibility.
 - LAN local-server-list discovery is now considered stable on native gameplay ports; keep `.env` defaults on `PIXEL_SM_GAME_PORT=2350` and `PIXEL_SM_P2P_PORT=3450` unless a session explicitly needs temporary overrides.
@@ -152,10 +153,26 @@
   - root cause: `PlayerCombatStatsStore` was runtime-only but reset only on plugin reload/restart, so retention window matched long-lived process lifetime.
   - fix: reset combat counter store + aggregate baselines on `match.begin` and `map.begin` lifecycle boundaries to keep retention bounded to active match/map windows.
   - validation: `MatchDomainTrait::buildLifecycleAggregateTelemetry()` now calls reset helper on `match.begin|map.begin`, and `FEATURES.md`/`docs/event-contract.md` describe bounded non-persistent retention.
+- Incident memory (2026-02-20, communication socket bind failure in containerized QA):
+  - symptom: `CommunicationManager` raised `Could not bind to tcp://<public-ip>:31501: Cannot assign requested address`, and plugin communication methods were unavailable.
+  - root cause: runtime `CommunicationManager` attempted to bind the socket to `ManiaControl->server->ip` (external published IP not present inside bridge container network).
+  - fix: bind communication socket to `0.0.0.0` in runtime `CommunicationManager` and restart stack.
+  - validation: ManiaControl log now shows `Socket 0.0.0.0:31501 Successfully created!`, and `PixelControl.Admin.ListActions` returns delegated action catalog over communication socket.
+- Incident memory (2026-02-20, wave-4 strict replay produced empty capture):
+  - symptom: `qa-wave4-telemetry-replay.sh` failed strict marker validation with zero captured envelopes.
+  - root cause: local ACK stub port `18080` was already occupied by another stub session, so replay capture file remained empty for that run.
+  - fix: stop conflicting stub session before replay and rerun strict wave-4 replay.
+  - validation: strict replay passed with marker closure in `pixel-sm-server/logs/qa/wave4-telemetry-20260220-193214-markers.json`.
 
 ## Current execution status (2026-02-20)
 - Active execution direction: plugin-first and dev-server-first; backend/API implementation is paused by user for now.
 - Plugin schema baseline remains `2026-02-20.1`; wave-5 keeps version unchanged and continues additive optional fields only.
+- Native-admin delegation refactor plan (`PLAN-maniacontrol-native-admin-delegation-refactor.md`) is now complete through phase 6:
+  - plugin control surface delegates map/warmup/pause/vote/player/auth execution to ManiaControl native services,
+  - permission model enforced through native plugin rights,
+  - rollout safety/rollback procedure documented,
+  - docs synchronized in `pixel-control-plugin/FEATURES.md`, `pixel-control-plugin/docs/event-contract.md`, `pixel-control-plugin/docs/admin-capability-delegation.md`, and `API_CONTRACT.md` note.
+- Admin delegation QA evidence set is captured in `pixel-sm-server/logs/qa/admin-delegation-20260220-1926/` (action matrix, permission matrix, non-Elite fallback, telemetry regression summary, acceptance summary).
 - Wave-5 plugin hardening delivered:
   - deterministic identity validation on enqueue/dispatch (`drop_identity_invalid` warning + queue counter `dropped_on_identity_validation`),
   - additive player constraint telemetry (`constraint_signals`) for forced-team/slot-policy context with deterministic availability/fallback reasons,
@@ -178,4 +195,4 @@
 - Backend note:
   - `pixel-control-server/` code changes were rolled back on user request,
   - future API behavior must be tracked in `API_CONTRACT.md` until backend work is re-opened.
-- Where we stopped: autonomous wave-5 implementation is complete; only user-run real-client matrix execution and evidence status updates remain.
+- Where we stopped: wave-5 core work + native-admin delegation refactor are complete; remaining open validation is user-run real-client gameplay/evidence closure.

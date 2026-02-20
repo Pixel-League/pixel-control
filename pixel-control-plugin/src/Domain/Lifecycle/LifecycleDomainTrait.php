@@ -31,6 +31,7 @@ trait LifecycleDomainTrait {
 		$variant = $this->resolveLifecycleVariant($sourceCallback, $callbackArguments);
 		$variantParts = explode('.', $variant, 2);
 		$isScriptLifecycle = $this->isScriptLifecycleCallback($sourceCallback);
+		$this->observePauseStateFromLifecycle($variant, $callbackArguments);
 
 		if ($variant === 'match.begin') {
 			$this->resetVetoDraftActions();

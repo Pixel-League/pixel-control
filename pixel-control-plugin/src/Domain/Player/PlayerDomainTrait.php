@@ -2,6 +2,7 @@
 
 namespace PixelControl\Domain\Player;
 
+use ManiaControl\Admin\AuthenticationManager;
 use ManiaControl\Callbacks\CallbackListener;
 use ManiaControl\Callbacks\Structures\ShootMania\OnCaptureStructure;
 use ManiaControl\Callbacks\Structures\ShootMania\OnHitNearMissArmorEmptyBaseStructure;
@@ -1072,40 +1073,34 @@ trait PlayerDomainTrait {
 			return 'Unknown';
 		}
 
-		switch ((int) $authLevel) {
-			case 4:
-				return 'MasterAdmin';
-			case 3:
-				return 'SuperAdmin';
-			case 2:
-				return 'Admin';
-			case 1:
-				return 'Moderator';
-			case 0:
-				return 'Player';
-			default:
-				return 'Unknown';
+		$authLevelName = AuthenticationManager::getAuthLevelName((int) $authLevel);
+		if (!is_string($authLevelName)) {
+			return 'Unknown';
 		}
+
+		$normalizedAuthLevelName = trim($authLevelName);
+		if ($normalizedAuthLevelName === '' || $normalizedAuthLevelName === '-') {
+			return 'Unknown';
+		}
+
+		return $normalizedAuthLevelName;
 	}
 
 	private function resolveAuthLevelRole($authLevel) {
-		if ($authLevel === null || !is_numeric($authLevel)) {
-			return 'unknown';
-		}
-
-		switch ((int) $authLevel) {
-			case 4:
+		$authLevelName = $this->resolveAuthLevelName($authLevel);
+		switch ($authLevelName) {
+			case AuthenticationManager::AUTH_NAME_MASTERADMIN:
 				return 'master_admin';
-			case 3:
+			case AuthenticationManager::AUTH_NAME_SUPERADMIN:
 				return 'super_admin';
-			case 2:
+			case AuthenticationManager::AUTH_NAME_ADMIN:
 				return 'admin';
-			case 1:
+			case AuthenticationManager::AUTH_NAME_MODERATOR:
 				return 'moderator';
-			case 0:
+			case AuthenticationManager::AUTH_NAME_PLAYER:
 				return 'player';
 			default:
-				return 'unknown';
+			return 'unknown';
 		}
 	}
 

@@ -60,6 +60,7 @@ trait CoreDomainTrait {
 		$this->initializeSettings();
 		$this->initializeSourceSequence();
 		$this->initializeEventPipeline();
+		$this->initializeAdminDelegationLayer();
 		$this->callbackRegistry = new CallbackRegistry();
 		$this->callbackRegistry->register($maniaControl, $this);
 		$this->registerPeriodicTimers();
@@ -81,7 +82,14 @@ trait CoreDomainTrait {
 
 	public function unload() {
 		Logger::log('[PixelControl] Unloading plugin.');
+		$this->unregisterAdminControlEntryPoints();
 
+		$this->nativeAdminGateway = null;
+		$this->adminControlEnabled = false;
+		$this->adminControlCommandName = 'pcadmin';
+		$this->adminControlPauseActive = null;
+		$this->adminControlPauseObservedAt = 0;
+		$this->adminControlPauseStateMaxAgeSeconds = 120;
 		$this->retryPolicy = null;
 		$this->eventQueue = null;
 		$this->apiClient = null;
@@ -150,6 +158,7 @@ trait CoreDomainTrait {
 		$settingManager->initSetting($this, self::SETTING_QUEUE_MAX_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_QUEUE_MAX_SIZE, 'PIXEL_CONTROL_QUEUE_MAX_SIZE', 2000, 1));
 		$settingManager->initSetting($this, self::SETTING_DISPATCH_BATCH_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1));
 		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 15, 1));
+		$this->initializeAdminControlSettings();
 	}
 
 	private function initializeEventPipeline() {

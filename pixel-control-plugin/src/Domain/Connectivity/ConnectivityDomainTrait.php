@@ -99,6 +99,7 @@ trait ConnectivityDomainTrait {
 				'dispatch_batch_size' => $this->dispatchBatchSize,
 				'growth_log_step' => $this->queueGrowthLogStep,
 			),
+			'admin_control' => $this->buildAdminControlCapabilitiesPayload(),
 		);
 
 		if ($this->heartbeatIntervalSeconds > 0) {

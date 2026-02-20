@@ -36,6 +36,7 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - callback group counts
   - transport and queue knobs
   - schema and identity capabilities
+  - delegated admin-control capabilities (`admin_control`) with ownership boundary (`telemetry_transport=pixel_plugin`, `admin_execution=native_maniacontrol`)
 - Runtime context snapshot:
   - server info + current map identity
   - active/total/spectator player counts
@@ -61,6 +62,24 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
 ## Admin
 
 - Admin action telemetry from script lifecycle callbacks
+- Delegated native-admin execution surface (no duplicated business rules in plugin)
+- Feature-gated control surface:
+  - setting/env toggle: `Pixel Control Native Admin Control Enabled` / `PIXEL_CONTROL_ADMIN_CONTROL_ENABLED` (safe default: disabled)
+  - command alias setting/env: `Pixel Control Native Admin Command` / `PIXEL_CONTROL_ADMIN_COMMAND` (default `pcadmin`)
+  - pause-state freshness setting/env: `Pixel Control Pause State Max Age Seconds` / `PIXEL_CONTROL_ADMIN_PAUSE_STATE_MAX_AGE_SECONDS`
+- Control entry points:
+  - admin chat command: `//pcadmin` (or configured alias)
+  - communication methods: `PixelControl.Admin.ExecuteAction`, `PixelControl.Admin.ListActions`
+- Permission gating delegated to native `AuthenticationManager` plugin rights (`definePluginPermissionLevel` + `checkPluginPermission`)
+- Delegated action catalog:
+  - map: `map.skip`, `map.restart`, `map.jump`, `map.queue`
+  - warmup/pause: `warmup.extend`, `warmup.end`, `pause.start`, `pause.end`, `pause.toggle`
+  - votes: `vote.cancel`, `vote.set_ratio`, optional `vote.custom_start`
+  - player/auth: `player.force_team`, `player.force_play`, `player.force_spec`, `auth.grant`, `auth.revoke`
+- Deterministic delegated-action observability markers:
+  - `[PixelControl][admin][action_requested]`
+  - `[PixelControl][admin][action_success]`
+  - `[PixelControl][admin][action_failed]`
 - Structured admin action fields:
   - `action_name`
   - `action_domain`

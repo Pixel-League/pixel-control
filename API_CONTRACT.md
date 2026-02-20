@@ -51,6 +51,12 @@ Compatibility note for wave-5:
 - Existing required envelope fields remain unchanged.
 - Consumers should ignore unknown additive payload fields when they are not yet projected.
 
+Compatibility note for native-admin delegation refactor:
+
+- This refactor is execution-path delegation only: control actions are now executed through native ManiaControl services behind the plugin control surface.
+- Plugin-to-API transport routes and required envelope fields are unchanged.
+- Any new admin-control visibility is additive under connectivity capability payload (`payload.capabilities.admin_control.*`) and does not change route contracts.
+
 Identity guardrails (wave-5 runtime hardening):
 
 - Plugin event identity remains deterministic:

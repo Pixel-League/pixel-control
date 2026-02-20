@@ -35,6 +35,23 @@ This document defines the active plugin-to-server envelope baseline for wave 5.
   - combat: `6`
   - mode: `8`
 
+## Delegated admin-control execution surface (additive)
+
+- Admin delegation refactor keeps schema version `2026-02-20.1` and does not add/rename event categories or callbacks.
+- Execution-path change only: privileged map/warmup/pause/vote/player/auth control requests are delegated to native ManiaControl services.
+- Additive connectivity capability field in plugin registration payload:
+  - `payload.capabilities.admin_control.available`
+  - `payload.capabilities.admin_control.enabled`
+  - `payload.capabilities.admin_control.command`
+  - `payload.capabilities.admin_control.pause_state_ttl_seconds`
+  - `payload.capabilities.admin_control.communication.execute_action`
+  - `payload.capabilities.admin_control.communication.list_actions`
+  - `payload.capabilities.admin_control.actions[]`
+  - `payload.capabilities.admin_control.ownership_boundary.telemetry_transport`
+  - `payload.capabilities.admin_control.ownership_boundary.admin_execution`
+- Delegated action request/response payloads are local plugin control-surface semantics (chat/communication) and are not new plugin-to-API event envelopes.
+- Existing lifecycle `admin_action` telemetry semantics remain unchanged and continue to be emitted by native callback observations.
+
 ## Lifecycle variant catalog
 
 Lifecycle payload field `variant` and metadata field `lifecycle_variant` are normalized to:
