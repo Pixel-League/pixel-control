@@ -21,6 +21,14 @@ log() {
   printf '[pixel-sm-qa-modes] %s\n' "$1"
 }
 
+require_file() {
+  candidate_file="$1"
+  if [ ! -f "$candidate_file" ]; then
+    log "Missing required file: ${candidate_file}"
+    exit 1
+  fi
+}
+
 run_smoke_case() {
   case_name="$1"
   shift
@@ -82,6 +90,14 @@ ensure_battle_titlepack() {
   fi
 }
 
+ensure_matchsettings_templates() {
+  require_file "${PROJECT_DIR}/templates/matchsettings/elite.txt"
+  require_file "${PROJECT_DIR}/templates/matchsettings/siege.txt"
+  require_file "${PROJECT_DIR}/templates/matchsettings/battle.txt"
+  require_file "${PROJECT_DIR}/templates/matchsettings/joust.txt"
+  require_file "${PROJECT_DIR}/templates/matchsettings/custom.txt"
+}
+
 build_first_run="${PIXEL_SM_QA_MODE_BUILD_FIRST:-1}"
 battle_titlepacks_source="${PIXEL_SM_QA_BATTLE_TITLEPACKS_SOURCE:-./TitlePacks}"
 
@@ -93,24 +109,37 @@ if [ "$build_first_run" = "1" ]; then
 fi
 
 ensure_battle_titlepack
+ensure_matchsettings_templates
 
 run_smoke_case "elite" \
   PIXEL_SM_QA_BUILD_IMAGES="${first_build_flag}" \
   PIXEL_SM_MODE=elite \
-  PIXEL_SM_MATCHSETTINGS=elite.txt \
+  PIXEL_SM_MATCHSETTINGS= \
   PIXEL_SM_TITLE_PACK=SMStormElite@nadeolabs
 
 run_smoke_case "siege" \
   PIXEL_SM_QA_BUILD_IMAGES=0 \
   PIXEL_SM_MODE=siege \
-  PIXEL_SM_MATCHSETTINGS=siege.txt \
+  PIXEL_SM_MATCHSETTINGS= \
   PIXEL_SM_TITLE_PACK=SMStorm@nadeo
 
 run_smoke_case "battle" \
   PIXEL_SM_QA_BUILD_IMAGES=0 \
   PIXEL_SM_TITLEPACKS_SOURCE="${battle_titlepacks_source}" \
   PIXEL_SM_MODE=battle \
-  PIXEL_SM_MATCHSETTINGS=battle.txt \
+  PIXEL_SM_MATCHSETTINGS= \
   PIXEL_SM_TITLE_PACK=SMStormBattle@nadeolabs
 
-log "Elite/Siege/Battle smoke checks passed"
+run_smoke_case "joust" \
+  PIXEL_SM_QA_BUILD_IMAGES=0 \
+  PIXEL_SM_MODE=joust \
+  PIXEL_SM_MATCHSETTINGS= \
+  PIXEL_SM_TITLE_PACK=SMStorm@nadeo
+
+run_smoke_case "custom" \
+  PIXEL_SM_QA_BUILD_IMAGES=0 \
+  PIXEL_SM_MODE=custom \
+  PIXEL_SM_MATCHSETTINGS= \
+  PIXEL_SM_TITLE_PACK=SMStormElite@nadeolabs
+
+log "Elite/Siege/Battle/Joust/Custom smoke checks passed"

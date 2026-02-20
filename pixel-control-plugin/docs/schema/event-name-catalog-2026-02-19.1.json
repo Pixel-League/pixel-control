@@ -73,5 +73,42 @@
     "round.begin",
     "round.end",
     "lifecycle.unknown"
+  ],
+  "admin_action_mappings": {
+    "pixel_control.lifecycle.maniaplanet_warmup_start": "warmup.start",
+    "pixel_control.lifecycle.maniaplanet_warmup_end": "warmup.end",
+    "pixel_control.lifecycle.maniaplanet_warmup_status": "warmup.status",
+    "pixel_control.lifecycle.maniaplanet_startmatch_start": "match.start",
+    "pixel_control.lifecycle.maniaplanet_startmatch_end": "match.start",
+    "pixel_control.lifecycle.maniaplanet_endmatch_start": "match.end",
+    "pixel_control.lifecycle.maniaplanet_endmatch_end": "match.end",
+    "pixel_control.lifecycle.maniaplanet_loadingmap_start": "map.loading.start",
+    "pixel_control.lifecycle.maniaplanet_loadingmap_end": "map.loading.end",
+    "pixel_control.lifecycle.maniaplanet_unloadingmap_start": "map.unloading.start",
+    "pixel_control.lifecycle.maniaplanet_unloadingmap_end": "map.unloading.end",
+    "pixel_control.lifecycle.maniaplanet_startround_start": "round.start",
+    "pixel_control.lifecycle.maniaplanet_startround_end": "round.start",
+    "pixel_control.lifecycle.maniaplanet_endround_start": "round.end",
+    "pixel_control.lifecycle.maniaplanet_endround_end": "round.end"
+  },
+  "combat_counter_keys": [
+    "kills",
+    "deaths",
+    "hits",
+    "shots",
+    "misses",
+    "rockets",
+    "lasers",
+    "accuracy"
+  ],
+  "combat_dimension_keys": [
+    "weapon_id",
+    "damage",
+    "distance",
+    "event_time",
+    "shooter",
+    "victim",
+    "shooter_position",
+    "victim_position"
   ]
 }

@@ -75,8 +75,14 @@
         },
         "payload_summary": {
           "$ref": "#/$defs/callbackSummary"
+        },
+        "payload": {
+          "type": "object"
         }
       }
+    },
+    "admin_action": {
+      "$ref": "#/$defs/adminAction"
     }
   },
   "$defs": {
@@ -108,6 +114,105 @@
               "value": {}
             }
           }
+        }
+      }
+    },
+    "adminActor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "login",
+        "nickname",
+        "team_id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "login",
+            "player"
+          ]
+        },
+        "login": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "team_id": {
+          "type": "integer"
+        }
+      }
+    },
+    "adminAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_name",
+        "action_phase",
+        "target",
+        "source_callback",
+        "source_channel",
+        "actor",
+        "context",
+        "field_availability",
+        "missing_fields"
+      ],
+      "properties": {
+        "action_name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:\\.[a-z0-9]+)*$"
+        },
+        "action_phase": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end",
+            "status"
+          ]
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "warmup",
+            "match",
+            "map",
+            "round"
+          ]
+        },
+        "source_callback": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_channel": {
+          "type": "string",
+          "enum": [
+            "maniaplanet",
+            "script"
+          ]
+        },
+        "actor": {
+          "$ref": "#/$defs/adminActor"
+        },
+        "context": {
+          "type": "object"
+        },
+        "field_availability": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "missing_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "script_payload": {
+          "type": "object"
         }
       }
     }

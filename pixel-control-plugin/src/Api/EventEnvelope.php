@@ -91,6 +91,20 @@ class EventEnvelope {
 	/**
 	 * @return string
 	 */
+	public function getSourceCallback() {
+		return $this->sourceCallback;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getSourceSequence() {
+		return $this->sourceSequence;
+	}
+
+	/**
+	 * @return string
+	 */
 	public function getIdempotencyKey() {
 		return $this->idempotencyKey;
 	}

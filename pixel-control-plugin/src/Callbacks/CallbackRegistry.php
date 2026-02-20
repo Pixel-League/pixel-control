@@ -24,6 +24,7 @@ class CallbackRegistry {
 		Callbacks::MP_WARMUP_START,
 		Callbacks::MP_WARMUP_END,
 		Callbacks::MP_WARMUP_STATUS,
+		Callbacks::MP_PAUSE_STATUS,
 		Callbacks::MP_STARTMATCHSTART,
 		Callbacks::MP_STARTMATCHEND,
 		Callbacks::MP_ENDMATCHSTART,

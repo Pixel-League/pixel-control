@@ -15,7 +15,7 @@
 
 ## Repo layout
 - `pixel-control-plugin/`: first-party ManiaControl plugin skeleton (`src/PixelControlPlugin.php`, callback registry, async API shell, queue/retry contracts).
-- `pixel-control-server/`: target location for first-party backend API code (currently docs-contract baseline, implementation pending).
+- `pixel-control-server/`: reserved workspace for future backend/API implementation (currently deferred by user; keep only lightweight contract references until backend phase starts).
 - `pixel-sm-server/`: first-party Dockerized ShootMania dev stack baseline (`docker-compose.yml`, `Dockerfile`, `scripts/bootstrap.sh`, templates, `.env.example`).
 - `.local-dev/`: gitignored local sandbox for mutable ManiaControl/ShootMania experiments outside first-party project trees.
 - `ressources/ManiaControl/`: upstream ManiaControl code, runtime scripts, core/plugins, configs.
@@ -28,6 +28,7 @@
 - Root checks:
   - `git rev-parse --show-toplevel`
   - `git status`
+- Pixel Control backend/API is currently deferred; no server runtime command is canonical for this phase.
 - First-party Pixel SM dev stack (from `pixel-sm-server`):
   - `cp .env.example .env`
   - `bash scripts/import-reference-runtime.sh` (optional, copies reference runtime into `pixel-sm-server/runtime/server`)
@@ -35,6 +36,9 @@
   - `docker compose down`
   - `docker compose logs -f`
   - `bash scripts/dev-plugin-sync.sh`
+  - `bash scripts/qa-wave3-telemetry-replay.sh`
+  - `bash scripts/qa-wave4-telemetry-replay.sh`
+  - `bash scripts/qa-admin-stats-replay.sh`
 - ManiaControl sandbox workflow (copy reference first, then run from `.local-dev/`):
   - `mkdir -p .local-dev`
   - `cp -R ressources/ManiaControl .local-dev/maniacontrol`
@@ -56,8 +60,10 @@
 - If reference assets are needed by a first-party project, copy/import them into that project directory first (do not bind mutable flows directly to `ressources/`).
 - For local experimentation outside first-party projects, use `.local-dev/` (gitignored) as scratch workspace.
 - If project-local imports need independent source tracking, initialize them as nested standalone repos inside the target project folder (empty git root + explicit import commit), never under `ressources/`.
-- Build new product code in `pixel-control-plugin/` and `pixel-control-server/`.
+- Build new product code in `pixel-control-plugin/` and `pixel-sm-server/` for now; keep `pixel-control-server/` implementation-deferred until explicitly resumed.
 - Build first-party dev server automation in `pixel-sm-server/` (do not evolve the imported Docker reference directly unless explicitly requested).
+- Keep `API_CONTRACT.md` (repo root) updated whenever plugin->API route expectations change.
+- Keep `pixel-control-plugin/FEATURES.md` updated whenever plugin capabilities change.
 - For plugin implementation, follow ManiaControl plugin contract conventions:
   - implement `ManiaControl\Plugins\Plugin` methods (`prepare`, `load`, `unload`, metadata getters),
   - wire callbacks/commands via managers,
@@ -66,13 +72,14 @@
 - Multi-mode support is required (do not hardcode Elite-only architecture).
 - Authentication choice between plugin and server is not fixed yet; document options in `ROADMAP.md` before locking implementation.
 - For Docker/dev-server work, document env var names only (no secret values) and keep secure defaults in `.env.example` style templates.
+- After each resolved blocker, append a concise incident memory in this local `AGENTS.md` with: symptom, root cause, applied fix, and validation signal so future runs avoid repeating the same failure.
 
 ## CI / release
 - No CI workflow files found at repo root (`.github/workflows` absent, `.gitlab-ci.yml` absent).
 - No release/versioning process defined yet for first-party Pixel Control code.
 
 ## Gotchas
-- `pixel-control-server/` is still placeholder-level; `pixel-control-plugin/` now has a runnable skeleton but no production business logic yet.
+- `pixel-control-server/` implementation is intentionally deferred for this phase; avoid adding backend runtime code there until user re-opens backend work.
 - `pixel-sm-server/` now has a first-party baseline, but still requires local runtime assets in `pixel-sm-server/runtime/server/` (dedicated binary + ManiaControl runtime).
 - `PIXEL_SM_RUNTIME_SOURCE` and title pack mutable sources must stay outside `ressources/`; helper scripts now fail fast when pointed at reference paths.
 - ManiaControl requires valid server + MySQL credentials in `ressources/ManiaControl/configs/server.xml`; never commit credentials.
@@ -115,28 +122,55 @@
 - First-party compose now wires `shootmania` healthcheck to `scripts/healthcheck.sh` (DB ping + plugin load marker + XML-RPC TCP probe); keep smoke checks aligned with this readiness contract.
 - Mode map pool is mounted via `PIXEL_SM_MAPS_SOURCE` and synced into runtime `UserData/Maps/PixelControl/` at bootstrap.
 - Mode matrix smoke helper: `pixel-sm-server/scripts/qa-mode-smoke.sh` validates Elite + Siege + Battle flows.
+- Wave-2 replay helper: `pixel-sm-server/scripts/qa-admin-stats-replay.sh` posts deterministic admin/player/combat envelopes into local server ingestion; treat as legacy while backend runtime remains paused.
+- Wave-2 replay helper fails fast with `curl: (7)` when backend ingestion is not running on `127.0.0.1:8080`; keep this expected while backend runtime remains paused.
+- Wave-3 replay helper: `pixel-sm-server/scripts/qa-wave3-telemetry-replay.sh` runs a local ACK stub, starts the stack with deterministic QA ports, replays admin/player/map actions in-container, validates required telemetry markers, and stores artifacts under `pixel-sm-server/logs/qa/wave3-telemetry-<timestamp>-*`.
+- Wave-3 helper now supports deterministic marker fixtures (`PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=1` by default) and host-side stub posting through `PIXEL_SM_QA_TELEMETRY_STUB_LOCAL_URL` (default `http://127.0.0.1:18080`) to avoid local `host.docker.internal` DNS issues.
+- Wave-4 replay helper: `pixel-sm-server/scripts/qa-wave4-telemetry-replay.sh` validates reconnect/side-change/team-aggregate/win-context/veto markers, stores artifacts under `pixel-sm-server/logs/qa/wave4-telemetry-<timestamp>-*`, and indexes canonical evidence in `pixel-sm-server/logs/qa/wave4-evidence-index-20260220.md`.
+- In current battle-mode runtime, direct fake-player `forcePlayerTeam(...)` calls can intermittently return `UnknownPlayer`; wave-4 replay now treats those as non-fatal warnings and relies on deterministic fixture envelopes for required marker closure.
+- Wave-5 manual evidence helpers are now first-party: `pixel-sm-server/scripts/manual-wave5-session-bootstrap.sh`, `pixel-sm-server/scripts/manual-wave5-ack-stub.sh`, `pixel-sm-server/scripts/manual-wave5-log-export.sh`, and `pixel-sm-server/scripts/manual-wave5-evidence-check.sh`.
+- Recommended manual payload capture flow: run local ACK stub on host `127.0.0.1:18080`, then restart plugin transport with `PIXEL_CONTROL_API_BASE_URL=http://host.docker.internal:18080 bash scripts/dev-plugin-sync.sh` before real-client scenarios.
 - QA launch smoke supports multi-file compose selection through `PIXEL_SM_QA_COMPOSE_FILES` (CSV, default `docker-compose.yml`).
 - Plugin fast-sync helper (`pixel-sm-server/scripts/dev-plugin-sync.sh`) supports multi-file compose selection through `PIXEL_SM_DEV_COMPOSE_FILES` (CSV, default `docker-compose.yml`) and leaves stack running for iteration.
+- Plugin hot-sync helper (`pixel-sm-server/scripts/dev-plugin-hot-sync.sh`) now supports plugin-only refresh without shootmania container restart: it copies plugin source into runtime and restarts ManiaControl process only (dedicated server PID should remain unchanged).
 - Plugin transport runtime now also supports queue/dispatch/heartbeat knobs through `PIXEL_CONTROL_QUEUE_MAX_SIZE`, `PIXEL_CONTROL_DISPATCH_BATCH_SIZE`, and `PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS`.
 - If default local ports are occupied during dev fast sync, override runtime ports inline (for example `PIXEL_SM_XMLRPC_PORT=57000 PIXEL_SM_GAME_PORT=57100 PIXEL_SM_P2P_PORT=57200 bash scripts/dev-plugin-sync.sh`).
+- For LAN peer-play sessions where login-based join URLs resolve to public IP and fail/hang, use local server list join and, if needed, restart with legacy gameplay ports (`PIXEL_SM_GAME_PORT=2350 PIXEL_SM_P2P_PORT=3450`) for compatibility.
+- LAN local-server-list discovery is now considered stable on native gameplay ports; keep `.env` defaults on `PIXEL_SM_GAME_PORT=2350` and `PIXEL_SM_P2P_PORT=3450` unless a session explicitly needs temporary overrides.
+- Incident memory (2026-02-20, server not visible/reachable on LAN):
+  - symptom: server missing from local list or join failures/hangs while using non-native gameplay ports.
+  - root cause: gameplay ports were moved away from native defaults and login URL resolution could route to public IP path.
+  - fix: pin gameplay ports back to native values (`PIXEL_SM_GAME_PORT=2350`, `PIXEL_SM_P2P_PORT=3450`) and join through local server list.
+  - validation: server appears in local list and remote client reaches spawn successfully.
+- Host-side direct XML-RPC clients against published port can be reset by server access policy; reliable automation is to run dedicated API calls from inside the `shootmania` container using ManiaControl's bundled PHP client (`Maniaplanet\DedicatedServer\Connection::factory('127.0.0.1', $PIXEL_SM_XMLRPC_PORT, ...)`).
+- For plugin payload evidence capture, a local ACK stub on host port `18080` works with container target `host.docker.internal:18080`; writing raw envelopes as NDJSON in `pixel-sm-server/logs/dev/` enables deterministic inspection of emitted payload fields.
+- Outage/recovery QA is reproducible by toggling that local ACK stub: stop stub -> observe `outage_entered`/`retry_scheduled` markers; restart stub -> observe `outage_recovered` + `recovery_flush_complete` in `pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log`.
+- `connectFakePlayer` + forced map transitions (`restartMap`/`nextMap`) can trigger admin-flow callbacks and at least `OnScores` combat envelope shape validation, but real client gameplay is still required for non-zero shot/hit/miss/kill counters.
+- Manual combat observability logs are now emitted with prefix `[Pixel Plugin]` for `OnShoot`/`OnHit`/`OnNearMiss`/`OnArmorEmpty`/`OnCapture`/`OnScores`; monitor with `tail -f pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log | grep --line-buffered -E '\[Pixel Plugin\]'`.
 
-## Current execution status (2026-02-19)
-- Active execution plan: `PLAN-immediate-pixel-control-execution.md` (resume marker kept on step `P7.16`).
-- Plugin scaffold completed in `pixel-control-plugin/src/` with full Plugin contract, callback groups (lifecycle/player/combat + mode stubs), async envelope client shell, and queue/retry contracts.
-- Dev stack baseline completed in `pixel-sm-server/` with deterministic bootstrap sequence (`DB readiness -> templating -> ManiaControl -> dedicated server`), mode-aware matchsettings resolution, runtime map auto-injection guard, and runtime healthcheck script.
-- Plugin runtime transport config now supports env-driven base URL, path, timeout/retry knobs, and auth mode/header/value via `PIXEL_CONTROL_*` variables.
-- Plugin connectivity P0 is now in place: monotonic source sequences, bounded queue/dispatch defaults, exponential retry policy, startup registration envelope, and periodic heartbeat envelope.
-- Lifecycle normalization P0 is now in place for ManiaPlanet lifecycle callbacks: warmup/match/map/round variants with shared runtime context metadata in outbound envelopes.
-- Lifecycle event bus now also includes script callback lifecycle signals (`Start/EndMatch`, `Loading/UnloadingMap`, `Start/EndRound`) with unified lifecycle variants and source channel tagging.
-- Envelope fields now include explicit `event_id` + `schema_version` plus existing source callback/time/sequence metadata for contract consistency.
-- Delivery error contract now defines shared retry semantics through typed `DeliveryError` payloads (`code`, `message`, `retryable`, `retry_after_seconds`) and ack/error parsing rules.
-- Canonical contract baseline is now in place for `Checkpoint R` with machine-readable event catalog + JSON schema artifacts in `pixel-control-plugin/docs/schema/` (`event-name-catalog-2026-02-19.1.json`, `envelope-2026-02-19.1.schema.json`, `lifecycle-payload-2026-02-19.1.schema.json`, `delivery-error-2026-02-19.1.schema.json`).
-- At-least-once ingestion contract baseline is now in place for `Checkpoint S` in `pixel-control-server/docs/` with request/response schema artifacts (`ingestion-contract.md`, `schema/ingestion-request-2026-02-19.1.schema.json`, `schema/ingestion-response-2026-02-19.1.schema.json`).
-- Roadmap thread now has checkpoints `A/B/C/D/E/F/G/H/I/J/K/L/M/N/O/P/Q/R/S` done and `T` as the single next step.
-- QA smoke now passes via `pixel-sm-server/scripts/qa-launch-smoke.sh` with markers: plugin sync, title-pack validation, mode script validation, matchsettings load, shootmania healthcheck, XML-RPC TCP readiness, and `[PixelControl] Plugin loaded.` in ManiaControl logs.
-- Mode smoke matrix now passes with `pixel-sm-server/scripts/qa-mode-smoke.sh` (Elite + Siege + Battle).
-- First-party networking path now documented with bridge-default and optional host override profile in `pixel-sm-server/README.md` + `pixel-sm-server/docker-compose.host.yml`.
-- Plugin-only iteration path now uses `pixel-sm-server/scripts/dev-plugin-sync.sh` (restart-only sync, no image rebuild) with logs in `pixel-sm-server/logs/dev/`.
-- Where we stopped: after completing roadmap `Checkpoint S` by shipping server-side ingestion contract + request/response schema baseline artifacts.
-- Exact next action: implement roadmap `Checkpoint T` by scaffolding first server-side ingestion implementation slice (endpoint stubs + dedupe receipt persistence plan).
-- Handoff note: keep `bash scripts/qa-mode-smoke.sh` as regression gate, and use `PIXEL_SM_QA_COMPOSE_FILES`/`PIXEL_SM_DEV_COMPOSE_FILES` when validating non-default compose profiles.
+## Current execution status (2026-02-20)
+- Active execution direction: plugin-first and dev-server-first; backend/API implementation is paused by user for now.
+- Plugin schema baseline remains `2026-02-20.1`; wave-5 keeps version unchanged and continues additive optional fields only.
+- Wave-5 plugin hardening delivered:
+  - deterministic identity validation on enqueue/dispatch (`drop_identity_invalid` warning + queue counter `dropped_on_identity_validation`),
+  - additive player constraint telemetry (`constraint_signals`) for forced-team/slot-policy context with deterministic availability/fallback reasons,
+  - callback hot-path safety via dedicated-policy cache refresh on load/heartbeat and cached reads in player callbacks.
+- Wave-5 deterministic QA indexing is complete:
+  - canonical index: `pixel-sm-server/logs/qa/wave5-evidence-index-20260220.md`,
+  - strict replay closure artifact set: `pixel-sm-server/logs/qa/wave4-telemetry-20260220-143317-*`,
+  - fixture-off plugin-only baseline artifact set: `pixel-sm-server/logs/qa/wave4-telemetry-20260220-143433-*`,
+  - fixture-off pre-profile strict failure retained for traceability: `pixel-sm-server/logs/qa/wave4-telemetry-20260220-143020-*`.
+- Wave-5 manual evidence contract is standardized:
+  - canonical directory: `pixel-sm-server/logs/manual/wave5-real-client-20260220/`,
+  - matrix file: `pixel-sm-server/logs/manual/wave5-real-client-20260220/MANUAL-TEST-MATRIX.md` (`W5-M01..W5-M10`),
+  - required per-session templates: `SESSION-<id>-{notes.md,payload.ndjson,evidence.md}`,
+  - index + completeness checker flow: `INDEX.md` + `bash scripts/manual-wave5-evidence-check.sh --manual-dir ...` (now requires matrix presence).
+- Final wave-5 handoff artifact is published: `HANDOFF-autonomous-wave-5-2026-02-20.md`.
+- Wave-1 manual gameplay closure remains pending by user choice:
+  - user said manual gameplay tests will be run later,
+  - keep `PLAN-autonomous-execution-wave-1.md` manual `P7.2/P7.3` evidence closure pending until user provides gameplay captures.
+- Wave-4/wave-5 real-client gameplay validation remains pending for plugin-only evidence (non-fixture reconnect/side-change/veto actor behavior under real player flow).
+- Backend note:
+  - `pixel-control-server/` code changes were rolled back on user request,
+  - future API behavior must be tracked in `API_CONTRACT.md` until backend work is re-opened.
+- Where we stopped: autonomous wave-5 implementation is complete; only user-run real-client matrix execution and evidence status updates remain.

@@ -10,7 +10,7 @@ It is designed for plugin and integration development in the Pixel Control monor
 - Automatic runtime bootstrap (config rendering, mode/matchsettings resolution, plugin sync)
 - ManiaControl startup with Pixel Control plugin auto-sync from source
 - Healthcheck that validates DB access, plugin load marker, and XML-RPC readiness
-- Smoke helpers for launch validation and multi-mode checks (Elite, Siege, Battle)
+- Smoke helpers for launch validation and multi-mode checks (Elite, Siege, Battle, Joust, Custom)
 
 ## Repository layout
 
@@ -21,7 +21,9 @@ It is designed for plugin and integration development in the Pixel Control monor
 - `scripts/healthcheck.sh`: readiness probe used by Compose
 - `scripts/dev-plugin-sync.sh`: fast plugin iteration workflow
 - `scripts/qa-launch-smoke.sh`: single launch smoke validation
-- `scripts/qa-mode-smoke.sh`: Elite/Siege/Battle smoke matrix
+- `scripts/qa-mode-smoke.sh`: Elite/Siege/Battle/Joust/Custom smoke matrix
+- `scripts/qa-wave3-telemetry-replay.sh`: deterministic admin/player/aggregate/map telemetry replay with local ACK capture
+- `scripts/qa-wave4-telemetry-replay.sh`: deterministic reconnect/side/team/veto telemetry replay with marker validation
 - `scripts/fetch-titlepack.sh`: title pack downloader helper
 - `scripts/import-reference-runtime.sh`: copy reference runtime into local `runtime/server/`
 - `runtime/server/`: local dedicated server + ManiaControl runtime
@@ -99,6 +101,14 @@ bash scripts/dev-plugin-sync.sh
 
 This restarts only `shootmania`, waits for health, and validates plugin load markers.
 
+If you want smoother dev flow and to avoid restarting the dedicated server process, use hot sync:
+
+```bash
+bash scripts/dev-plugin-hot-sync.sh
+```
+
+This syncs plugin files into the running container and restarts only ManiaControl (dedicated server PID should stay unchanged).
+
 ### Smoke validation
 
 Single launch smoke:
@@ -107,13 +117,86 @@ Single launch smoke:
 bash scripts/qa-launch-smoke.sh
 ```
 
-Mode matrix smoke (Elite, Siege, Battle):
+Mode matrix smoke (Elite, Siege, Battle, Joust, Custom):
 
 ```bash
 bash scripts/qa-mode-smoke.sh
 ```
 
+Wave-3 telemetry replay (admin/player correlation + round/map aggregates + map rotation markers):
+
+```bash
+bash scripts/qa-wave3-telemetry-replay.sh
+```
+
+Wave-4 telemetry replay (reconnect/side-change + team aggregate/win-context + veto action/result markers):
+
+```bash
+bash scripts/qa-wave4-telemetry-replay.sh
+```
+
 Smoke artifacts are saved under `logs/qa/`. Dev-sync artifacts are saved under `logs/dev/`.
+Wave-3 replay writes deterministic artifacts with prefix `logs/qa/wave3-telemetry-<timestamp>-*`.
+Wave-4 replay writes deterministic artifacts with prefix `logs/qa/wave4-telemetry-<timestamp>-*`.
+By default it injects deterministic fixture envelopes in addition to captured plugin traffic so required markers can be validated without real client gameplay.
+
+### Wave-5 manual real-client evidence workflow
+
+Use this flow when running real ShootMania clients and collecting canonical wave-5 evidence.
+
+1) Bootstrap manual evidence folder + session templates:
+
+```bash
+bash scripts/manual-wave5-session-bootstrap.sh --date 20260220 --session-id session-001 --focus "stack-join-baseline"
+```
+
+This creates:
+
+- `logs/manual/wave5-real-client-20260220/MANUAL-TEST-MATRIX.md`
+- `logs/manual/wave5-real-client-20260220/INDEX.md`
+- `logs/manual/wave5-real-client-20260220/SESSION-session-001-{notes.md,payload.ndjson,evidence.md}`
+
+2) Start local ACK stub capture for the session payload file:
+
+```bash
+bash scripts/manual-wave5-ack-stub.sh --output "logs/manual/wave5-real-client-20260220/SESSION-session-001-payload.ndjson"
+```
+
+3) Restart plugin transport targeting the local ACK stub:
+
+```bash
+PIXEL_CONTROL_API_BASE_URL=http://host.docker.internal:18080 bash scripts/dev-plugin-sync.sh
+```
+
+4) Run manual client scenarios, then export logs into the same session namespace:
+
+```bash
+bash scripts/manual-wave5-log-export.sh --manual-dir "logs/manual/wave5-real-client-20260220" --session-id session-001
+```
+
+5) Fill matrix scenario evidence rows (`W5-M01` through `W5-M10`) in `SESSION-session-001-evidence.md` and update `INDEX.md` status.
+
+6) Validate manual evidence completeness:
+
+```bash
+bash scripts/manual-wave5-evidence-check.sh --manual-dir "logs/manual/wave5-real-client-20260220"
+```
+
+Optional dedicated-action trace (fixture-off plugin-only baseline):
+
+```bash
+PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/qa-wave4-telemetry-replay.sh
+```
+
+Naming conventions:
+
+- manual directory: `logs/manual/wave5-real-client-<YYYYMMDD>/`
+- session id format: lowercase `[a-z0-9_-]` (example: `session-001`)
+- required scenario ids in matrix/evidence: `W5-M01` ... `W5-M10`
+- required per-session files:
+  - `SESSION-<session-id>-notes.md`
+  - `SESSION-<session-id>-payload.ndjson`
+  - `SESSION-<session-id>-evidence.md`
 
 ## Key configuration
 
@@ -136,8 +219,49 @@ Most users only need to adjust these variables in `.env`:
   - `PIXEL_CONTROL_API_BASE_URL`
   - `PIXEL_CONTROL_API_EVENT_PATH`
   - `PIXEL_CONTROL_AUTH_MODE` / `PIXEL_CONTROL_AUTH_VALUE`
+- Optional QA replay knobs (`qa-wave3-telemetry-replay.sh` and `qa-wave4-telemetry-replay.sh`):
+  - `PIXEL_SM_QA_COMPOSE_FILES`
+  - `PIXEL_SM_QA_XMLRPC_PORT`, `PIXEL_SM_QA_GAME_PORT`, `PIXEL_SM_QA_P2P_PORT`
+  - `PIXEL_SM_QA_TELEMETRY_API_HOST`, `PIXEL_SM_QA_TELEMETRY_API_PORT`, `PIXEL_SM_QA_TELEMETRY_API_BASE_URL`
+  - `PIXEL_SM_QA_TELEMETRY_STUB_LOCAL_HOST`, `PIXEL_SM_QA_TELEMETRY_STUB_LOCAL_URL`
+  - `PIXEL_SM_QA_TELEMETRY_WAIT_SECONDS`, `PIXEL_SM_QA_TELEMETRY_KEEP_STACK_RUNNING`
+  - `PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES` (`1` by default, set `0` for plugin-only capture)
 
 All available variables and defaults are documented in `.env.example`.
+
+## Mode presets and title packs
+
+Preset resolution order:
+
+1. `PIXEL_SM_MATCHSETTINGS` explicit override (if non-empty)
+2. `<PIXEL_SM_MODE>.txt` preset template fallback (`elite`, `siege`, `battle`, `joust`, `custom`)
+
+Title-pack reference list (common ShootMania runtime names):
+
+| Preset | Default matchsettings | Recommended title pack | Notes |
+| --- | --- | --- | --- |
+| `elite` | `elite.txt` | `SMStormElite@nadeolabs` | Auto-injection can fill maps when playlist is empty. |
+| `siege` | `siege.txt` | `SMStorm@nadeo` | Requires explicit Siege-compatible map entries. |
+| `battle` | `battle.txt` | `SMStormBattle@nadeolabs` | Requires local `SMStormBattle@nadeolabs.Title.Pack.gbx`. |
+| `joust` | `joust.txt` | `SMStorm@nadeo` | Requires explicit Joust-compatible map entries and runtime script availability. |
+| `royal` | use `custom.txt` | runtime Royal pack (commonly `SMRoyal@nadeolabs`) | No first-party `royal.txt` preset yet; run Royal via `PIXEL_SM_MODE=custom` with explicit script/maps. |
+| `custom` | `custom.txt` | user-defined | Template is intentionally editable; set script/title/maps for your scenario. |
+
+Mounted title-pack guidance:
+
+- Place `.Title.Pack.gbx` assets under `PIXEL_SM_TITLEPACKS_SOURCE` (default `./TitlePacks`).
+- Bootstrap copies mounted packs into runtime `runtime/server/Packs/` and validates the selected `PIXEL_SM_TITLE_PACK`.
+- For modes without a dedicated preset template (currently Royal), use `custom.txt` + explicit script and map pool entries.
+
+Title-pack asset note:
+
+- Bootstrap validates `PIXEL_SM_TITLE_PACK` against runtime pack assets in `runtime/server/Packs/`.
+- If a required pack is missing, startup fails fast with available pack names.
+- Battle helper download:
+
+```bash
+bash scripts/fetch-titlepack.sh SMStormBattle@nadeolabs
+```
 
 ## Networking profiles
 

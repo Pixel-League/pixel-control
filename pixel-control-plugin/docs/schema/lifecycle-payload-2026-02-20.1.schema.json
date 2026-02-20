@@ -1,0 +1,658 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixel-control.dev/schema/lifecycle-payload-2026-02-20.1.schema.json",
+  "title": "Pixel Control lifecycle payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "variant",
+    "phase",
+    "state",
+    "source_channel",
+    "raw_source_callback",
+    "raw_callback_summary"
+  ],
+  "properties": {
+    "variant": {
+      "type": "string",
+      "enum": [
+        "warmup.start",
+        "warmup.end",
+        "warmup.status",
+        "pause.start",
+        "pause.end",
+        "pause.status",
+        "match.begin",
+        "match.end",
+        "map.begin",
+        "map.end",
+        "round.begin",
+        "round.end",
+        "lifecycle.unknown"
+      ]
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "warmup",
+        "pause",
+        "match",
+        "map",
+        "round",
+        "lifecycle"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "start",
+        "end",
+        "status",
+        "begin",
+        "unknown"
+      ]
+    },
+    "source_channel": {
+      "type": "string",
+      "enum": [
+        "maniaplanet",
+        "script"
+      ]
+    },
+    "raw_source_callback": {
+      "type": "string",
+      "minLength": 1
+    },
+    "raw_callback_summary": {
+      "$ref": "#/$defs/callbackSummary"
+    },
+    "script_callback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload_summary": {
+          "$ref": "#/$defs/callbackSummary"
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "admin_action": {
+      "$ref": "#/$defs/adminAction"
+    },
+    "aggregate_stats": {
+      "$ref": "#/$defs/aggregateStats"
+    },
+    "map_rotation": {
+      "$ref": "#/$defs/mapRotation"
+    }
+  },
+  "$defs": {
+    "callbackSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "arguments_count",
+        "arguments"
+      ],
+      "properties": {
+        "arguments_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "value"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "value": {}
+            }
+          }
+        }
+      }
+    },
+    "adminActor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "login",
+        "nickname",
+        "team_id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "login",
+            "player"
+          ]
+        },
+        "login": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "team_id": {
+          "type": "integer"
+        }
+      }
+    },
+    "adminAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_name",
+        "action_domain",
+        "action_type",
+        "action_phase",
+        "target",
+        "target_scope",
+        "target_id",
+        "initiator_kind",
+        "source_callback",
+        "source_channel",
+        "actor",
+        "context",
+        "field_availability",
+        "missing_fields"
+      ],
+      "properties": {
+        "action_name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:\\.[a-z0-9]+)*$"
+        },
+        "action_domain": {
+          "type": "string",
+          "enum": [
+            "match_flow",
+            "unknown"
+          ]
+        },
+        "action_type": {
+          "type": "string",
+          "enum": [
+            "warmup",
+            "pause",
+            "match_start",
+            "match_end",
+            "map_loading",
+            "map_unloading",
+            "round_start",
+            "round_end",
+            "unknown"
+          ]
+        },
+        "action_phase": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end",
+            "status"
+          ]
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "warmup",
+            "pause",
+            "match",
+            "map",
+            "round"
+          ]
+        },
+        "target_scope": {
+          "type": "string",
+          "enum": [
+            "server",
+            "match",
+            "map",
+            "round",
+            "unknown"
+          ]
+        },
+        "target_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "initiator_kind": {
+          "type": "string",
+          "enum": [
+            "player",
+            "system",
+            "script",
+            "unknown"
+          ]
+        },
+        "source_callback": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_channel": {
+          "type": "string",
+          "enum": [
+            "maniaplanet",
+            "script"
+          ]
+        },
+        "actor": {
+          "$ref": "#/$defs/adminActor"
+        },
+        "context": {
+          "type": "object"
+        },
+        "field_availability": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "missing_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "script_payload": {
+          "type": "object"
+        }
+      }
+    },
+    "aggregateStats": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "scope",
+        "counter_scope",
+        "window_state",
+        "player_counters_delta",
+        "totals",
+        "source_coverage",
+        "win_context",
+        "field_availability",
+        "missing_fields"
+      ],
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": [
+            "round",
+            "map"
+          ]
+        },
+        "counter_scope": {
+          "type": "string"
+        },
+        "window_state": {
+          "type": "string"
+        },
+        "player_counters_delta": {
+          "type": "object"
+        },
+        "team_counters_delta": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "team_summary": {
+          "type": "object"
+        },
+        "totals": {
+          "type": "object"
+        },
+        "source_coverage": {
+          "type": "object"
+        },
+        "win_context": {
+          "type": "object"
+        },
+        "field_availability": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "missing_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "mapRotation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "map_pool_size",
+        "current_map",
+        "map_pool",
+        "played_map_order",
+        "veto_result",
+        "field_availability",
+        "missing_fields"
+      ],
+      "properties": {
+        "map_pool_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "current_map": {
+          "type": "object"
+        },
+        "map_pool": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "played_map_order": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "veto_draft_actions": {
+          "type": "object"
+        },
+        "veto_result": {
+          "type": "object"
+        },
+        "field_availability": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "missing_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source_channel": {
+            "const": "script"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "script_callback"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "warmup.start"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "warmup"
+          },
+          "state": {
+            "const": "start"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "warmup.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "warmup"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "warmup.status"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "warmup"
+          },
+          "state": {
+            "const": "status"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "pause.start"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "pause"
+          },
+          "state": {
+            "const": "start"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "pause.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "pause"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "pause.status"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "pause"
+          },
+          "state": {
+            "const": "status"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "match.begin"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "match"
+          },
+          "state": {
+            "const": "begin"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "match.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "match"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "map.begin"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "map"
+          },
+          "state": {
+            "const": "begin"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "map.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "map"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "round.begin"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "round"
+          },
+          "state": {
+            "const": "begin"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "round.end"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "round"
+          },
+          "state": {
+            "const": "end"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "variant": {
+            "const": "lifecycle.unknown"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "phase": {
+            "const": "lifecycle"
+          },
+          "state": {
+            "const": "unknown"
+          }
+        }
+      }
+    }
+  ]
+}

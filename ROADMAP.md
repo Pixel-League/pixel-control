@@ -16,10 +16,10 @@ Priority scale:
 - `P4`: low priority, optimization/hardening later
 - `P5`: backlog/nice-to-have
 
-## Current execution thread (session: 2026-02-19)
+## Current execution thread (session: 2026-02-20)
 
 Active plan file:
-- `PLAN-immediate-pixel-control-execution.md` (resume marker currently on `P7.16`)
+- `PLAN-autonomous-execution-wave-5.md` (final autonomous plugin/dev-server closure: identity guardrails, team/slot constraint telemetry signaling, deterministic/manual evidence pipeline hardening, backend/API implementation paused)
 
 Checkpoint status (owner-ready):
 - [x] `Checkpoint A` (Owner: Executor) - Scaffolded first-party plugin foundation in `pixel-control-plugin/` with Plugin contract, callback registry stubs, async API shell, and queue/retry contracts.
@@ -40,12 +40,16 @@ Checkpoint status (owner-ready):
 - [x] `Checkpoint P` (Owner: Executor) - Defined first compatibility matrix baseline in plugin docs (plugin version <-> envelope schema version) for safe contract rollout.
 - [x] `Checkpoint Q` (Owner: Executor) - Defined shared delivery error envelope + retry semantics contract (typed `DeliveryError`, retryable flags, retry-after hints, and ack parsing semantics).
 - [x] `Checkpoint R` (Owner: Executor) - Defined canonical event naming catalog + JSON schema baseline for envelope payloads and lifecycle variants.
-- [x] `Checkpoint S` (Owner: Executor) - Defined at-least-once server ingestion contract baseline (dedupe/idempotency acknowledgment semantics) in `pixel-control-server/` docs with request/response schema artifacts.
-- [ ] `Checkpoint T` (Owner: Executor, next) - Scaffold first server-side ingestion implementation slice (endpoint stubs + dedupe receipt persistence plan) aligned with the new ingestion contract baseline.
+- [x] `Checkpoint S` (Owner: Executor) - Defined contract baseline for plugin->API ingestion and idempotency semantics.
+- [ ] `Checkpoint T` (Owner: Executor, deferred) - Runnable backend/API ingestion implementation is paused by user for now (code rollback requested in `pixel-control-server/`).
+- [ ] `Checkpoint U` (Owner: Executor, deferred) - Backend read/workflow APIs + contract tests remain deferred until backend phase re-opens.
+- [x] `Checkpoint V` (Owner: Executor) - Continued plugin-first execution with wave-3 telemetry expansion (roster/eligibility/admin-correlation + round/map aggregate + map-rotation baseline), deterministic local QA replay helper, and contract/doc synchronization.
+- [x] `Checkpoint W` (Owner: Executor) - Delivered wave-4 additive telemetry closure for team-side aggregate + win-context semantics, reconnect/side-change deterministic payloads, veto action/result export fallback semantics, and deterministic QA evidence indexing.
+- [x] `Checkpoint X` (Owner: Executor) - Delivered wave-5 plugin/dev-server hardening with deterministic identity validation drops, forced-team/slot-policy constraint signaling (telemetry-only), wave-5 manual evidence scaffolding/checkers, and final-wave handoff synchronization.
 
 Resume-from-here (single next action):
-- Start `Checkpoint T` by scaffolding minimal server endpoint/documented persistence slice implementing the ingestion contract baseline.
-- Handoff note: keep current mode script + title-pack + map compatibility fail-fast checks, networking profile docs, plugin fast-sync workflow, lifecycle variant naming, and mode smoke matrix as acceptance guards.
+- Wave-5 is the final autonomous plugin/dev-server wave in the current sequence; next action is user-run real-client gameplay matrix execution using `pixel-sm-server/logs/manual/wave5-real-client-20260220/MANUAL-TEST-MATRIX.md` plus `INDEX.md` evidence status tracking.
+- Handoff note: keep route expectations in `API_CONTRACT.md` and plugin capability inventory in `pixel-control-plugin/FEATURES.md` synchronized for every additive telemetry change.
 
 ## Pixel Control Plugin
 
@@ -54,33 +58,37 @@ Resume-from-here (single next action):
 - [x] P0🔥 Add plugin registration handshake with capability payload
 - [x] P0🔥 Add server heartbeat (mode/map/player-count/health)
 - [x] P0🔥 Emit monotonic local event sequence numbers for ordering/replay diagnostics
-- [ ] P1 Add local event queue for temporary API outages
+- [x] P1 Add local event queue for temporary API outages
 - [x] P1 Version plugin payload schemas
 
 ### Match lifecycle
 - [x] P0🔥 Emit warmup, match start/end, map start/end, round start/end events
 - [x] P0🔥 Include context metadata (server login/name, title, mode, match settings)
 - [x] P0🔥 Normalize ManiaPlanet + script callbacks into a single internal lifecycle event bus
-- [ ] P1 Emit administrative actions that alter match flow
+- [x] P1 Emit administrative actions that alter match flow
 
 ### Stats
-- [ ] P1 Capture player stats: kills, deaths, hits, shots, misses, rockets, lasers, accuracy
-- [ ] P1 Include combat dimensions (weapon id, damage, distance, shooter/victim positions)
-- [ ] P2 Capture per-round and per-map aggregates
-- [ ] P2 Capture team-side aggregates and win-condition context
-- [ ] P1 Add event idempotency keys to avoid duplicate processing
+- [x] P1 Capture player stats: kills, deaths, hits, shots, misses, rockets, lasers, accuracy
+- [x] P1 Include combat dimensions (weapon id, damage, distance, shooter/victim positions)
+- [x] P2 Capture per-round and per-map aggregates
+- [x] P2 Capture team-side aggregates and win-condition context
+- [x] P1 Add event idempotency keys to avoid duplicate processing
 
 ### Players
-- [ ] P1 Sync roster state (connected, spectator, team, readiness)
-- [ ] P1 Sync eligibility and permission state for who can play
-- [ ] P2 Handle reconnects and side changes deterministically
-- [ ] P2 Add constraints for forced teams and slot policies
+- [x] P1 Sync roster state (connected, spectator, team, readiness)
+- [x] P1 Sync eligibility and permission state for who can play
+- [x] P2 Handle reconnects and side changes deterministically
+- [x] P2 Add constraints for forced teams and slot policies
+
+Player constraint note: wave-5 implementation exposes forced-team/slot-policy state as deterministic telemetry signals (`constraint_signals`) with explicit availability/fallback reasons; enforcement remains external/runtime-driven (no plugin-side authority rewrite).
 
 ### Maps
-- [ ] P1 Sync map pack and map rotation metadata
-- [ ] P1 Export veto/draft actions (ban/pick actor, order, timestamps)
-- [ ] P1 Export final veto result and played map order
-- [ ] P2 Sync map identifiers (uid, name, optional MX id)
+- [x] P1 Sync map pack and map rotation metadata
+- [x] P1 Export veto/draft actions (ban/pick actor, order, timestamps)
+- [x] P1 Export final veto result and played map order
+- [x] P2 Sync map identifiers (uid, name, optional MX id)
+
+Note: wave-5 keeps schema `2026-02-20.1` additive and adds identity-validation guardrails plus `player.constraint_signals` (forced-team/slot-policy telemetry + deterministic fallback markers), with deterministic evidence under `pixel-sm-server/logs/qa/wave5-evidence-index-20260220.md` and final execution handoff in `HANDOFF-autonomous-wave-5-2026-02-20.md`; real-client gameplay evidence capture remains open until user-run sessions are completed.
 
 ### Admin UX
 - [ ] P2 Add health/debug command surface for admins
@@ -98,13 +106,13 @@ Resume-from-here (single next action):
 ### Ingestion API
 - [ ] P0🔥 Registration endpoint for plugin capability negotiation
 - [ ] P0🔥 Heartbeat endpoint for server liveness
-- [ ] P0🔥 Lifecycle event ingestion endpoint
+- [ ] P0🔥 Lifecycle event ingestion endpoint (deferred until backend phase resumes)
 - [ ] P1 Stats ingestion endpoint (single + batch)
 - [ ] P1 Maps/veto ingestion endpoint
 - [ ] P0🔥 Idempotency support for all write endpoints
 
 ### Domain: Stats
-- [ ] P1 Store raw events and derived aggregates
+- [ ] P1 Store raw events and derived aggregates (deferred until backend phase resumes)
 - [ ] P2 Build per-player/per-team/per-match read models
 - [ ] P2 Expose stats query endpoints for dashboards and tooling
 - [ ] P4 Add recalculation/backfill jobs
@@ -138,7 +146,7 @@ Resume-from-here (single next action):
 - [x] P0🔥 Define shared error format and retry semantics
 
 ### Reliability
-- [ ] P0🔥 Guarantee at-least-once delivery with server-side dedupe
+- [ ] P0🔥 Guarantee at-least-once delivery with server-side dedupe (implementation deferred; contract tracked in `API_CONTRACT.md`)
 - [ ] P2 Define replay/backfill strategy after outages
 - [ ] P2 Define recovery flow after partial desynchronization
 
@@ -171,7 +179,7 @@ Resume-from-here (single next action):
 - [x] P0🔥 Replace hardcoded `/game_settings=MatchSettings/.txt` with configurable matchsettings input
 - [x] P0🔥 Make title pack fully configurable and validate pack availability at startup
 - [x] P0🔥 Ensure selected title pack assets are available in runtime (copy or mount `TitlePacks/`)
-- [ ] P1 Add mode presets (Elite, Siege, Battle, Joust, Custom) with default matchsettings templates
+- [x] P1 Add mode presets (Elite, Siege, Battle, Joust, Custom) with default matchsettings templates
 - [x] P1 Support custom maps/matchsettings/titlepacks via mounted volumes
 - [ ] P2 Add multi-instance local support with deterministic port offsets
 
@@ -183,9 +191,10 @@ Resume-from-here (single next action):
 
 ### Developer experience
 - [x] P1 Document one-command workflows in `pixel-sm-server/README.md` (`up`, `down`, `logs`, `rebuild`)
-- [ ] P1 Add a clear ShootMania title-pack name list in `pixel-sm-server/README.md` (for example Elite/Siege/Battle/Joust/Royal)
+- [x] P1 Add a clear ShootMania title-pack name list in `pixel-sm-server/README.md` (for example Elite/Siege/Battle/Joust/Royal)
 - [x] P1 Add smoke checks for DB connectivity, XML-RPC reachability, and ManiaControl boot
 - [x] P2 Add mode smoke checks for at least Elite, Siege, and Battle
+- [x] P2 Add deterministic telemetry replay helper for plugin admin/player/aggregate/map evidence capture
 - [ ] P3 Add CI image build + security scanning for `pixel-sm-server`
 
 ### Security and hardening

@@ -260,6 +260,236 @@
         }
       }
     },
+    "combatPlayerIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "login",
+        "nickname",
+        "team_id",
+        "is_spectator"
+      ],
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "team_id": {
+          "type": "integer"
+        },
+        "is_spectator": {
+          "type": "boolean"
+        }
+      }
+    },
+    "combatPosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      }
+    },
+    "combatPlayerCounters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kills",
+        "deaths",
+        "hits",
+        "shots",
+        "misses",
+        "rockets",
+        "lasers",
+        "accuracy"
+      ],
+      "properties": {
+        "kills": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deaths": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "misses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rockets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lasers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accuracy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "combatPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_kind",
+        "counter_scope",
+        "player_counters",
+        "tracked_player_count",
+        "dimensions",
+        "field_availability",
+        "missing_dimensions",
+        "raw_callback_summary"
+      ],
+      "properties": {
+        "event_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "counter_scope": {
+          "const": "runtime_session"
+        },
+        "player_counters": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/combatPlayerCounters"
+          }
+        },
+        "tracked_player_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "weapon_id",
+            "damage",
+            "distance",
+            "event_time",
+            "shooter",
+            "victim",
+            "shooter_position",
+            "victim_position"
+          ],
+          "properties": {
+            "weapon_id": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "damage": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "distance": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "event_time": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "shooter": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/combatPlayerIdentity"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "victim": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/combatPlayerIdentity"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "shooter_position": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/combatPosition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "victim_position": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/combatPosition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "field_availability": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "missing_dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "raw_callback_summary": {
+          "$ref": "#/$defs/callbackSummary"
+        },
+        "capture_players": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scores_section": {
+          "type": "string"
+        }
+      }
+    },
     "connectivityPayload": {
       "oneOf": [
         {
@@ -502,7 +732,7 @@
             "$ref": "#/$defs/combatEventName"
           },
           "payload": {
-            "$ref": "#/$defs/callbackSummary"
+            "$ref": "#/$defs/combatPayload"
           },
           "metadata": {
             "$ref": "#/$defs/callbackMetadata"

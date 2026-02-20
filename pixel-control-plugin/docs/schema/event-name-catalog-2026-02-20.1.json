@@ -1,0 +1,319 @@
+{
+  "catalog_version": "2026-02-20.1",
+  "schema_version": "2026-02-20.1",
+  "event_name_pattern": "pixel_control.<event_category>.<normalized_source_callback>",
+  "event_categories": [
+    "connectivity",
+    "lifecycle",
+    "player",
+    "combat",
+    "mode"
+  ],
+  "events": {
+    "connectivity": [
+      "pixel_control.connectivity.plugin_registration",
+      "pixel_control.connectivity.plugin_heartbeat"
+    ],
+    "lifecycle": [
+      "pixel_control.lifecycle.maniaplanet_beginmatch",
+      "pixel_control.lifecycle.maniaplanet_endmatch",
+      "pixel_control.lifecycle.maniaplanet_beginmap",
+      "pixel_control.lifecycle.maniaplanet_endmap",
+      "pixel_control.lifecycle.maniaplanet_beginround",
+      "pixel_control.lifecycle.maniaplanet_endround",
+      "pixel_control.lifecycle.maniaplanet_warmup_start",
+      "pixel_control.lifecycle.maniaplanet_warmup_end",
+      "pixel_control.lifecycle.maniaplanet_warmup_status",
+      "pixel_control.lifecycle.maniaplanet_pause_status",
+      "pixel_control.lifecycle.maniaplanet_startmatch_start",
+      "pixel_control.lifecycle.maniaplanet_startmatch_end",
+      "pixel_control.lifecycle.maniaplanet_endmatch_start",
+      "pixel_control.lifecycle.maniaplanet_endmatch_end",
+      "pixel_control.lifecycle.maniaplanet_loadingmap_start",
+      "pixel_control.lifecycle.maniaplanet_loadingmap_end",
+      "pixel_control.lifecycle.maniaplanet_unloadingmap_start",
+      "pixel_control.lifecycle.maniaplanet_unloadingmap_end",
+      "pixel_control.lifecycle.maniaplanet_startround_start",
+      "pixel_control.lifecycle.maniaplanet_startround_end",
+      "pixel_control.lifecycle.maniaplanet_endround_start",
+      "pixel_control.lifecycle.maniaplanet_endround_end"
+    ],
+    "player": [
+      "pixel_control.player.playermanagercallback_playerconnect",
+      "pixel_control.player.playermanagercallback_playerdisconnect",
+      "pixel_control.player.playermanagercallback_playerinfochanged",
+      "pixel_control.player.playermanagercallback_playerinfoschanged"
+    ],
+    "combat": [
+      "pixel_control.combat.shootmania_event_onshoot",
+      "pixel_control.combat.shootmania_event_onhit",
+      "pixel_control.combat.shootmania_event_onnearmiss",
+      "pixel_control.combat.shootmania_event_onarmorempty",
+      "pixel_control.combat.shootmania_event_oncapture",
+      "pixel_control.combat.shootmania_event_scores"
+    ],
+    "mode": [
+      "pixel_control.mode.shootmania_elite_startturn",
+      "pixel_control.mode.shootmania_elite_endturn",
+      "pixel_control.mode.shootmania_joust_onreload",
+      "pixel_control.mode.shootmania_joust_selectedplayers",
+      "pixel_control.mode.shootmania_joust_roundresult",
+      "pixel_control.mode.shootmania_royal_points",
+      "pixel_control.mode.shootmania_royal_playerspawn",
+      "pixel_control.mode.shootmania_royal_roundwinner"
+    ]
+  },
+  "lifecycle_variants": [
+    "warmup.start",
+    "warmup.end",
+    "warmup.status",
+    "pause.start",
+    "pause.end",
+    "pause.status",
+    "match.begin",
+    "match.end",
+    "map.begin",
+    "map.end",
+    "round.begin",
+    "round.end",
+    "lifecycle.unknown"
+  ],
+  "admin_action_mappings": {
+    "pixel_control.lifecycle.maniaplanet_warmup_start": {
+      "action_name": "warmup.start",
+      "action_domain": "match_flow",
+      "action_type": "warmup",
+      "action_phase": "start",
+      "target_scope": "server"
+    },
+    "pixel_control.lifecycle.maniaplanet_warmup_end": {
+      "action_name": "warmup.end",
+      "action_domain": "match_flow",
+      "action_type": "warmup",
+      "action_phase": "end",
+      "target_scope": "server"
+    },
+    "pixel_control.lifecycle.maniaplanet_warmup_status": {
+      "action_name": "warmup.status",
+      "action_domain": "match_flow",
+      "action_type": "warmup",
+      "action_phase": "status",
+      "target_scope": "server"
+    },
+    "pixel_control.lifecycle.maniaplanet_pause_status": {
+      "action_name": "pause.status",
+      "action_domain": "match_flow",
+      "action_type": "pause",
+      "action_phase": "status",
+      "target_scope": "match"
+    },
+    "pixel_control.lifecycle.maniaplanet_startmatch_start": {
+      "action_name": "match.start",
+      "action_domain": "match_flow",
+      "action_type": "match_start",
+      "action_phase": "start",
+      "target_scope": "match"
+    },
+    "pixel_control.lifecycle.maniaplanet_startmatch_end": {
+      "action_name": "match.start",
+      "action_domain": "match_flow",
+      "action_type": "match_start",
+      "action_phase": "end",
+      "target_scope": "match"
+    },
+    "pixel_control.lifecycle.maniaplanet_endmatch_start": {
+      "action_name": "match.end",
+      "action_domain": "match_flow",
+      "action_type": "match_end",
+      "action_phase": "start",
+      "target_scope": "match"
+    },
+    "pixel_control.lifecycle.maniaplanet_endmatch_end": {
+      "action_name": "match.end",
+      "action_domain": "match_flow",
+      "action_type": "match_end",
+      "action_phase": "end",
+      "target_scope": "match"
+    },
+    "pixel_control.lifecycle.maniaplanet_loadingmap_start": {
+      "action_name": "map.loading.start",
+      "action_domain": "match_flow",
+      "action_type": "map_loading",
+      "action_phase": "start",
+      "target_scope": "map"
+    },
+    "pixel_control.lifecycle.maniaplanet_loadingmap_end": {
+      "action_name": "map.loading.end",
+      "action_domain": "match_flow",
+      "action_type": "map_loading",
+      "action_phase": "end",
+      "target_scope": "map"
+    },
+    "pixel_control.lifecycle.maniaplanet_unloadingmap_start": {
+      "action_name": "map.unloading.start",
+      "action_domain": "match_flow",
+      "action_type": "map_unloading",
+      "action_phase": "start",
+      "target_scope": "map"
+    },
+    "pixel_control.lifecycle.maniaplanet_unloadingmap_end": {
+      "action_name": "map.unloading.end",
+      "action_domain": "match_flow",
+      "action_type": "map_unloading",
+      "action_phase": "end",
+      "target_scope": "map"
+    },
+    "pixel_control.lifecycle.maniaplanet_startround_start": {
+      "action_name": "round.start",
+      "action_domain": "match_flow",
+      "action_type": "round_start",
+      "action_phase": "start",
+      "target_scope": "round"
+    },
+    "pixel_control.lifecycle.maniaplanet_startround_end": {
+      "action_name": "round.start",
+      "action_domain": "match_flow",
+      "action_type": "round_start",
+      "action_phase": "end",
+      "target_scope": "round"
+    },
+    "pixel_control.lifecycle.maniaplanet_endround_start": {
+      "action_name": "round.end",
+      "action_domain": "match_flow",
+      "action_type": "round_end",
+      "action_phase": "start",
+      "target_scope": "round"
+    },
+    "pixel_control.lifecycle.maniaplanet_endround_end": {
+      "action_name": "round.end",
+      "action_domain": "match_flow",
+      "action_type": "round_end",
+      "action_phase": "end",
+      "target_scope": "round"
+    }
+  },
+  "player_event_kinds": [
+    "player.connect",
+    "player.disconnect",
+    "player.info_changed",
+    "player.infos_changed",
+    "player.unknown"
+  ],
+  "player_transition_kinds": [
+    "connectivity",
+    "state_change",
+    "batch_refresh",
+    "unknown"
+  ],
+  "player_state_delta_keys": [
+    "connectivity",
+    "spectator",
+    "team_id",
+    "auth_level",
+    "auth_role",
+    "is_referee",
+    "has_player_slot",
+    "has_joined_game",
+    "forced_spectator_state",
+    "is_temporary_spectator",
+    "readiness_state",
+    "eligibility_state",
+    "can_join_round"
+  ],
+  "player_roster_state_keys": [
+    "current",
+    "previous",
+    "delta",
+    "aggregate",
+    "field_availability",
+    "missing_fields"
+  ],
+  "player_admin_correlation_keys": [
+    "correlated",
+    "window_seconds",
+    "confidence",
+    "matched_by",
+    "seconds_since_admin_action",
+    "inference_reasons",
+    "admin_event",
+    "field_availability",
+    "missing_fields"
+  ],
+  "player_reconnect_continuity_keys": [
+    "identity_key",
+    "player_login",
+    "event_kind",
+    "transition_kind",
+    "transition_state",
+    "continuity_state",
+    "session_id",
+    "session_ordinal",
+    "previous_session_id",
+    "reconnect_count",
+    "connected_before",
+    "connected_after",
+    "ordering",
+    "field_availability",
+    "missing_fields"
+  ],
+  "player_side_change_keys": [
+    "detected",
+    "transition_kind",
+    "player_login",
+    "previous_team_id",
+    "current_team_id",
+    "previous_side",
+    "current_side",
+    "team_changed",
+    "side_changed",
+    "dedupe_key",
+    "ordering",
+    "field_availability",
+    "missing_fields"
+  ],
+  "combat_counter_keys": [
+    "kills",
+    "deaths",
+    "hits",
+    "shots",
+    "misses",
+    "rockets",
+    "lasers",
+    "accuracy"
+  ],
+  "combat_dimension_keys": [
+    "weapon_id",
+    "damage",
+    "distance",
+    "event_time",
+    "shooter",
+    "victim",
+    "shooter_position",
+    "victim_position"
+  ],
+  "lifecycle_aggregate_scopes": [
+    "round",
+    "map"
+  ],
+  "lifecycle_aggregate_team_keys": [
+    "team_counters_delta",
+    "team_summary"
+  ],
+  "map_rotation_keys": [
+    "map_pool_size",
+    "current_map",
+    "current_map_index",
+    "next_maps",
+    "map_pool",
+    "played_map_count",
+    "played_map_order",
+    "veto_draft_actions",
+    "veto_result",
+    "field_availability",
+    "missing_fields"
+  ],
+  "map_rotation_veto_baseline": {
+    "status": "partial",
+    "reason": "final_selection_inferred_from_partial_veto_actions"
+  }
+}
