@@ -20,6 +20,7 @@ It is designed for plugin and integration development in the Pixel Control monor
 - `scripts/bootstrap.sh`: runtime startup orchestration
 - `scripts/healthcheck.sh`: readiness probe used by Compose
 - `scripts/dev-plugin-sync.sh`: fast plugin iteration workflow
+- `scripts/dev-mode-compose.sh`: mode profile launcher/relauncher (`.env.<mode>` -> `.env`)
 - `scripts/qa-launch-smoke.sh`: single launch smoke validation
 - `scripts/qa-mode-smoke.sh`: Elite/Siege/Battle/Joust/Custom smoke matrix
 - `scripts/qa-wave3-telemetry-replay.sh`: deterministic admin/player/aggregate/map telemetry replay with local ACK capture
@@ -109,6 +110,22 @@ bash scripts/dev-plugin-hot-sync.sh
 ```
 
 This syncs plugin files into the running container and restarts only ManiaControl (dedicated server PID should stay unchanged).
+
+### Mode profile launch/relaunch
+
+If you keep one env profile per mode (`.env.elite`, `.env.joust`, ...), use:
+
+```bash
+bash scripts/dev-mode-compose.sh elite
+bash scripts/dev-mode-compose.sh joust relaunch
+```
+
+Behavior:
+
+- Reads `.env.<mode>` and copies it into `.env`
+- Launches/relaunches `mysql` + `shootmania` via `docker-compose.yml`
+- Supports compose-file override via `PIXEL_SM_DEV_COMPOSE_FILES`
+- Supports optional image rebuild via `PIXEL_SM_DEV_MODE_BUILD_IMAGES=1`
 
 ### Smoke validation
 
