@@ -15,7 +15,7 @@ class NativeAdminGateway {
 		$this->maniaControl = $maniaControl;
 	}
 
-	public function execute($actionName, array $parameters = array(), $actorLogin = '') {
+	public function execute($actionName, array $parameters = array(), $actorLogin = '', array $executionContext = array()) {
 		$normalizedActionName = AdminActionCatalog::normalizeActionName($actionName);
 		if ($normalizedActionName === '') {
 			return AdminActionResult::failure('unknown', 'action_missing', 'Action name is required.');
@@ -31,6 +31,10 @@ class NativeAdminGateway {
 					return $this->executeMapJump($normalizedActionName, $parameters);
 				case AdminActionCatalog::ACTION_MAP_QUEUE:
 					return $this->executeMapQueue($normalizedActionName, $parameters);
+				case AdminActionCatalog::ACTION_MAP_ADD:
+					return $this->executeMapAdd($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_MAP_REMOVE:
+					return $this->executeMapRemove($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_WARMUP_EXTEND:
 					return $this->executeWarmupExtend($normalizedActionName, $parameters);
 				case AdminActionCatalog::ACTION_WARMUP_END:
@@ -46,17 +50,17 @@ class NativeAdminGateway {
 				case AdminActionCatalog::ACTION_VOTE_SET_RATIO:
 					return $this->executeVoteSetRatio($normalizedActionName, $parameters);
 				case AdminActionCatalog::ACTION_PLAYER_FORCE_TEAM:
-					return $this->executeForceTeam($normalizedActionName, $parameters, $actorLogin);
+					return $this->executeForceTeam($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_PLAYER_FORCE_PLAY:
-					return $this->executeForcePlay($normalizedActionName, $parameters, $actorLogin);
+					return $this->executeForcePlay($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_PLAYER_FORCE_SPEC:
-					return $this->executeForceSpec($normalizedActionName, $parameters, $actorLogin);
+					return $this->executeForceSpec($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_AUTH_GRANT:
-					return $this->executeAuthGrant($normalizedActionName, $parameters, $actorLogin);
+					return $this->executeAuthGrant($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_AUTH_REVOKE:
-					return $this->executeAuthRevoke($normalizedActionName, $parameters, $actorLogin);
+					return $this->executeAuthRevoke($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_VOTE_CUSTOM_START:
-					return $this->executeCustomVoteStart($normalizedActionName, $parameters, $actorLogin);
+					return $this->executeCustomVoteStart($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				default:
 					return AdminActionResult::failure($normalizedActionName, 'action_unknown', 'Unknown admin action.');
 			}
@@ -149,6 +153,87 @@ class NativeAdminGateway {
 		));
 	}
 
+	private function executeMapAdd($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		$mxId = $this->readIntParameter($parameters, array('mx_id', 'mxid'));
+		if ($mxId === null || $mxId <= 0) {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires valid mx_id.');
+		}
+
+		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $parameters);
+		$allowActorless = $this->allowActorlessExecution($executionContext);
+		$nativeLogin = $resolvedActorLogin !== '' ? $resolvedActorLogin : null;
+
+		if ($nativeLogin === null && !$allowActorless) {
+			return AdminActionResult::failure($actionName, 'actor_missing', 'Actor login is required for this request source.');
+		}
+
+		$this->maniaControl->getMapManager()->addMapFromMx($mxId, $nativeLogin, false);
+
+		return AdminActionResult::success($actionName, 'Map add submitted to native MapManager (async ManiaExchange import).', array(
+			'mx_id' => $mxId,
+			'actor_login' => ($nativeLogin !== null) ? $nativeLogin : '',
+			'async_submission' => true,
+			'native_entrypoint' => 'MapManager::addMapFromMx',
+		));
+	}
+
+	private function executeMapRemove($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		$mapUid = $this->readStringParameter($parameters, array('map_uid', 'uid'));
+		$mxId = null;
+
+		if ($mapUid === '') {
+			$mxId = $this->readIntParameter($parameters, array('mx_id', 'mxid'));
+			if ($mxId !== null) {
+				$mxMap = $this->maniaControl->getMapManager()->getMapByMxId($mxId);
+				if ($mxMap && isset($mxMap->uid)) {
+					$mapUid = (string) $mxMap->uid;
+				}
+			}
+		}
+
+		if ($mapUid === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires map_uid or mx_id that resolves to a map UID.');
+		}
+
+		$eraseMapFile = $this->readBooleanParameter($parameters, array('erase_map_file', 'erase_file', 'erase_map'));
+		$showChatMessage = $this->readBooleanParameter($parameters, array('show_chat_message', 'show_message', 'display_message'));
+		if ($eraseMapFile === null) {
+			$eraseMapFile = false;
+		}
+		if ($showChatMessage === null) {
+			$showChatMessage = true;
+		}
+
+		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $parameters);
+		$allowActorless = $this->allowActorlessExecution($executionContext);
+		$adminPlayer = null;
+
+		if ($resolvedActorLogin !== '') {
+			$adminPlayer = $this->maniaControl->getPlayerManager()->getPlayer($resolvedActorLogin);
+		}
+
+		if ($adminPlayer === null && $resolvedActorLogin !== '' && !$allowActorless) {
+			return AdminActionResult::failure($actionName, 'actor_not_found', 'Actor player was not found in player manager.');
+		}
+
+		$success = $this->maniaControl->getMapManager()->removeMap($adminPlayer, $mapUid, $eraseMapFile, $showChatMessage);
+		if (!$success) {
+			return AdminActionResult::failure($actionName, 'native_rejected', 'Map remove failed in native MapManager.', array(
+				'map_uid' => $mapUid,
+				'mx_id' => $mxId,
+				'erase_map_file' => $eraseMapFile,
+			));
+		}
+
+		return AdminActionResult::success($actionName, 'Map remove delegated to native MapManager.', array(
+			'map_uid' => $mapUid,
+			'mx_id' => $mxId,
+			'erase_map_file' => $eraseMapFile,
+			'show_chat_message' => $showChatMessage,
+			'native_entrypoint' => 'MapManager::removeMap',
+		));
+	}
+
 	private function executeWarmupExtend($actionName, array $parameters) {
 		$scriptGuardResult = $this->guardScriptMode($actionName);
 		if ($scriptGuardResult !== null) {
@@ -188,9 +273,10 @@ class NativeAdminGateway {
 			return $pauseGuardResult;
 		}
 
-		$this->maniaControl->getModeScriptEventManager()->startPause();
+		$this->applyPauseState(true);
 
 		return AdminActionResult::success($actionName, 'Pause start delegated to native mode script manager.', array(
+			'compatibility_mode' => 'script_event_plus_mode_commands',
 			'native_entrypoint' => 'ModeScriptEventManager::startPause',
 		));
 	}
@@ -201,9 +287,10 @@ class NativeAdminGateway {
 			return $pauseGuardResult;
 		}
 
-		$this->maniaControl->getModeScriptEventManager()->endPause();
+		$this->applyPauseState(false);
 
 		return AdminActionResult::success($actionName, 'Pause end delegated to native mode script manager.', array(
+			'compatibility_mode' => 'script_event_plus_mode_commands',
 			'native_entrypoint' => 'ModeScriptEventManager::endPause',
 		));
 	}
@@ -220,20 +307,46 @@ class NativeAdminGateway {
 		}
 
 		if ($pauseActive) {
-			$this->maniaControl->getModeScriptEventManager()->endPause();
+			$this->applyPauseState(false);
 			return AdminActionResult::success($actionName, 'Pause toggle delegated to native mode script manager (end).', array(
 				'pause_active_before' => true,
 				'pause_active_after' => false,
+				'compatibility_mode' => 'script_event_plus_mode_commands',
 				'native_entrypoint' => 'ModeScriptEventManager::endPause',
 			));
 		}
 
-		$this->maniaControl->getModeScriptEventManager()->startPause();
+		$this->applyPauseState(true);
 		return AdminActionResult::success($actionName, 'Pause toggle delegated to native mode script manager (start).', array(
 			'pause_active_before' => false,
 			'pause_active_after' => true,
+			'compatibility_mode' => 'script_event_plus_mode_commands',
 			'native_entrypoint' => 'ModeScriptEventManager::startPause',
 		));
+	}
+
+	private function applyPauseState($active) {
+		$active = (bool) $active;
+
+		if ($active) {
+			$this->sendModeScriptCommandsSafely(array('Command_ForceWarmUp' => true));
+			$this->sendModeScriptCommandsSafely(array('Command_SetPause' => true));
+			$this->sendModeScriptCommandsSafely(array('Command_ForceEndRound' => true));
+			$this->maniaControl->getModeScriptEventManager()->startPause();
+			return;
+		}
+
+		$this->sendModeScriptCommandsSafely(array('Command_SetPause' => false));
+		$this->sendModeScriptCommandsSafely(array('Command_ForceWarmUp' => false));
+		$this->maniaControl->getModeScriptEventManager()->endPause();
+	}
+
+	private function sendModeScriptCommandsSafely(array $commands) {
+		try {
+			$this->maniaControl->getClient()->sendModeScriptCommands($commands);
+		} catch (\Exception $exception) {
+			// Keep delegated pause flows resilient across script implementations.
+		}
 	}
 
 	private function executeVoteCancel($actionName) {
@@ -303,14 +416,19 @@ class NativeAdminGateway {
 		));
 	}
 
-	private function executeForceTeam($actionName, array $parameters, $actorLogin) {
+	private function executeForceTeam($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
 		$teamModeGuardResult = $this->guardTeamMode($actionName);
 		if ($teamModeGuardResult !== null) {
 			return $teamModeGuardResult;
 		}
 
 		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $parameters);
-		if ($resolvedActorLogin === '') {
+		$calledByAdmin = true;
+		if ($resolvedActorLogin === '' && $this->allowActorlessExecution($executionContext)) {
+			$calledByAdmin = false;
+		}
+
+		if ($resolvedActorLogin === '' && $calledByAdmin) {
 			return AdminActionResult::failure($actionName, 'actor_missing', 'Actor login is required for delegated player actions.');
 		}
 
@@ -328,7 +446,7 @@ class NativeAdminGateway {
 			$resolvedActorLogin,
 			$targetLogin,
 			$teamId,
-			true
+			$calledByAdmin
 		);
 
 		if (!$success) {
@@ -341,13 +459,19 @@ class NativeAdminGateway {
 		return AdminActionResult::success($actionName, 'Force-team delegated to native PlayerActions.', array(
 			'target_login' => $targetLogin,
 			'team_id' => $teamId,
+			'execution_mode' => $calledByAdmin ? 'actor_bound' : 'server_payload_actorless',
 			'native_entrypoint' => 'PlayerActions::forcePlayerToTeam',
 		));
 	}
 
-	private function executeForcePlay($actionName, array $parameters, $actorLogin) {
+	private function executeForcePlay($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
 		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $parameters);
-		if ($resolvedActorLogin === '') {
+		$calledByAdmin = true;
+		if ($resolvedActorLogin === '' && $this->allowActorlessExecution($executionContext)) {
+			$calledByAdmin = false;
+		}
+
+		if ($resolvedActorLogin === '' && $calledByAdmin) {
 			return AdminActionResult::failure($actionName, 'actor_missing', 'Actor login is required for delegated player actions.');
 		}
 
@@ -361,7 +485,7 @@ class NativeAdminGateway {
 			$targetLogin,
 			true,
 			true,
-			true
+			$calledByAdmin
 		);
 
 		if (!$success) {
@@ -372,13 +496,19 @@ class NativeAdminGateway {
 
 		return AdminActionResult::success($actionName, 'Force-play delegated to native PlayerActions.', array(
 			'target_login' => $targetLogin,
+			'execution_mode' => $calledByAdmin ? 'actor_bound' : 'server_payload_actorless',
 			'native_entrypoint' => 'PlayerActions::forcePlayerToPlay',
 		));
 	}
 
-	private function executeForceSpec($actionName, array $parameters, $actorLogin) {
+	private function executeForceSpec($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
 		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $parameters);
-		if ($resolvedActorLogin === '') {
+		$calledByAdmin = true;
+		if ($resolvedActorLogin === '' && $this->allowActorlessExecution($executionContext)) {
+			$calledByAdmin = false;
+		}
+
+		if ($resolvedActorLogin === '' && $calledByAdmin) {
 			return AdminActionResult::failure($actionName, 'actor_missing', 'Actor login is required for delegated player actions.');
 		}
 
@@ -392,7 +522,7 @@ class NativeAdminGateway {
 			$targetLogin,
 			PlayerActions::SPECTATOR_BUT_KEEP_SELECTABLE,
 			true,
-			true
+			$calledByAdmin
 		);
 
 		if (!$success) {
@@ -403,13 +533,15 @@ class NativeAdminGateway {
 
 		return AdminActionResult::success($actionName, 'Force-spectator delegated to native PlayerActions.', array(
 			'target_login' => $targetLogin,
+			'execution_mode' => $calledByAdmin ? 'actor_bound' : 'server_payload_actorless',
 			'native_entrypoint' => 'PlayerActions::forcePlayerToSpectator',
 		));
 	}
 
-	private function executeAuthGrant($actionName, array $parameters, $actorLogin) {
+	private function executeAuthGrant($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
 		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $parameters);
-		if ($resolvedActorLogin === '') {
+		$allowActorless = $this->allowActorlessExecution($executionContext);
+		if ($resolvedActorLogin === '' && !$allowActorless) {
 			return AdminActionResult::failure($actionName, 'actor_missing', 'Actor login is required for delegated auth actions.');
 		}
 
@@ -428,8 +560,23 @@ class NativeAdminGateway {
 			return AdminActionResult::failure($actionName, 'target_not_found', 'Target player was not found in native player manager.');
 		}
 		$beforeLevel = isset($targetBefore->authLevel) ? (int) $targetBefore->authLevel : null;
+		$nativeEntrypoint = 'PlayerActions::grantAuthLevel';
+		$executionMode = 'actor_bound';
 
-		$this->maniaControl->getPlayerManager()->getPlayerActions()->grantAuthLevel($resolvedActorLogin, $targetLogin, $authLevel);
+		if ($resolvedActorLogin !== '') {
+			$this->maniaControl->getPlayerManager()->getPlayerActions()->grantAuthLevel($resolvedActorLogin, $targetLogin, $authLevel);
+		} else {
+			$grantSuccess = $this->maniaControl->getAuthenticationManager()->grantAuthLevel($targetBefore, $authLevel);
+			if (!$grantSuccess) {
+				return AdminActionResult::failure($actionName, 'native_rejected', 'Grant-auth request failed in native AuthenticationManager.', array(
+					'target_login' => $targetLogin,
+					'requested_auth_level' => $authLevel,
+				));
+			}
+
+			$nativeEntrypoint = 'AuthenticationManager::grantAuthLevel';
+			$executionMode = 'server_payload_actorless';
+		}
 
 		$targetAfter = $this->maniaControl->getPlayerManager()->getPlayer($targetLogin);
 		$afterLevel = ($targetAfter && isset($targetAfter->authLevel)) ? (int) $targetAfter->authLevel : null;
@@ -443,17 +590,19 @@ class NativeAdminGateway {
 			));
 		}
 
-		return AdminActionResult::success($actionName, 'Grant-auth delegated to native PlayerActions.', array(
+		return AdminActionResult::success($actionName, 'Grant-auth delegated to native auth service.', array(
 			'target_login' => $targetLogin,
 			'before_auth_level' => $beforeLevel,
 			'after_auth_level' => $afterLevel,
-			'native_entrypoint' => 'PlayerActions::grantAuthLevel',
+			'execution_mode' => $executionMode,
+			'native_entrypoint' => $nativeEntrypoint,
 		));
 	}
 
-	private function executeAuthRevoke($actionName, array $parameters, $actorLogin) {
+	private function executeAuthRevoke($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
 		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $parameters);
-		if ($resolvedActorLogin === '') {
+		$allowActorless = $this->allowActorlessExecution($executionContext);
+		if ($resolvedActorLogin === '' && !$allowActorless) {
 			return AdminActionResult::failure($actionName, 'actor_missing', 'Actor login is required for delegated auth actions.');
 		}
 
@@ -467,8 +616,22 @@ class NativeAdminGateway {
 			return AdminActionResult::failure($actionName, 'target_not_found', 'Target player was not found in native player manager.');
 		}
 		$beforeLevel = isset($targetBefore->authLevel) ? (int) $targetBefore->authLevel : null;
+		$nativeEntrypoint = 'PlayerActions::revokeAuthLevel';
+		$executionMode = 'actor_bound';
 
-		$this->maniaControl->getPlayerManager()->getPlayerActions()->revokeAuthLevel($resolvedActorLogin, $targetLogin);
+		if ($resolvedActorLogin !== '') {
+			$this->maniaControl->getPlayerManager()->getPlayerActions()->revokeAuthLevel($resolvedActorLogin, $targetLogin);
+		} else {
+			$revokeSuccess = $this->maniaControl->getAuthenticationManager()->grantAuthLevel($targetBefore, AuthenticationManager::AUTH_LEVEL_PLAYER);
+			if (!$revokeSuccess) {
+				return AdminActionResult::failure($actionName, 'native_rejected', 'Revoke-auth request failed in native AuthenticationManager.', array(
+					'target_login' => $targetLogin,
+				));
+			}
+
+			$nativeEntrypoint = 'AuthenticationManager::grantAuthLevel';
+			$executionMode = 'server_payload_actorless';
+		}
 
 		$targetAfter = $this->maniaControl->getPlayerManager()->getPlayer($targetLogin);
 		$afterLevel = ($targetAfter && isset($targetAfter->authLevel)) ? (int) $targetAfter->authLevel : null;
@@ -481,17 +644,19 @@ class NativeAdminGateway {
 			));
 		}
 
-		return AdminActionResult::success($actionName, 'Revoke-auth delegated to native PlayerActions.', array(
+		return AdminActionResult::success($actionName, 'Revoke-auth delegated to native auth service.', array(
 			'target_login' => $targetLogin,
 			'before_auth_level' => $beforeLevel,
 			'after_auth_level' => $afterLevel,
-			'native_entrypoint' => 'PlayerActions::revokeAuthLevel',
+			'execution_mode' => $executionMode,
+			'native_entrypoint' => $nativeEntrypoint,
 		));
 	}
 
-	private function executeCustomVoteStart($actionName, array $parameters, $actorLogin) {
+	private function executeCustomVoteStart($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
 		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $parameters);
-		if ($resolvedActorLogin === '') {
+		$allowActorless = $this->allowActorlessExecution($executionContext);
+		if ($resolvedActorLogin === '' && !$allowActorless) {
 			return AdminActionResult::failure($actionName, 'actor_missing', 'Actor login is required to start a custom vote.');
 		}
 
@@ -505,14 +670,26 @@ class NativeAdminGateway {
 			return AdminActionResult::failure($actionName, 'capability_unavailable', 'CustomVotesPlugin is not active on this server.');
 		}
 
-		$actorPlayer = $this->maniaControl->getPlayerManager()->getPlayer($resolvedActorLogin);
+		$actorPlayer = null;
+		$executionMode = 'actor_bound';
+		if ($resolvedActorLogin !== '') {
+			$actorPlayer = $this->maniaControl->getPlayerManager()->getPlayer($resolvedActorLogin);
+		}
+
+		if (!$actorPlayer && $allowActorless) {
+			$actorPlayer = $this->resolveFallbackVoteActor();
+			$executionMode = 'server_payload_actorless';
+		}
+
 		if (!$actorPlayer) {
-			return AdminActionResult::failure($actionName, 'actor_not_found', 'Actor player was not found in player manager.');
+			return AdminActionResult::failure($actionName, 'actor_not_found', 'No connected player is available to initiate the custom vote.');
 		}
 
 		call_user_func(array($customVotesPlugin, 'startVote'), $actorPlayer, $voteIndex);
 
 		return AdminActionResult::success($actionName, 'Custom vote start delegated to native CustomVotesPlugin.', array(
+			'actor_login' => isset($actorPlayer->login) ? (string) $actorPlayer->login : '',
+			'execution_mode' => $executionMode,
 			'vote_index' => $voteIndex,
 			'native_entrypoint' => 'CustomVotesPlugin::startVote',
 		));
@@ -548,6 +725,47 @@ class NativeAdminGateway {
 		}
 
 		return null;
+	}
+
+	private function allowActorlessExecution(array $executionContext) {
+		return !empty($executionContext['allow_actorless']);
+	}
+
+	private function resolveFallbackVoteActor() {
+		$players = $this->maniaControl->getPlayerManager()->getPlayers(false);
+		if (!is_array($players) || empty($players)) {
+			return null;
+		}
+
+		$fallbackAny = null;
+		$fallbackNonSpectator = null;
+
+		foreach ($players as $player) {
+			if (!$player) {
+				continue;
+			}
+
+			if ($fallbackAny === null) {
+				$fallbackAny = $player;
+			}
+
+			$isSpectator = isset($player->isSpectator) && $player->isSpectator;
+			$isMuted = method_exists($player, 'isMuted') && $player->isMuted();
+
+			if (!$isSpectator && !$isMuted) {
+				return $player;
+			}
+
+			if (!$isSpectator && $fallbackNonSpectator === null) {
+				$fallbackNonSpectator = $player;
+			}
+		}
+
+		if ($fallbackNonSpectator !== null) {
+			return $fallbackNonSpectator;
+		}
+
+		return $fallbackAny;
 	}
 
 	private function resolveActorLogin($actorLogin, array $parameters) {

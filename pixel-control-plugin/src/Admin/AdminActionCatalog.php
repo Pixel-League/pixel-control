@@ -9,6 +9,8 @@ class AdminActionCatalog {
 	const ACTION_MAP_RESTART = 'map.restart';
 	const ACTION_MAP_JUMP = 'map.jump';
 	const ACTION_MAP_QUEUE = 'map.queue';
+	const ACTION_MAP_ADD = 'map.add';
+	const ACTION_MAP_REMOVE = 'map.remove';
 	const ACTION_WARMUP_EXTEND = 'warmup.extend';
 	const ACTION_WARMUP_END = 'warmup.end';
 	const ACTION_PAUSE_START = 'pause.start';
@@ -27,6 +29,8 @@ class AdminActionCatalog {
 	const RIGHT_MAP_RESTART = 'Pixel Control Admin: Map Restart';
 	const RIGHT_MAP_JUMP = 'Pixel Control Admin: Map Jump';
 	const RIGHT_MAP_QUEUE = 'Pixel Control Admin: Map Queue';
+	const RIGHT_MAP_ADD = 'Pixel Control Admin: Map Add';
+	const RIGHT_MAP_REMOVE = 'Pixel Control Admin: Map Remove';
 	const RIGHT_WARMUP_EXTEND = 'Pixel Control Admin: Warmup Extend';
 	const RIGHT_WARMUP_END = 'Pixel Control Admin: Warmup End';
 	const RIGHT_PAUSE_START = 'Pixel Control Admin: Pause Start';
@@ -55,6 +59,10 @@ class AdminActionCatalog {
 			'map.skip_current' => self::ACTION_MAP_SKIP,
 			'map.res' => self::ACTION_MAP_RESTART,
 			'map.add_queue' => self::ACTION_MAP_QUEUE,
+			'map.add_mx' => self::ACTION_MAP_ADD,
+			'map.add_from_mx' => self::ACTION_MAP_ADD,
+			'map.delete' => self::ACTION_MAP_REMOVE,
+			'map.rm' => self::ACTION_MAP_REMOVE,
 			'warmup.stop' => self::ACTION_WARMUP_END,
 			'pause.resume' => self::ACTION_PAUSE_END,
 			'vote.cancel_current' => self::ACTION_VOTE_CANCEL,
@@ -112,6 +120,20 @@ class AdminActionCatalog {
 				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
 				'required_parameters' => array('map_uid|mx_id'),
 				'native_entrypoint' => 'MapQueue::serverAddMapToMapQueue',
+				'ownership' => 'delegate',
+			),
+			self::ACTION_MAP_ADD => array(
+				'permission_setting' => self::RIGHT_MAP_ADD,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_ADMIN,
+				'required_parameters' => array('mx_id'),
+				'native_entrypoint' => 'MapManager::addMapFromMx',
+				'ownership' => 'delegate',
+			),
+			self::ACTION_MAP_REMOVE => array(
+				'permission_setting' => self::RIGHT_MAP_REMOVE,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_ADMIN,
+				'required_parameters' => array('map_uid|mx_id'),
+				'native_entrypoint' => 'MapManager::removeMap',
 				'ownership' => 'delegate',
 			),
 			self::ACTION_WARMUP_EXTEND => array(

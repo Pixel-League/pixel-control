@@ -181,7 +181,18 @@ trait AdminControlDomainTrait {
 			$actorLogin = trim((string) $requestPayload['actor_login']);
 		}
 
-		$result = $this->executeDelegatedAdminAction($actionName, $parameters, $actorLogin, 'communication', null);
+		$result = $this->executeDelegatedAdminAction(
+			$actionName,
+			$parameters,
+			$actorLogin,
+			'communication',
+			null,
+			array(
+				'allow_actorless' => true,
+				'skip_permission_checks' => true,
+				'security_mode' => 'payload_untrusted',
+			)
+		);
 
 		return new CommunicationAnswer($result->toArray(), !$result->isSuccess());
 	}
@@ -194,26 +205,56 @@ trait AdminControlDomainTrait {
 				'exec' => AdminActionCatalog::COMMUNICATION_EXECUTE_ACTION,
 				'list' => AdminActionCatalog::COMMUNICATION_LIST_ACTIONS,
 			),
+			'security' => array(
+				'chat_command' => array(
+					'actor_login_required' => true,
+					'permission_model' => 'maniacontrol_plugin_rights',
+				),
+				'communication' => array(
+					'authentication_mode' => 'none_temporary',
+					'actor_login_required' => false,
+					'permission_model' => 'trusted_payload_no_actor',
+				),
+			),
 			'actions' => AdminActionCatalog::getActionDefinitions(),
 		);
 
 		return new CommunicationAnswer($payload, false);
 	}
 
-	private function executeDelegatedAdminAction($actionName, array $parameters, $actorLogin, $requestSource, $requestActor = null) {
+	private function executeDelegatedAdminAction($actionName, array $parameters, $actorLogin, $requestSource, $requestActor = null, array $requestOptions = array()) {
 		$normalizedActionName = AdminActionCatalog::normalizeActionName($actionName);
 		$actionDefinition = AdminActionCatalog::getActionDefinition($normalizedActionName);
 		if ($actionDefinition === null) {
 			return AdminActionResult::failure($normalizedActionName, 'action_unknown', 'Unknown admin action. Use //'.$this->adminControlCommandName.' help to list actions.');
 		}
 
+		$allowActorless = !empty($requestOptions['allow_actorless']);
+		$skipPermissionChecks = !empty($requestOptions['skip_permission_checks']);
+		$securityMode = isset($requestOptions['security_mode']) ? trim((string) $requestOptions['security_mode']) : 'actor_bound';
+
 		$resolvedActor = $this->resolveActionActor($actorLogin, $requestActor);
-		if (!$resolvedActor) {
+		if (!$resolvedActor && !$allowActorless) {
 			return AdminActionResult::failure($normalizedActionName, 'actor_not_found', 'Delegated admin action requires a connected actor player.');
+		}
+		$resolvedActorLogin = ($resolvedActor && isset($resolvedActor->login)) ? (string) $resolvedActor->login : '';
+		$logActor = ($resolvedActorLogin !== '') ? $resolvedActorLogin : 'server_payload';
+
+		if ($allowActorless && $resolvedActorLogin === '') {
+			Logger::logWarning(
+				'[PixelControl][admin][security_mode] action=' . $normalizedActionName
+				. ', source=' . (string) $requestSource
+				. ', mode=' . ($securityMode !== '' ? $securityMode : 'payload_untrusted')
+				. ', actor=none, note=unauthenticated_payload_path.'
+			);
 		}
 
 		$permissionSetting = isset($actionDefinition['permission_setting']) ? (string) $actionDefinition['permission_setting'] : '';
-		if ($permissionSetting !== '') {
+		if ($permissionSetting !== '' && !$skipPermissionChecks) {
+			if (!$resolvedActor) {
+				return AdminActionResult::failure($normalizedActionName, 'actor_not_found', 'Delegated admin action requires a connected actor player.');
+			}
+
 			$hasPermission = $this->maniaControl->getAuthenticationManager()->checkPluginPermission($this, $resolvedActor, $permissionSetting);
 			if (!$hasPermission) {
 				return AdminActionResult::failure($normalizedActionName, 'permission_denied', 'Permission denied for delegated admin action.');
@@ -225,13 +266,23 @@ trait AdminControlDomainTrait {
 		Logger::log(
 			'[PixelControl][admin][action_requested] action=' . $normalizedActionName
 			. ', source=' . $requestSource
-			. ', actor=' . (isset($resolvedActor->login) ? (string) $resolvedActor->login : 'unknown')
+			. ', actor=' . $logActor
 			. ', parameters=' . json_encode($normalizedParameters)
 			. '.'
 		);
 
 		$result = $this->nativeAdminGateway
-			? $this->nativeAdminGateway->execute($normalizedActionName, $normalizedParameters, isset($resolvedActor->login) ? (string) $resolvedActor->login : '')
+			? $this->nativeAdminGateway->execute(
+				$normalizedActionName,
+				$normalizedParameters,
+				$resolvedActorLogin,
+				array(
+					'request_source' => (string) $requestSource,
+					'allow_actorless' => $allowActorless,
+					'skip_permission_checks' => $skipPermissionChecks,
+					'security_mode' => ($securityMode !== '' ? $securityMode : 'actor_bound'),
+				)
+			)
 			: AdminActionResult::failure($normalizedActionName, 'gateway_unavailable', 'Native admin gateway is unavailable.');
 
 		if ($result->isSuccess()) {
@@ -239,7 +290,7 @@ trait AdminControlDomainTrait {
 			Logger::log(
 				'[PixelControl][admin][action_success] action=' . $normalizedActionName
 				. ', source=' . $requestSource
-				. ', actor=' . (isset($resolvedActor->login) ? (string) $resolvedActor->login : 'unknown')
+				. ', actor=' . $logActor
 				. ', code=' . $result->getCode()
 				. '.'
 			);
@@ -249,7 +300,7 @@ trait AdminControlDomainTrait {
 		Logger::logWarning(
 			'[PixelControl][admin][action_failed] action=' . $normalizedActionName
 			. ', source=' . $requestSource
-			. ', actor=' . (isset($resolvedActor->login) ? (string) $resolvedActor->login : 'unknown')
+			. ', actor=' . $logActor
 			. ', code=' . $result->getCode()
 			. ', message=' . $result->getMessage()
 			. '.'
@@ -329,6 +380,16 @@ trait AdminControlDomainTrait {
 		switch ($actionName) {
 			case AdminActionCatalog::ACTION_MAP_JUMP:
 			case AdminActionCatalog::ACTION_MAP_QUEUE:
+				if (!isset($normalizedParameters['map_uid']) && !empty($positionals)) {
+					$normalizedParameters['map_uid'] = $positionals[0];
+				}
+			break;
+			case AdminActionCatalog::ACTION_MAP_ADD:
+				if (!isset($normalizedParameters['mx_id']) && !empty($positionals)) {
+					$normalizedParameters['mx_id'] = $positionals[0];
+				}
+			break;
+			case AdminActionCatalog::ACTION_MAP_REMOVE:
 				if (!isset($normalizedParameters['map_uid']) && !empty($positionals)) {
 					$normalizedParameters['map_uid'] = $positionals[0];
 				}
@@ -557,6 +618,17 @@ trait AdminControlDomainTrait {
 			'communication' => array(
 				'execute_action' => AdminActionCatalog::COMMUNICATION_EXECUTE_ACTION,
 				'list_actions' => AdminActionCatalog::COMMUNICATION_LIST_ACTIONS,
+			),
+			'security' => array(
+				'chat_command' => array(
+					'actor_login_required' => true,
+					'permission_model' => 'maniacontrol_plugin_rights',
+				),
+				'communication' => array(
+					'authentication_mode' => 'none_temporary',
+					'actor_login_required' => false,
+					'permission_model' => 'trusted_payload_no_actor',
+				),
 			),
 			'actions' => $actionNames,
 			'ownership_boundary' => array(

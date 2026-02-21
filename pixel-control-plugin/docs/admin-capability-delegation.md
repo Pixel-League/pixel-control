@@ -29,11 +29,16 @@ Feature toggle and runtime controls:
 
 ## Permission model
 
-- Plugin rights are declared through `AuthenticationManager::definePluginPermissionLevel(...)`.
-- Requests are gated with `AuthenticationManager::checkPluginPermission(...)`.
-- Effective minimum rights:
-  - Moderator: map/warmup/pause/vote-cancel/player-force/custom-vote-start
-  - Admin: vote-ratio/auth-grant/auth-revoke
+- Chat-command path (`//pcadmin`) is actor-bound:
+  - plugin rights declared through `AuthenticationManager::definePluginPermissionLevel(...)`,
+  - requests gated with `AuthenticationManager::checkPluginPermission(...)`.
+- Communication payload path (`PixelControl.Admin.ExecuteAction`) is currently trusted/unauthenticated:
+  - `actor_login` is optional,
+  - plugin permission checks are skipped by design,
+  - this is temporary until signed/authenticated payload verification is introduced.
+- Effective minimum rights for chat-command path:
+  - Moderator: map skip/restart/jump/queue, warmup/pause, vote-cancel, player-force, custom-vote-start
+  - Admin: map.add/map.remove, vote-ratio, auth-grant/auth-revoke
 
 ## Action routing matrix
 
@@ -43,6 +48,8 @@ Feature toggle and runtime controls:
 | `map.restart` | `MapActions::restartMap` | delegate |
 | `map.jump` | `MapActions::skipToMapByUid` or `MapActions::skipToMapByMxId` | `map_uid` or `mx_id` |
 | `map.queue` | `MapQueue::serverAddMapToMapQueue` | resolves `mx_id` to map uid |
+| `map.add` | `MapManager::addMapFromMx` | requires `mx_id`; async MX import |
+| `map.remove` | `MapManager::removeMap` | accepts `map_uid` or `mx_id` (resolved to uid); optional `erase_map_file` |
 | `warmup.extend` | `ModeScriptEventManager::extendManiaPlanetWarmup` | script-mode guard |
 | `warmup.end` | `ModeScriptEventManager::stopManiaPlanetWarmup` | script-mode guard |
 | `pause.start` | `ModeScriptEventManager::startPause` | requires `modeUsesPause()` |
@@ -50,12 +57,12 @@ Feature toggle and runtime controls:
 | `pause.toggle` | `ModeScriptEventManager::startPause` or `ModeScriptEventManager::endPause` | requires known `pause_active` |
 | `vote.cancel` | `Client::cancelVote` | native failure when no vote running |
 | `vote.set_ratio` | `Client::setCallVoteRatios` | validates command + ratio range |
-| `player.force_team` | `PlayerActions::forcePlayerToTeam` | team-mode guard |
-| `player.force_play` | `PlayerActions::forcePlayerToPlay` | delegate |
-| `player.force_spec` | `PlayerActions::forcePlayerToSpectator` | delegate |
-| `auth.grant` | `PlayerActions::grantAuthLevel` | verifies applied auth level |
-| `auth.revoke` | `PlayerActions::revokeAuthLevel` | verifies fallback to player level |
-| `vote.custom_start` | `MCTeam\CustomVotesPlugin::startVote` | capability unavailable when plugin inactive |
+| `player.force_team` | `PlayerActions::forcePlayerToTeam` | team-mode guard; actorless payload path uses native `calledByAdmin=false` |
+| `player.force_play` | `PlayerActions::forcePlayerToPlay` | actorless payload path uses native `calledByAdmin=false` |
+| `player.force_spec` | `PlayerActions::forcePlayerToSpectator` | actorless payload path uses native `calledByAdmin=false` |
+| `auth.grant` | `PlayerActions::grantAuthLevel` or `AuthenticationManager::grantAuthLevel` | actor-bound chat path keeps native hierarchy checks; actorless payload path uses AuthenticationManager direct grant |
+| `auth.revoke` | `PlayerActions::revokeAuthLevel` or `AuthenticationManager::grantAuthLevel(AUTH_LEVEL_PLAYER)` | actor-bound chat path keeps native hierarchy checks; actorless payload path applies direct fallback-to-player level |
+| `vote.custom_start` | `MCTeam\CustomVotesPlugin::startVote` | capability unavailable when plugin inactive; actorless payload path uses fallback connected initiator player |
 
 ## Capability and fallback semantics
 
@@ -72,6 +79,7 @@ Rollout defaults and safety:
 - Feature is disabled by default unless explicitly enabled (`PIXEL_CONTROL_ADMIN_CONTROL_ENABLED=1` or setting `Pixel Control Native Admin Control Enabled=1`).
 - When disabled, plugin remains telemetry/transport-only and does not register admin command/communication entry points.
 - Startup marker confirms effective state: `[PixelControl][admin][bootstrap] enabled=yes|no, ...`.
+- Current security trade-off: communication payload mode is intentionally unauthenticated (`security_mode=payload_untrusted`) and should be network-restricted until signed/authenticated server payloads are implemented.
 
 Rollback procedure (telemetry-only fallback):
 
@@ -92,6 +100,7 @@ Restore delegated controls:
   - `[PixelControl][admin][action_requested]`
   - `[PixelControl][admin][action_success]`
   - `[PixelControl][admin][action_failed]`
+  - `[PixelControl][admin][security_mode]` (when actorless unauthenticated payload execution is used)
 - Connectivity registration capability payload exposes delegated control surface under `payload.capabilities.admin_control`.
 
 ## Validation evidence (2026-02-20)

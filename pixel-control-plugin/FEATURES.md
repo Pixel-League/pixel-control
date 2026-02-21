@@ -70,9 +70,11 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
 - Control entry points:
   - admin chat command: `//pcadmin` (or configured alias)
   - communication methods: `PixelControl.Admin.ExecuteAction`, `PixelControl.Admin.ListActions`
-- Permission gating delegated to native `AuthenticationManager` plugin rights (`definePluginPermissionLevel` + `checkPluginPermission`)
+- Permission model:
+  - chat command path is actor-bound and gated by native `AuthenticationManager` plugin rights (`definePluginPermissionLevel` + `checkPluginPermission`)
+  - communication payload path currently supports actorless execution (`actor_login` optional) and skips permission checks in temporary trusted mode
 - Delegated action catalog:
-  - map: `map.skip`, `map.restart`, `map.jump`, `map.queue`
+  - map: `map.skip`, `map.restart`, `map.jump`, `map.queue`, `map.add`, `map.remove`
   - warmup/pause: `warmup.extend`, `warmup.end`, `pause.start`, `pause.end`, `pause.toggle`
   - votes: `vote.cancel`, `vote.set_ratio`, optional `vote.custom_start`
   - player/auth: `player.force_team`, `player.force_play`, `player.force_spec`, `auth.grant`, `auth.revoke`
@@ -80,6 +82,7 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - `[PixelControl][admin][action_requested]`
   - `[PixelControl][admin][action_success]`
   - `[PixelControl][admin][action_failed]`
+  - `[PixelControl][admin][security_mode]` (actorless payload warning marker)
 - Structured admin action fields:
   - `action_name`
   - `action_domain`

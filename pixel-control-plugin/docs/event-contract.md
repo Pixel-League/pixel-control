@@ -46,10 +46,17 @@ This document defines the active plugin-to-server envelope baseline for wave 5.
   - `payload.capabilities.admin_control.pause_state_ttl_seconds`
   - `payload.capabilities.admin_control.communication.execute_action`
   - `payload.capabilities.admin_control.communication.list_actions`
+  - `payload.capabilities.admin_control.security.chat_command.actor_login_required`
+  - `payload.capabilities.admin_control.security.chat_command.permission_model`
+  - `payload.capabilities.admin_control.security.communication.authentication_mode`
+  - `payload.capabilities.admin_control.security.communication.actor_login_required`
+  - `payload.capabilities.admin_control.security.communication.permission_model`
   - `payload.capabilities.admin_control.actions[]`
   - `payload.capabilities.admin_control.ownership_boundary.telemetry_transport`
   - `payload.capabilities.admin_control.ownership_boundary.admin_execution`
 - Delegated action request/response payloads are local plugin control-surface semantics (chat/communication) and are not new plugin-to-API event envelopes.
+- Chat command requests remain actor-bound and permission-gated with ManiaControl plugin rights.
+- Communication payload requests currently run in temporary trusted mode (`authentication_mode=none_temporary`): `actor_login` is optional and plugin permission checks are intentionally skipped.
 - Existing lifecycle `admin_action` telemetry semantics remain unchanged and continue to be emitted by native callback observations.
 
 ## Lifecycle variant catalog

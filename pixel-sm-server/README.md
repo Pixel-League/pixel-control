@@ -24,6 +24,7 @@ It is designed for plugin and integration development in the Pixel Control monor
 - `scripts/qa-mode-smoke.sh`: Elite/Siege/Battle/Joust/Custom smoke matrix
 - `scripts/qa-wave3-telemetry-replay.sh`: deterministic admin/player/aggregate/map telemetry replay with local ACK capture
 - `scripts/qa-wave4-telemetry-replay.sh`: deterministic reconnect/side/team/veto telemetry replay with marker validation
+- `scripts/qa-admin-payload-sim.sh`: simulate server-side admin payloads against `PixelControl.Admin.*` communication methods
 - `scripts/fetch-titlepack.sh`: title pack downloader helper
 - `scripts/import-reference-runtime.sh`: copy reference runtime into local `runtime/server/`
 - `runtime/server/`: local dedicated server + ManiaControl runtime
@@ -139,6 +140,27 @@ Smoke artifacts are saved under `logs/qa/`. Dev-sync artifacts are saved under `
 Wave-3 replay writes deterministic artifacts with prefix `logs/qa/wave3-telemetry-<timestamp>-*`.
 Wave-4 replay writes deterministic artifacts with prefix `logs/qa/wave4-telemetry-<timestamp>-*`.
 By default it injects deterministic fixture envelopes in addition to captured plugin traffic so required markers can be validated without real client gameplay.
+
+### Admin payload simulation (future server -> plugin)
+
+Use this helper to simulate external server payloads sent to delegated admin communication methods:
+
+```bash
+bash scripts/qa-admin-payload-sim.sh list-actions
+bash scripts/qa-admin-payload-sim.sh execute map.skip
+bash scripts/qa-admin-payload-sim.sh execute map.add mx_id=12345
+bash scripts/qa-admin-payload-sim.sh execute map.remove map_uid=SomeMapUid
+bash scripts/qa-admin-payload-sim.sh execute auth.grant target_login=SomePlayer auth_level=admin
+bash scripts/qa-admin-payload-sim.sh matrix target_login=SomePlayer map_uid=SomeMapUid mx_id=12345
+```
+
+Behavior notes:
+
+- Sends encrypted socket frames to ManiaControl communication service and calls:
+  - `PixelControl.Admin.ListActions`
+  - `PixelControl.Admin.ExecuteAction`
+- Matrix mode replays the full delegated admin action catalog and writes artifacts under `logs/qa/admin-payload-sim-<timestamp>/`.
+- If no communication password/port is provided, the helper tries to auto-read socket settings from `mc_settings` and falls back to `127.0.0.1:31501` with empty password.
 
 ### Wave-5 manual real-client evidence workflow
 

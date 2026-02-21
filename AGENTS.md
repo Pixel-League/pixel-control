@@ -95,6 +95,7 @@
 - Runtime map auto-injection is now restricted to Elite-compatible flows; for Siege/Battle/Joust/Royal scripts, bootstrap fails early with explicit map guidance when `<map>` entries are missing.
 - Battle mode in current workflow expects `SMStormBattle@nadeolabs` + `Battle\BattlePro.Script.txt`; using `ShootMania\Battle\Mode.Script.txt` fails in this runtime.
 - Official battle title pack download endpoint: `https://maniaplanet.com/ingame/public/titles/download/SMStormBattle@nadeolabs.Title.Pack.gbx`.
+- Admin payload control surface currently allows unauthenticated actorless execution (`PixelControl.Admin.ExecuteAction` in temporary trusted mode); before production exposure, implement source authentication (for example HMAC/JWT + timestamp/nonce replay protection) and restrict accepted origins.
 
 ## Plugin implementation playbook
 - Startup order: `ManiaControl::run()` triggers `Callbacks::ONINIT`, then plugin loading (`PluginManager::loadPlugins()`), then `Callbacks::AFTERINIT`.
@@ -127,6 +128,7 @@
 - Wave-3 replay helper: `pixel-sm-server/scripts/qa-wave3-telemetry-replay.sh` runs a local ACK stub, starts the stack with deterministic QA ports, replays admin/player/map actions in-container, validates required telemetry markers, and stores artifacts under `pixel-sm-server/logs/qa/wave3-telemetry-<timestamp>-*`.
 - Wave-3 helper now supports deterministic marker fixtures (`PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=1` by default) and host-side stub posting through `PIXEL_SM_QA_TELEMETRY_STUB_LOCAL_URL` (default `http://127.0.0.1:18080`) to avoid local `host.docker.internal` DNS issues.
 - Wave-4 replay helper: `pixel-sm-server/scripts/qa-wave4-telemetry-replay.sh` validates reconnect/side-change/team-aggregate/win-context/veto markers, stores artifacts under `pixel-sm-server/logs/qa/wave4-telemetry-<timestamp>-*`, and indexes canonical evidence in `pixel-sm-server/logs/qa/wave4-evidence-index-20260220.md`.
+- Admin payload simulation helper: `pixel-sm-server/scripts/qa-admin-payload-sim.sh` simulates future server-originated `PixelControl.Admin.ListActions`/`PixelControl.Admin.ExecuteAction` payloads over ManiaControl communication socket and stores artifacts under `pixel-sm-server/logs/qa/admin-payload-sim-<timestamp>/`.
 - In current battle-mode runtime, direct fake-player `forcePlayerTeam(...)` calls can intermittently return `UnknownPlayer`; wave-4 replay now treats those as non-fatal warnings and relies on deterministic fixture envelopes for required marker closure.
 - Wave-5 manual evidence helpers are now first-party: `pixel-sm-server/scripts/manual-wave5-session-bootstrap.sh`, `pixel-sm-server/scripts/manual-wave5-ack-stub.sh`, `pixel-sm-server/scripts/manual-wave5-log-export.sh`, and `pixel-sm-server/scripts/manual-wave5-evidence-check.sh`.
 - Recommended manual payload capture flow: run local ACK stub on host `127.0.0.1:18080`, then restart plugin transport with `PIXEL_CONTROL_API_BASE_URL=http://host.docker.internal:18080 bash scripts/dev-plugin-sync.sh` before real-client scenarios.
@@ -163,6 +165,11 @@
   - root cause: local ACK stub port `18080` was already occupied by another stub session, so replay capture file remained empty for that run.
   - fix: stop conflicting stub session before replay and rerun strict wave-4 replay.
   - validation: strict replay passed with marker closure in `pixel-sm-server/logs/qa/wave4-telemetry-20260220-193214-markers.json`.
+- Incident memory (2026-02-21, external admin payload actor requirements):
+  - symptom: server-originated `PixelControl.Admin.ExecuteAction` calls required `actor_login` and returned `actor_not_found` when omitted, blocking actorless server orchestration.
+  - root cause: delegated action flow always resolved a connected actor and always applied plugin permission checks before gateway execution.
+  - fix: communication-path execution now enables actorless mode (`allow_actorless`) and skips plugin permission checks in temporary trusted mode (`security_mode=payload_untrusted`); gateway supports actorless force/auth flows using native ManiaControl APIs.
+  - validation: PHP lint passes on `AdminControlDomainTrait`/`NativeAdminGateway`, docs updated in `pixel-control-plugin/docs/admin-capability-delegation.md`, `pixel-control-plugin/docs/event-contract.md`, and `API_CONTRACT.md`.
 
 ## Current execution status (2026-02-20)
 - Active execution direction: plugin-first and dev-server-first; backend/API implementation is paused by user for now.
