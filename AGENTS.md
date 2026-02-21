@@ -148,6 +148,11 @@
 - Host-side direct XML-RPC clients against published port can be reset by server access policy; reliable automation is to run dedicated API calls from inside the `shootmania` container using ManiaControl's bundled PHP client (`Maniaplanet\DedicatedServer\Connection::factory('127.0.0.1', $PIXEL_SM_XMLRPC_PORT, ...)`).
 - For plugin payload evidence capture, a local ACK stub on host port `18080` works with container target `host.docker.internal:18080`; writing raw envelopes as NDJSON in `pixel-sm-server/logs/dev/` enables deterministic inspection of emitted payload fields.
 - Outage/recovery QA is reproducible by toggling that local ACK stub: stop stub -> observe `outage_entered`/`retry_scheduled` markers; restart stub -> observe `outage_recovered` + `recovery_flush_complete` in `pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log`.
+- Incident memory (2026-02-21, repeated `retry_scheduled` spam for `host.docker.internal:18080`):
+  - symptom: ManiaControl log repeatedly emitted `[PixelControl][queue][retry_scheduled] ... Failed to connect to host.docker.internal port 18080: Connection refused`.
+  - root cause: plugin transport target (`PIXEL_CONTROL_API_BASE_URL=http://host.docker.internal:18080`) was configured, but no ACK/backend listener was running on host port `18080`.
+  - fix: start local ACK stub (`bash pixel-sm-server/scripts/manual-wave5-ack-stub.sh --output pixel-sm-server/logs/dev/live-ack-stub.ndjson`) so plugin retries can recover and flush.
+  - validation: `ManiaControl.log` showed `outage_recovered` then `recovery_flush_complete`, and repeated retry warnings stopped.
 - `connectFakePlayer` + forced map transitions (`restartMap`/`nextMap`) can trigger admin-flow callbacks and at least `OnScores` combat envelope shape validation, but real client gameplay is still required for non-zero shot/hit/miss/kill counters.
 - Manual combat observability logs are now emitted with prefix `[Pixel Plugin]` for `OnShoot`/`OnHit`/`OnNearMiss`/`OnArmorEmpty`/`OnCapture`/`OnScores`; monitor with `tail -f pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log | grep --line-buffered -E '\[Pixel Plugin\]'`.
 - Incident memory (2026-02-20, long-lived in-memory combat stats retention):
@@ -170,6 +175,26 @@
   - root cause: delegated action flow always resolved a connected actor and always applied plugin permission checks before gateway execution.
   - fix: communication-path execution now enables actorless mode (`allow_actorless`) and skips plugin permission checks in temporary trusted mode (`security_mode=payload_untrusted`); gateway supports actorless force/auth flows using native ManiaControl APIs.
   - validation: PHP lint passes on `AdminControlDomainTrait`/`NativeAdminGateway`, docs updated in `pixel-control-plugin/docs/admin-capability-delegation.md`, `pixel-control-plugin/docs/event-contract.md`, and `API_CONTRACT.md`.
+- Incident memory (2026-02-21, pause.end had no visible gameplay effect in delegated admin flow):
+  - symptom: `pause.start` could pause gameplay, but `pause.end` returned success without resuming match state in some mode/script combinations.
+  - root cause: pause delegation relied on pause events/partial commands and did not consistently unwind warmup/round-forcing side effects across script implementations.
+  - fix: `NativeAdminGateway::applyPauseState(false)` now uses a broader compatibility sequence (`Command_SetPause=false`, `Command_ForceWarmUp=false`, `Command_ForceEndRound=false`, plus `ModeScriptEventManager::endPause()` and `stopManiaPlanetWarmup()` fallback).
+  - validation: PHP lint passes, plugin hot-sync completed, and delegated `pause.start`/`pause.end` payload calls return success with compatibility marker `script_event_plus_mode_commands`.
+- Incident memory (2026-02-21, Elite turn callbacks missing lifecycle round telemetry):
+  - symptom: manual Elite gameplay produced `OnEliteStartTurn`/`OnEliteEndTurn` mode events and `scores_section=EndTurn`, but no lifecycle `round.begin`/`round.end` envelopes.
+  - root cause: lifecycle normalization mapped only ManiaPlanet round callbacks; Elite turn callbacks were emitted only under `mode` category.
+  - fix: mode handler now projects Elite turn callbacks into lifecycle enqueue path, and lifecycle variant resolver maps Elite start/end turn callback identifiers to `round.begin`/`round.end`.
+  - validation: PHP lint passes on `CoreDomainTrait`/`LifecycleDomainTrait`, docs updated in `FEATURES.md`, `docs/event-contract.md`, `docs/schema/event-name-catalog-2026-02-20.1.json`, and `docs/manual-feature-test-todo.md`.
+- Incident memory (2026-02-21, player callbacks emitted `player.unknown` instead of `player.connect`/`player.disconnect`):
+  - symptom: manual NDJSON capture showed `event_name=pixel_control.player.maniacontrol_players_player` and `payload.event_kind=player.unknown` even when connectivity delta clearly indicated connect/disconnect transitions.
+  - root cause: queue extraction used callback argument shape (`ManiaControl\Players\Player` object) as source callback; ManiaControl dispatch does not pass callback name to listener params, so transition mapping never saw `PlayerManagerCallback.*` identifiers.
+  - fix: player pipeline now resolves a semantic player source callback before envelope creation (`CB_PLAYERCONNECT`/`CB_PLAYERDISCONNECT`/`CB_PLAYERINFOCHANGED`/`CB_PLAYERINFOSCHANGED`) using callback args + cached connectivity transitions; player argument extraction now scans all args instead of only the first.
+  - validation: PHP lint passes on `PipelineDomainTrait` and `PlayerDomainTrait`; next runtime reconnect should emit `payload.event_kind=player.connect|player.disconnect|player.info_changed|player.infos_changed` with normalized `event_name` matching `PlayerManagerCallback.*`.
+- Incident memory (2026-02-21, admin player actions missing `admin_correlation` on player events):
+  - symptom: after `player.force_team` test, player telemetry showed `state_delta.team_id.changed=true` but `payload.admin_correlation.correlated` stayed false.
+  - root cause: admin-correlation cache (`recentAdminActionContexts`) was populated from lifecycle enqueue path only; direct admin execute path did not seed context for player-targeted actions, so player-domain correlation could not match recent admin intent.
+  - fix: `AdminControlDomainTrait::executeDelegatedAdminAction()` now records correlation context on successful admin execution (action name/type/target scope/target id/initiator/actor/observed_at) via `rememberAdminActionCorrelationContext(...)`.
+  - validation: runtime plugin source contains the new correlation helper methods in `Domain/Admin/AdminControlDomainTrait.php`; QA checklist now states precondition that positive correlation checks require admin action response `success=true`.
 
 ## Current execution status (2026-02-20)
 - Active execution direction: plugin-first and dev-server-first; backend/API implementation is paused by user for now.

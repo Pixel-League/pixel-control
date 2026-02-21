@@ -75,7 +75,7 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	/** @var int $dispatchBatchSize */
 	private $dispatchBatchSize = 3;
 	/** @var int $heartbeatIntervalSeconds */
-	private $heartbeatIntervalSeconds = 15;
+	private $heartbeatIntervalSeconds = 120;
 	/** @var NativeAdminGateway|null $nativeAdminGateway */
 	private $nativeAdminGateway = null;
 	/** @var bool $adminControlEnabled */

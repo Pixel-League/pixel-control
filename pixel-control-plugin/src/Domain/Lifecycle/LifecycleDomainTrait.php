@@ -592,10 +592,12 @@ trait LifecycleDomainTrait {
 			case 'maniaplanet_beginround':
 			case 'maniaplanet_startround_start':
 			case 'maniaplanet_startround_end':
+			case 'maniacontrol_callbacks_structures_shootmania_onelitestartturnstructure':
 				return 'round.begin';
 			case 'maniaplanet_endround':
 			case 'maniaplanet_endround_start':
 			case 'maniaplanet_endround_end':
+			case 'maniacontrol_callbacks_structures_shootmania_oneliteendturnstructure':
 				return 'round.end';
 			default:
 				return 'lifecycle.unknown';

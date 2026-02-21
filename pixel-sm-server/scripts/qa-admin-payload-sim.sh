@@ -523,17 +523,17 @@ run_matrix() {
 
   {
     printf '# Admin Payload Simulation Matrix\n\n'
-    printf '- Timestamp: `%s`\n' "$TIMESTAMP"
-    printf '- Service: `%s`\n' "$SERVICE_NAME"
-    printf '- Compose files: `%s`\n' "$COMPOSE_FILES_CSV"
-    printf '- Comm host/port: `%s:%s`\n' "$COMM_HOST" "$COMM_PORT"
-    printf '- Comm password source: `%s`\n' "$( [[ -n "${PIXEL_SM_ADMIN_SIM_COMM_PASSWORD:-}" ]] && printf '%s' 'env_override' || printf '%s' 'mc_settings_or_empty' )"
-    printf '- Socket enabled setting: `%s`\n' "${COMM_SOCKET_ENABLED:-unknown}"
+    printf -- '- Timestamp: `%s`\n' "$TIMESTAMP"
+    printf -- '- Service: `%s`\n' "$SERVICE_NAME"
+    printf -- '- Compose files: `%s`\n' "$COMPOSE_FILES_CSV"
+    printf -- '- Comm host/port: `%s:%s`\n' "$COMM_HOST" "$COMM_PORT"
+    printf -- '- Comm password source: `%s`\n' "$( [[ -n "${PIXEL_SM_ADMIN_SIM_COMM_PASSWORD:-}" ]] && printf '%s' 'env_override' || printf '%s' 'mc_settings_or_empty' )"
+    printf -- '- Socket enabled setting: `%s`\n' "${COMM_SOCKET_ENABLED:-unknown}"
 
-    printf '- Matrix actor login: `%s`\n' "${MATRIX_ACTOR_LOGIN:-<actorless>}"
-    printf '- Matrix target login: `%s`\n' "$MATRIX_TARGET_LOGIN"
-    printf '- Matrix map uid: `%s`\n' "$MATRIX_MAP_UID"
-    printf '- Matrix mx id: `%s`\n\n' "$MATRIX_MX_ID"
+    printf -- '- Matrix actor login: `%s`\n' "${MATRIX_ACTOR_LOGIN:-<actorless>}"
+    printf -- '- Matrix target login: `%s`\n' "$MATRIX_TARGET_LOGIN"
+    printf -- '- Matrix map uid: `%s`\n' "$MATRIX_MAP_UID"
+    printf -- '- Matrix mx id: `%s`\n\n' "$MATRIX_MX_ID"
     printf '| # | Action | Communication Error | Action Success | Action Code | Artifact |\n'
     printf '| - | ------ | ------------------- | -------------- | ----------- | -------- |\n'
   } > "$summary_file"

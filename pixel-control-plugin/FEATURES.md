@@ -26,7 +26,7 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
 - Runtime identity validation on enqueue + dispatch with explicit invalid-envelope drop marker (`drop_identity_invalid`)
 - Canonical event catalog shipped in `docs/schema/event-name-catalog-2026-02-20.1.json`:
   - 5 categories (`connectivity`, `lifecycle`, `player`, `combat`, `mode`)
-  - 42 canonical event names
+  - 44 canonical event names
 
 ## Connectivity
 
@@ -53,6 +53,7 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - round (`begin`, `end`)
   - fallback `lifecycle.unknown`
 - Source channel traceability (`maniaplanet` vs `script`)
+- Elite compatibility projection: `OnEliteStartTurn`/`OnEliteEndTurn` also emit lifecycle `round.begin`/`round.end` for cross-mode telemetry parity
 - Raw callback summary and decoded script callback snapshot when available
 - Lifecycle hooks drive:
   - aggregate combat telemetry (`aggregate_stats`)

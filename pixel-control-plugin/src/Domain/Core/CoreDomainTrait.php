@@ -112,7 +112,7 @@ trait CoreDomainTrait {
 		$this->playerConstraintPolicyErrorLogAt = 0;
 		$this->vetoDraftActions = array();
 		$this->vetoDraftActionSequence = 0;
-		$this->heartbeatIntervalSeconds = 15;
+		$this->heartbeatIntervalSeconds = 120;
 		$this->resetDeliveryTelemetry();
 		$this->maniaControl = null;
 
@@ -133,6 +133,21 @@ trait CoreDomainTrait {
 
 	public function handleModeCallback(...$callbackArguments) {
 		$this->queueCallbackEvent('mode', $callbackArguments);
+		$this->queueLifecycleProjectionFromModeCallback($callbackArguments);
+	}
+
+	private function queueLifecycleProjectionFromModeCallback(array $callbackArguments) {
+		$sourceCallback = $this->extractSourceCallback($callbackArguments);
+		$normalizedSourceCallback = $this->normalizeIdentifier($sourceCallback, 'unknown');
+
+		if (
+			$normalizedSourceCallback !== 'maniacontrol_callbacks_structures_shootmania_onelitestartturnstructure'
+			&& $normalizedSourceCallback !== 'maniacontrol_callbacks_structures_shootmania_oneliteendturnstructure'
+		) {
+			return;
+		}
+
+		$this->queueCallbackEvent('lifecycle', $callbackArguments);
 	}
 
 	public function handleDispatchTimerTick() {
@@ -157,7 +172,7 @@ trait CoreDomainTrait {
 		$settingManager->initSetting($this, self::SETTING_API_AUTH_HEADER, $this->readEnvString('PIXEL_CONTROL_AUTH_HEADER', 'X-Pixel-Control-Api-Key'));
 		$settingManager->initSetting($this, self::SETTING_QUEUE_MAX_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_QUEUE_MAX_SIZE, 'PIXEL_CONTROL_QUEUE_MAX_SIZE', 2000, 1));
 		$settingManager->initSetting($this, self::SETTING_DISPATCH_BATCH_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1));
-		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 15, 1));
+		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1));
 		$this->initializeAdminControlSettings();
 	}
 
@@ -172,7 +187,7 @@ trait CoreDomainTrait {
 		$authHeader = $this->resolveRuntimeStringSetting(self::SETTING_API_AUTH_HEADER, 'PIXEL_CONTROL_AUTH_HEADER', 'X-Pixel-Control-Api-Key');
 		$this->queueMaxSize = $this->resolveRuntimeIntSetting(self::SETTING_QUEUE_MAX_SIZE, 'PIXEL_CONTROL_QUEUE_MAX_SIZE', 2000, 1);
 		$this->dispatchBatchSize = $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1);
-		$this->heartbeatIntervalSeconds = $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 15, 1);
+		$this->heartbeatIntervalSeconds = $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1);
 		$this->queueGrowthLogStep = max(10, (int) floor($this->queueMaxSize / 10));
 		$retryBackoffSeconds = max(0, (int) ceil($retryBackoffMs / 1000));
 

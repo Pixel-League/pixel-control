@@ -16,6 +16,7 @@ use ManiaControl\Maps\Map;
 use ManiaControl\Plugins\Plugin;
 use ManiaControl\Plugins\PluginManager;
 use ManiaControl\Players\Player;
+use ManiaControl\Players\PlayerManager;
 use PixelControl\Api\AsyncPixelControlApiClient;
 use PixelControl\Api\DeliveryError;
 use PixelControl\Api\EventEnvelope;
@@ -28,6 +29,79 @@ use PixelControl\Retry\ExponentialBackoffRetryPolicy;
 use PixelControl\Retry\RetryPolicyInterface;
 use PixelControl\Stats\PlayerCombatStatsStore;
 trait PlayerDomainTrait {
+	private function resolvePlayerSourceCallback($sourceCallback, array $callbackArguments) {
+		$normalizedSourceCallback = $this->normalizeIdentifier($sourceCallback, 'unknown');
+		$isExplicitInfoChanged = $normalizedSourceCallback === 'playermanagercallback_playerinfochanged';
+
+		if (
+			$normalizedSourceCallback === 'playermanagercallback_playerconnect'
+			|| $normalizedSourceCallback === 'playermanagercallback_playerdisconnect'
+			|| $normalizedSourceCallback === 'playermanagercallback_playerinfoschanged'
+		) {
+			return $sourceCallback;
+		}
+
+		if (!$isExplicitInfoChanged && $normalizedSourceCallback !== 'maniacontrol_players_player' && $normalizedSourceCallback !== 'unknown') {
+			return $sourceCallback;
+		}
+
+		if (empty($callbackArguments)) {
+			if ($isExplicitInfoChanged) {
+				return PlayerManager::CB_PLAYERINFOCHANGED;
+			}
+
+			return PlayerManager::CB_PLAYERINFOSCHANGED;
+		}
+
+		$player = $this->extractPlayerFromCallbackArguments($callbackArguments);
+		if (!$player instanceof Player) {
+			return PlayerManager::CB_PLAYERINFOCHANGED;
+		}
+
+		$currentPlayerSnapshot = $this->buildPlayerTelemetrySnapshot($player);
+		$previousPlayerSnapshot = $this->resolvePreviousPlayerSnapshot($currentPlayerSnapshot);
+		$beforeConnectivity = $this->resolvePlayerConnectivityState($previousPlayerSnapshot);
+		$afterConnectivity = $this->resolvePlayerConnectivityState($currentPlayerSnapshot);
+		$playerLogin = $this->resolvePlayerLoginFromSnapshots($currentPlayerSnapshot, $previousPlayerSnapshot);
+		$connectedRosterState = $this->resolveConnectedRosterState($playerLogin);
+
+		if ($connectedRosterState === false && $afterConnectivity === 'connected') {
+			return PlayerManager::CB_PLAYERDISCONNECT;
+		}
+
+		if ($connectedRosterState === true && $afterConnectivity === 'disconnected') {
+			return PlayerManager::CB_PLAYERCONNECT;
+		}
+
+		if ($beforeConnectivity !== 'connected' && ($afterConnectivity === 'connected' || $connectedRosterState === true)) {
+			return PlayerManager::CB_PLAYERCONNECT;
+		}
+
+		if (($beforeConnectivity === 'connected' || $afterConnectivity === 'connected') && ($afterConnectivity === 'disconnected' || $connectedRosterState === false)) {
+			return PlayerManager::CB_PLAYERDISCONNECT;
+		}
+
+		return PlayerManager::CB_PLAYERINFOCHANGED;
+	}
+
+	private function resolveConnectedRosterState($playerLogin) {
+		if (!$this->maniaControl || !is_string($playerLogin)) {
+			return null;
+		}
+
+		$playerLogin = trim($playerLogin);
+		if ($playerLogin === '') {
+			return null;
+		}
+
+		$connectedPlayer = $this->maniaControl->getPlayerManager()->getPlayer($playerLogin, true);
+		if ($connectedPlayer instanceof Player) {
+			return true;
+		}
+
+		return false;
+	}
+
 	private function resolvePlayerTransitionDefinition($sourceCallback) {
 		switch ($this->normalizeIdentifier($sourceCallback, 'unknown')) {
 			case 'playermanagercallback_playerconnect':
@@ -172,13 +246,31 @@ trait PlayerDomainTrait {
 			return null;
 		}
 
-		$firstArgument = $callbackArguments[0];
-		if ($firstArgument instanceof Player) {
-			return $firstArgument;
+		foreach ($callbackArguments as $callbackArgument) {
+			if ($callbackArgument instanceof Player) {
+				return $callbackArgument;
+			}
 		}
 
-		if (is_string($firstArgument) && $this->maniaControl) {
-			$resolvedPlayer = $this->maniaControl->getPlayerManager()->getPlayer($firstArgument);
+		if (!$this->maniaControl) {
+			return null;
+		}
+
+		foreach ($callbackArguments as $callbackArgument) {
+			if (!is_string($callbackArgument)) {
+				continue;
+			}
+
+			$candidateLogin = trim($callbackArgument);
+			if ($candidateLogin === '') {
+				continue;
+			}
+
+			if (stripos($candidateLogin, 'PlayerManagerCallback.') === 0) {
+				continue;
+			}
+
+			$resolvedPlayer = $this->maniaControl->getPlayerManager()->getPlayer($candidateLogin);
 			if ($resolvedPlayer instanceof Player) {
 				return $resolvedPlayer;
 			}

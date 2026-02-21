@@ -305,8 +305,15 @@ class NativeAdminGateway {
 		}
 
 		$this->sendModeScriptCommandsSafely(array('Command_SetPause' => false));
-		$this->sendModeScriptCommandsSafely(array('Command_ForceWarmUp' => false));
 		$this->maniaControl->getModeScriptEventManager()->endPause();
+		$this->sendModeScriptCommandsSafely(array('Command_ForceWarmUp' => false));
+		$this->sendModeScriptCommandsSafely(array('Command_ForceEndRound' => false));
+
+		try {
+			$this->maniaControl->getModeScriptEventManager()->stopManiaPlanetWarmup();
+		} catch (\Exception $exception) {
+			// Keep delegated pause flows resilient across script implementations.
+		}
 	}
 
 	private function sendModeScriptCommandsSafely(array $commands) {
@@ -778,7 +785,25 @@ class NativeAdminGateway {
 			return null;
 		}
 
-		$resolvedAuthLevel = AuthenticationManager::getAuthLevel($authLevelRaw);
+		$normalizedAuthLevel = strtolower(trim($authLevelRaw));
+		switch ($normalizedAuthLevel) {
+			case 'player':
+				$resolvedAuthLevel = AuthenticationManager::AUTH_LEVEL_PLAYER;
+				break;
+			case 'moderator':
+				$resolvedAuthLevel = AuthenticationManager::AUTH_LEVEL_MODERATOR;
+				break;
+			case 'admin':
+				$resolvedAuthLevel = AuthenticationManager::AUTH_LEVEL_ADMIN;
+				break;
+			case 'superadmin':
+				$resolvedAuthLevel = AuthenticationManager::AUTH_LEVEL_SUPERADMIN;
+				break;
+			default:
+				$resolvedAuthLevel = AuthenticationManager::getAuthLevel($authLevelRaw);
+				break;
+		}
+
 		if ($resolvedAuthLevel >= AuthenticationManager::AUTH_LEVEL_PLAYER && $resolvedAuthLevel <= AuthenticationManager::AUTH_LEVEL_SUPERADMIN) {
 			return $resolvedAuthLevel;
 		}

@@ -251,6 +251,14 @@ validate_matchsettings_mode_script() {
       log "Mode script confirmed in runtime: ${script_name} (provided by title pack ${PIXEL_SM_TITLE_PACK})."
       return
       ;;
+    shootmania\\siegev1.script.txt\|smstormsiege*|shootmania\\siegev1\\*.script.txt\|smstormsiege*|shootmania\\siege\\*.script.txt\|smstormsiege*|siege\\*.script.txt\|smstormsiege*|siegev1\\*.script.txt\|smstormsiege*)
+      log "Mode script confirmed in runtime: ${script_name} (provided by title pack ${PIXEL_SM_TITLE_PACK})."
+      return
+      ;;
+    shootmania\\joust\\joust.script.txt\|smstormjoust*|joust\\*.script.txt\|smstormjoust*|shootmania\\joust\\*.script.txt\|smstormjoust*)
+      log "Mode script confirmed in runtime: ${script_name} (provided by title pack ${PIXEL_SM_TITLE_PACK})."
+      return
+      ;;
   esac
 
   log "Mode script not available in runtime: ${script_name}"

@@ -287,6 +287,13 @@ trait AdminControlDomainTrait {
 
 		if ($result->isSuccess()) {
 			$this->rememberPauseStateAfterAction($normalizedActionName, $normalizedParameters);
+			$this->rememberAdminActionCorrelationContext(
+				$normalizedActionName,
+				$normalizedParameters,
+				$resolvedActorLogin,
+				$requestSource,
+				$securityMode
+			);
 			Logger::log(
 				'[PixelControl][admin][action_success] action=' . $normalizedActionName
 				. ', source=' . $requestSource
@@ -307,6 +314,126 @@ trait AdminControlDomainTrait {
 		);
 
 		return $result;
+	}
+
+	private function rememberAdminActionCorrelationContext($actionName, array $parameters, $actorLogin, $requestSource, $securityMode) {
+		$targetScope = $this->resolveAdminActionCorrelationTargetScope($actionName);
+		$targetId = $this->resolveAdminActionCorrelationTargetId($actionName, $parameters, $actorLogin);
+		$normalizedActorLogin = trim((string) $actorLogin);
+		$observedAt = time();
+
+		$this->recentAdminActionContexts[] = array(
+			'event_id' => 'pc-adminctx-' . sha1($actionName . '|' . $targetId . '|' . $observedAt),
+			'event_name' => 'pixel_control.admin.execute_action',
+			'source_sequence' => 0,
+			'source_time' => $observedAt,
+			'source_callback' => 'admin.execute_action',
+			'action_name' => $actionName,
+			'action_type' => $this->resolveAdminActionCorrelationType($actionName),
+			'action_phase' => 'execute',
+			'target_scope' => $targetScope,
+			'target_id' => $targetId,
+			'initiator_kind' => $this->resolveAdminActionCorrelationInitiatorKind($normalizedActorLogin, $requestSource, $securityMode),
+			'actor_login' => $normalizedActorLogin,
+			'observed_at' => $observedAt,
+		);
+
+		if (count($this->recentAdminActionContexts) > $this->adminCorrelationHistoryLimit) {
+			$this->recentAdminActionContexts = array_slice($this->recentAdminActionContexts, -1 * $this->adminCorrelationHistoryLimit);
+		}
+
+		$this->pruneRecentAdminActionContexts();
+	}
+
+	private function resolveAdminActionCorrelationTargetScope($actionName) {
+		switch ($actionName) {
+			case AdminActionCatalog::ACTION_PLAYER_FORCE_TEAM:
+			case AdminActionCatalog::ACTION_PLAYER_FORCE_PLAY:
+			case AdminActionCatalog::ACTION_PLAYER_FORCE_SPEC:
+			case AdminActionCatalog::ACTION_AUTH_GRANT:
+			case AdminActionCatalog::ACTION_AUTH_REVOKE:
+				return 'player';
+			case AdminActionCatalog::ACTION_MAP_SKIP:
+			case AdminActionCatalog::ACTION_MAP_RESTART:
+			case AdminActionCatalog::ACTION_MAP_JUMP:
+			case AdminActionCatalog::ACTION_MAP_QUEUE:
+			case AdminActionCatalog::ACTION_MAP_ADD:
+			case AdminActionCatalog::ACTION_MAP_REMOVE:
+				return 'map';
+			case AdminActionCatalog::ACTION_WARMUP_EXTEND:
+			case AdminActionCatalog::ACTION_WARMUP_END:
+			case AdminActionCatalog::ACTION_PAUSE_START:
+			case AdminActionCatalog::ACTION_PAUSE_END:
+			case AdminActionCatalog::ACTION_VOTE_CANCEL:
+			case AdminActionCatalog::ACTION_VOTE_SET_RATIO:
+			case AdminActionCatalog::ACTION_VOTE_CUSTOM_START:
+				return 'server';
+			default:
+				return 'unknown';
+		}
+	}
+
+	private function resolveAdminActionCorrelationTargetId($actionName, array $parameters, $actorLogin) {
+		switch ($actionName) {
+			case AdminActionCatalog::ACTION_PLAYER_FORCE_TEAM:
+			case AdminActionCatalog::ACTION_PLAYER_FORCE_PLAY:
+			case AdminActionCatalog::ACTION_PLAYER_FORCE_SPEC:
+			case AdminActionCatalog::ACTION_AUTH_GRANT:
+			case AdminActionCatalog::ACTION_AUTH_REVOKE:
+				if (isset($parameters['target_login']) && trim((string) $parameters['target_login']) !== '') {
+					return trim((string) $parameters['target_login']);
+				}
+
+				return trim((string) $actorLogin);
+			case AdminActionCatalog::ACTION_MAP_JUMP:
+			case AdminActionCatalog::ACTION_MAP_QUEUE:
+			case AdminActionCatalog::ACTION_MAP_REMOVE:
+				if (isset($parameters['map_uid']) && trim((string) $parameters['map_uid']) !== '') {
+					return trim((string) $parameters['map_uid']);
+				}
+				if (isset($parameters['mx_id']) && trim((string) $parameters['mx_id']) !== '') {
+					return 'mx:' . trim((string) $parameters['mx_id']);
+				}
+
+				return 'unknown';
+			case AdminActionCatalog::ACTION_MAP_ADD:
+				if (isset($parameters['mx_id']) && trim((string) $parameters['mx_id']) !== '') {
+					return 'mx:' . trim((string) $parameters['mx_id']);
+				}
+
+				return 'unknown';
+			default:
+				return 'unknown';
+		}
+	}
+
+	private function resolveAdminActionCorrelationType($actionName) {
+		$actionTokens = explode('.', (string) $actionName);
+		if (empty($actionTokens)) {
+			return 'unknown';
+		}
+
+		if (count($actionTokens) < 2) {
+			return $actionTokens[0];
+		}
+
+		return $actionTokens[0] . '_' . $actionTokens[1];
+	}
+
+	private function resolveAdminActionCorrelationInitiatorKind($actorLogin, $requestSource, $securityMode) {
+		if (trim((string) $actorLogin) !== '') {
+			return 'player';
+		}
+
+		if ($requestSource === 'communication') {
+			if ($securityMode === 'payload_untrusted') {
+				return 'server_payload_untrusted';
+			}
+
+			return 'server_payload';
+		}
+
+		return 'unknown';
 	}
 
 	private function parseAdminControlCommandRequest(array $chatCallback) {
@@ -472,17 +599,71 @@ trait AdminControlDomainTrait {
 	}
 
 	private function sendAdminControlHelp(Player $player) {
-		$actionNames = array_keys(AdminActionCatalog::getActionDefinitions());
+		$actionDefinitions = AdminActionCatalog::getActionDefinitions();
+		$actionNames = array_keys($actionDefinitions);
 		sort($actionNames);
 
 		$this->maniaControl->getChat()->sendInformation(
-			'Pixel delegated admin actions: ' . implode(', ', $actionNames),
+			'Pixel delegated admin actions (' . count($actionNames) . ').',
 			$player
 		);
 		$this->maniaControl->getChat()->sendInformation(
 			'Usage: //' . $this->adminControlCommandName . ' <action> key=value ...',
 			$player
 		);
+
+		foreach ($actionNames as $actionName) {
+			$definition = (isset($actionDefinitions[$actionName]) && is_array($actionDefinitions[$actionName]))
+				? $actionDefinitions[$actionName]
+				: array();
+			$requiredParameters = $this->extractAdminActionHelpParameters($definition, 'required_parameters');
+			$optionalParameters = $this->extractAdminActionHelpParameters($definition, 'optional_parameters');
+
+			$this->maniaControl->getChat()->sendInformation(
+				$this->formatAdminActionHelpLine($actionName, $requiredParameters, $optionalParameters),
+				$player
+			);
+		}
+	}
+
+	private function extractAdminActionHelpParameters(array $actionDefinition, $fieldName) {
+		if (!isset($actionDefinition[$fieldName]) || !is_array($actionDefinition[$fieldName])) {
+			return array();
+		}
+
+		$parameters = array();
+		foreach ($actionDefinition[$fieldName] as $parameterName) {
+			$normalizedParameterName = trim((string) $parameterName);
+			if ($normalizedParameterName === '') {
+				continue;
+			}
+
+			$parameters[] = $normalizedParameterName;
+		}
+
+		return $parameters;
+	}
+
+	private function formatAdminActionHelpLine($actionName, array $requiredParameters, array $optionalParameters) {
+		$segments = array('- ' . $actionName);
+		$requiredPart = $this->formatAdminActionHelpParameterGroup($requiredParameters, 'required');
+		$optionalPart = $this->formatAdminActionHelpParameterGroup($optionalParameters, 'optional');
+		if ($requiredPart !== '') {
+			$segments[] = $requiredPart;
+		}
+		if ($optionalPart !== '') {
+			$segments[] = $optionalPart;
+		}
+
+		return implode(' | ', $segments);
+	}
+
+	private function formatAdminActionHelpParameterGroup(array $parameters, $label) {
+		if (empty($parameters)) {
+			return '';
+		}
+
+		return $label . ': ' . implode(', ', $parameters);
 	}
 
 	private function resolveRuntimeBoolSetting($settingName, $environmentVariableName, $fallback) {

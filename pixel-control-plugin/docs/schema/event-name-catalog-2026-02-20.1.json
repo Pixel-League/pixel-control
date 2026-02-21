@@ -36,7 +36,9 @@
       "pixel_control.lifecycle.maniaplanet_startround_start",
       "pixel_control.lifecycle.maniaplanet_startround_end",
       "pixel_control.lifecycle.maniaplanet_endround_start",
-      "pixel_control.lifecycle.maniaplanet_endround_end"
+      "pixel_control.lifecycle.maniaplanet_endround_end",
+      "pixel_control.lifecycle.maniacontrol_callbacks_structures_shootmania_onelitestartturnstructure",
+      "pixel_control.lifecycle.maniacontrol_callbacks_structures_shootmania_oneliteendturnstructure"
     ],
     "player": [
       "pixel_control.player.playermanagercallback_playerconnect",

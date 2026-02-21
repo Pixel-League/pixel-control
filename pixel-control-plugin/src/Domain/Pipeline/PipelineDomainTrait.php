@@ -29,6 +29,10 @@ use PixelControl\Stats\PlayerCombatStatsStore;
 trait PipelineDomainTrait {
 	private function queueCallbackEvent($eventCategory, array $callbackArguments) {
 		$sourceCallback = $this->extractSourceCallback($callbackArguments);
+		if ($eventCategory === 'player') {
+			$sourceCallback = $this->resolvePlayerSourceCallback($sourceCallback, $callbackArguments);
+		}
+
 		$payload = $this->buildCallbackPayload($eventCategory, $sourceCallback, $callbackArguments);
 		$metadata = $this->buildEnvelopeMetadata($eventCategory, $sourceCallback, $payload);
 

@@ -28,9 +28,9 @@ This document defines the active plugin-to-server envelope baseline for wave 5.
 ## Canonical event catalog
 
 - Machine-readable catalog: `docs/schema/event-name-catalog-2026-02-20.1.json`.
-- Baseline catalog contains `42` canonical event names:
+- Baseline catalog contains `44` canonical event names:
   - connectivity: `2`
-  - lifecycle: `22`
+  - lifecycle: `24`
   - player: `4`
   - combat: `6`
   - mode: `8`
@@ -76,6 +76,12 @@ Lifecycle payload field `variant` and metadata field `lifecycle_variant` are nor
 - `round.begin`
 - `round.end`
 - `lifecycle.unknown`
+
+Elite compatibility note:
+
+- In Elite mode, turn callbacks are also projected into lifecycle round variants for cross-mode parity:
+  - `OnEliteStartTurn` -> `round.begin`
+  - `OnEliteEndTurn` -> `round.end`
 
 Lifecycle payload field `source_channel` values:
 
