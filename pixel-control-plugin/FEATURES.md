@@ -75,7 +75,7 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - communication payload path currently supports actorless execution (`actor_login` optional) and skips permission checks in temporary trusted mode
 - Delegated action catalog:
   - map: `map.skip`, `map.restart`, `map.jump`, `map.queue`, `map.add`, `map.remove`
-  - warmup/pause: `warmup.extend`, `warmup.end`, `pause.start`, `pause.end`, `pause.toggle`
+  - warmup/pause: `warmup.extend`, `warmup.end`, `pause.start`, `pause.end`
   - votes: `vote.cancel`, `vote.set_ratio`, optional `vote.custom_start`
   - player/auth: `player.force_team`, `player.force_play`, `player.force_spec`, `auth.grant`, `auth.revoke`
 - Deterministic delegated-action observability markers:

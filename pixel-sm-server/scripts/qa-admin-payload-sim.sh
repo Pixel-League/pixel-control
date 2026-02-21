@@ -30,7 +30,6 @@ MATRIX_AUTH_LEVEL="${PIXEL_SM_ADMIN_SIM_AUTH_LEVEL:-admin}"
 MATRIX_VOTE_COMMAND="${PIXEL_SM_ADMIN_SIM_VOTE_COMMAND:-nextmap}"
 MATRIX_VOTE_RATIO="${PIXEL_SM_ADMIN_SIM_VOTE_RATIO:-0.60}"
 MATRIX_VOTE_INDEX="${PIXEL_SM_ADMIN_SIM_VOTE_INDEX:-0}"
-MATRIX_PAUSE_ACTIVE="${PIXEL_SM_ADMIN_SIM_PAUSE_ACTIVE:-true}"
 
 COMPOSE_FILE_ARGS=()
 
@@ -76,7 +75,6 @@ Commands:
         vote_command=<command>
         vote_ratio=<0..1>
         vote_index=<int>
-        pause_active=<true|false>
 
 Env overrides:
   PIXEL_SM_ADMIN_SIM_ENV_FILE
@@ -592,7 +590,6 @@ run_matrix() {
   matrix_step 'warmup.end'
   matrix_step 'pause.start'
   matrix_step 'pause.end'
-  matrix_step 'pause.toggle' "pause_active=${MATRIX_PAUSE_ACTIVE}"
   matrix_step 'vote.cancel'
   matrix_step 'vote.set_ratio' "command=${MATRIX_VOTE_COMMAND}" "ratio=${MATRIX_VOTE_RATIO}"
   matrix_step 'vote.custom_start' "vote_index=${MATRIX_VOTE_INDEX}"
@@ -649,9 +646,6 @@ parse_kv_assignments() {
         ;;
       vote_index)
         MATRIX_VOTE_INDEX="$value"
-        ;;
-      pause_active)
-        MATRIX_PAUSE_ACTIVE="$value"
         ;;
       comm_host)
         COMM_HOST="$value"
@@ -748,15 +742,6 @@ main() {
       log "Execute response: ${response_file}"
       cat "$response_file"
 
-      if [[ "$action_name" == "pause.toggle" ]]; then
-        local_triplet="$(extract_response_triplet "$response_file")"
-        local_action_code="${local_triplet#*$'\t'}"
-        local_action_code="${local_action_code#*$'\t'}"
-
-        if [[ "$local_action_code" == "pause_state_unknown" ]]; then
-          warn "pause.toggle needs known current state. Retry with explicit parameter: pause_active=true (if currently paused) or pause_active=false (if currently running)."
-        fi
-      fi
       ;;
     matrix)
       run_matrix

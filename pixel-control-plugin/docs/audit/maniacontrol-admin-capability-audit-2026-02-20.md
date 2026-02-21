@@ -124,7 +124,6 @@ Action IDs to expose through Pixel admin-control entry points:
 - `warmup.end` (no params)
 - `pause.start` (no params)
 - `pause.end` (no params)
-- `pause.toggle` (status-aware; requires known pause state)
 - `vote.cancel` (no params)
 - `vote.set_ratio` (`command`, `ratio`)
 - `player.force_team` (`target_login`, `team`)

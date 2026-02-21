@@ -15,7 +15,6 @@ class AdminActionCatalog {
 	const ACTION_WARMUP_END = 'warmup.end';
 	const ACTION_PAUSE_START = 'pause.start';
 	const ACTION_PAUSE_END = 'pause.end';
-	const ACTION_PAUSE_TOGGLE = 'pause.toggle';
 	const ACTION_VOTE_CANCEL = 'vote.cancel';
 	const ACTION_VOTE_SET_RATIO = 'vote.set_ratio';
 	const ACTION_PLAYER_FORCE_TEAM = 'player.force_team';
@@ -35,7 +34,6 @@ class AdminActionCatalog {
 	const RIGHT_WARMUP_END = 'Pixel Control Admin: Warmup End';
 	const RIGHT_PAUSE_START = 'Pixel Control Admin: Pause Start';
 	const RIGHT_PAUSE_END = 'Pixel Control Admin: Pause End';
-	const RIGHT_PAUSE_TOGGLE = 'Pixel Control Admin: Pause Toggle';
 	const RIGHT_VOTE_CANCEL = 'Pixel Control Admin: Vote Cancel';
 	const RIGHT_VOTE_SET_RATIO = 'Pixel Control Admin: Vote Ratio';
 	const RIGHT_PLAYER_FORCE_TEAM = 'Pixel Control Admin: Force Team';
@@ -162,13 +160,6 @@ class AdminActionCatalog {
 				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
 				'required_parameters' => array(),
 				'native_entrypoint' => 'ModeScriptEventManager::endPause',
-				'ownership' => 'mixed',
-			),
-			self::ACTION_PAUSE_TOGGLE => array(
-				'permission_setting' => self::RIGHT_PAUSE_TOGGLE,
-				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
-				'required_parameters' => array('pause_active'),
-				'native_entrypoint' => 'ModeScriptEventManager::startPause|endPause',
 				'ownership' => 'mixed',
 			),
 			self::ACTION_VOTE_CANCEL => array(

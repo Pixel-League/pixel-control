@@ -437,13 +437,6 @@ trait AdminControlDomainTrait {
 			break;
 		}
 
-		if ($actionName === AdminActionCatalog::ACTION_PAUSE_TOGGLE && !array_key_exists('pause_active', $normalizedParameters)) {
-			$knownPauseState = $this->resolveKnownPauseStateForToggle();
-			if ($knownPauseState !== null) {
-				$normalizedParameters['pause_active'] = $knownPauseState;
-			}
-		}
-
 		return $normalizedParameters;
 	}
 
@@ -560,23 +553,6 @@ trait AdminControlDomainTrait {
 		$this->adminControlPauseObservedAt = time();
 	}
 
-	private function resolveKnownPauseStateForToggle() {
-		if (!is_bool($this->adminControlPauseActive)) {
-			return null;
-		}
-
-		if ($this->adminControlPauseObservedAt <= 0) {
-			return null;
-		}
-
-		$ageSeconds = max(0, time() - (int) $this->adminControlPauseObservedAt);
-		if ($ageSeconds > $this->adminControlPauseStateMaxAgeSeconds) {
-			return null;
-		}
-
-		return $this->adminControlPauseActive;
-	}
-
 	private function rememberPauseStateAfterAction($actionName, array $parameters) {
 		if ($actionName === AdminActionCatalog::ACTION_PAUSE_START) {
 			$this->adminControlPauseActive = true;
@@ -588,20 +564,6 @@ trait AdminControlDomainTrait {
 			$this->adminControlPauseActive = false;
 			$this->adminControlPauseObservedAt = time();
 			return;
-		}
-
-		if ($actionName !== AdminActionCatalog::ACTION_PAUSE_TOGGLE) {
-			return;
-		}
-
-		if (!array_key_exists('pause_active', $parameters)) {
-			return;
-		}
-
-		$pauseWasActive = $parameters['pause_active'];
-		if (is_bool($pauseWasActive)) {
-			$this->adminControlPauseActive = !$pauseWasActive;
-			$this->adminControlPauseObservedAt = time();
 		}
 	}
 

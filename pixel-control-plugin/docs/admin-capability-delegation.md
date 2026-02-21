@@ -54,7 +54,6 @@ Feature toggle and runtime controls:
 | `warmup.end` | `ModeScriptEventManager::stopManiaPlanetWarmup` | script-mode guard |
 | `pause.start` | `ModeScriptEventManager::startPause` | requires `modeUsesPause()` |
 | `pause.end` | `ModeScriptEventManager::endPause` | requires `modeUsesPause()` |
-| `pause.toggle` | `ModeScriptEventManager::startPause` or `ModeScriptEventManager::endPause` | requires known `pause_active` |
 | `vote.cancel` | `Client::cancelVote` | native failure when no vote running |
 | `vote.set_ratio` | `Client::setCallVoteRatios` | validates command + ratio range |
 | `player.force_team` | `PlayerActions::forcePlayerToTeam` | team-mode guard; actorless payload path uses native `calledByAdmin=false` |

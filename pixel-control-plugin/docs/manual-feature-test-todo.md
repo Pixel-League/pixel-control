@@ -53,7 +53,7 @@ Chaque item contient le titre de la feature + une User Story (one-liner) + comme
 
 - [ ] Pause start/end/status
   - User Story: En tant qu'operateur match, je veux piloter et observer la pause pour gerer les interruptions sans perdre le contexte.
-  - Action: lancer `pause.start`, puis `pause.end`, puis `pause.toggle`.
+  - Action: lancer `pause.start`, puis `pause.end`.
   - Verification: map/match se met bien en pause puis reprend, et payload `pause.status` coherent.
 
 - [ ] Match begin/end
@@ -269,11 +269,6 @@ Notes:
   - User Story: En tant qu'orchestrateur match, je veux reprendre la partie a distance une fois l'incident resolu.
   - Commande: `bash pixel-sm-server/scripts/qa-admin-payload-sim.sh execute pause.end`
   - Verification: reprise de la partie + succes en reponse.
-
-- [ ] pause.toggle
-  - User Story: En tant qu'orchestrateur match, je veux forcer l'etat de pause avec un parametre explicite pour eviter les ambiguitees.
-  - Commande: `bash pixel-sm-server/scripts/qa-admin-payload-sim.sh execute pause.toggle pause_active=true`
-  - Verification: etat pause conforme a `pause_active` + succes en reponse.
 
 - [ ] vote.cancel
   - User Story: En tant qu'operateur serveur, je veux annuler un vote en cours pour garder le controle du flux de match.

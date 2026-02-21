@@ -43,8 +43,6 @@ class NativeAdminGateway {
 					return $this->executePauseStart($normalizedActionName);
 				case AdminActionCatalog::ACTION_PAUSE_END:
 					return $this->executePauseEnd($normalizedActionName);
-				case AdminActionCatalog::ACTION_PAUSE_TOGGLE:
-					return $this->executePauseToggle($normalizedActionName, $parameters);
 				case AdminActionCatalog::ACTION_VOTE_CANCEL:
 					return $this->executeVoteCancel($normalizedActionName);
 				case AdminActionCatalog::ACTION_VOTE_SET_RATIO:
@@ -292,36 +290,6 @@ class NativeAdminGateway {
 		return AdminActionResult::success($actionName, 'Pause end delegated to native mode script manager.', array(
 			'compatibility_mode' => 'script_event_plus_mode_commands',
 			'native_entrypoint' => 'ModeScriptEventManager::endPause',
-		));
-	}
-
-	private function executePauseToggle($actionName, array $parameters) {
-		$pauseGuardResult = $this->guardPauseCapability($actionName);
-		if ($pauseGuardResult !== null) {
-			return $pauseGuardResult;
-		}
-
-		$pauseActive = $this->readBooleanParameter($parameters, array('pause_active', 'active'));
-		if ($pauseActive === null) {
-			return AdminActionResult::failure($actionName, 'pause_state_unknown', 'Pause toggle requires a known pause_active state.');
-		}
-
-		if ($pauseActive) {
-			$this->applyPauseState(false);
-			return AdminActionResult::success($actionName, 'Pause toggle delegated to native mode script manager (end).', array(
-				'pause_active_before' => true,
-				'pause_active_after' => false,
-				'compatibility_mode' => 'script_event_plus_mode_commands',
-				'native_entrypoint' => 'ModeScriptEventManager::endPause',
-			));
-		}
-
-		$this->applyPauseState(true);
-		return AdminActionResult::success($actionName, 'Pause toggle delegated to native mode script manager (start).', array(
-			'pause_active_before' => false,
-			'pause_active_after' => true,
-			'compatibility_mode' => 'script_event_plus_mode_commands',
-			'native_entrypoint' => 'ModeScriptEventManager::startPause',
 		));
 	}
 
