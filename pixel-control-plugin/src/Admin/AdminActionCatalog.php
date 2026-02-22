@@ -23,6 +23,12 @@ class AdminActionCatalog {
 	const ACTION_AUTH_GRANT = 'auth.grant';
 	const ACTION_AUTH_REVOKE = 'auth.revoke';
 	const ACTION_VOTE_CUSTOM_START = 'vote.custom_start';
+	const ACTION_MATCH_BO_SET = 'match.bo.set';
+	const ACTION_MATCH_BO_GET = 'match.bo.get';
+	const ACTION_MATCH_MAPS_SET = 'match.maps.set';
+	const ACTION_MATCH_MAPS_GET = 'match.maps.get';
+	const ACTION_MATCH_SCORE_SET = 'match.score.set';
+	const ACTION_MATCH_SCORE_GET = 'match.score.get';
 
 	const RIGHT_MAP_SKIP = 'Pixel Control Admin: Map Skip';
 	const RIGHT_MAP_RESTART = 'Pixel Control Admin: Map Restart';
@@ -42,6 +48,12 @@ class AdminActionCatalog {
 	const RIGHT_AUTH_GRANT = 'Pixel Control Admin: Grant Auth';
 	const RIGHT_AUTH_REVOKE = 'Pixel Control Admin: Revoke Auth';
 	const RIGHT_VOTE_CUSTOM_START = 'Pixel Control Admin: Custom Vote Start';
+	const RIGHT_MATCH_BO_SET = 'Pixel Control Admin: Match BO Set';
+	const RIGHT_MATCH_BO_GET = 'Pixel Control Admin: Match BO Get';
+	const RIGHT_MATCH_MAPS_SET = 'Pixel Control Admin: Match Maps Set';
+	const RIGHT_MATCH_MAPS_GET = 'Pixel Control Admin: Match Maps Get';
+	const RIGHT_MATCH_SCORE_SET = 'Pixel Control Admin: Match Score Set';
+	const RIGHT_MATCH_SCORE_GET = 'Pixel Control Admin: Match Score Get';
 
 	const COMMUNICATION_EXECUTE_ACTION = 'PixelControl.Admin.ExecuteAction';
 	const COMMUNICATION_LIST_ACTIONS = 'PixelControl.Admin.ListActions';
@@ -71,6 +83,15 @@ class AdminActionCatalog {
 			'auth.grant_level' => self::ACTION_AUTH_GRANT,
 			'auth.revoke_level' => self::ACTION_AUTH_REVOKE,
 			'custom_vote.start' => self::ACTION_VOTE_CUSTOM_START,
+			'bo.set' => self::ACTION_MATCH_BO_SET,
+			'bo.get' => self::ACTION_MATCH_BO_GET,
+			'match.bo' => self::ACTION_MATCH_BO_GET,
+			'maps.set' => self::ACTION_MATCH_MAPS_SET,
+			'match.maps' => self::ACTION_MATCH_MAPS_GET,
+			'maps.get' => self::ACTION_MATCH_MAPS_GET,
+			'score.set' => self::ACTION_MATCH_SCORE_SET,
+			'match.score' => self::ACTION_MATCH_SCORE_GET,
+			'score.get' => self::ACTION_MATCH_SCORE_GET,
 		);
 
 		if (array_key_exists($normalizedActionName, $aliases)) {
@@ -217,6 +238,48 @@ class AdminActionCatalog {
 				'required_parameters' => array('vote_index'),
 				'native_entrypoint' => 'MCTeam\\CustomVotesPlugin::startVote',
 				'ownership' => 'mixed',
+			),
+			self::ACTION_MATCH_BO_SET => array(
+				'permission_setting' => self::RIGHT_MATCH_BO_SET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array('best_of'),
+				'native_entrypoint' => 'SeriesControlState::setBestOf',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_MATCH_BO_GET => array(
+				'permission_setting' => self::RIGHT_MATCH_BO_GET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'SeriesControlState::getSnapshot(best_of)',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_MATCH_MAPS_SET => array(
+				'permission_setting' => self::RIGHT_MATCH_MAPS_SET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array('target_team', 'maps_score'),
+				'native_entrypoint' => 'SeriesControlState::setMatchMapsScore',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_MATCH_MAPS_GET => array(
+				'permission_setting' => self::RIGHT_MATCH_MAPS_GET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'SeriesControlState::getSnapshot(maps_score)',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_MATCH_SCORE_SET => array(
+				'permission_setting' => self::RIGHT_MATCH_SCORE_SET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array('target_team', 'score'),
+				'native_entrypoint' => 'SeriesControlState::setCurrentMapScore',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_MATCH_SCORE_GET => array(
+				'permission_setting' => self::RIGHT_MATCH_SCORE_GET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'SeriesControlState::getSnapshot(current_map_score)',
+				'ownership' => 'plugin_state',
 			),
 		);
 	}

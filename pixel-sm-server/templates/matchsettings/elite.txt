@@ -13,4 +13,32 @@
   </filter>
 
   <startindex>0</startindex>
+
+  <map>
+    <file>PixelControl/elite/elite-45514.Map.Gbx</file>
+  </map>
+  <map>
+    <file>PixelControl/elite/elite-45481.Map.Gbx</file>
+  </map>
+  <map>
+    <file>PixelControl/elite/elite-42694.Map.Gbx</file>
+  </map>
+  <map>
+    <file>PixelControl/elite/elite-44733.Map.Gbx</file>
+  </map>
+  <map>
+    <file>PixelControl/elite/elite-44518.Map.Gbx</file>
+  </map>
+  <map>
+    <file>PixelControl/elite/elite-43989.Map.Gbx</file>
+  </map>
+  <map>
+    <file>PixelControl/elite/elite-43858.Map.Gbx</file>
+  </map>
+  <map>
+    <file>PixelControl/elite/elite-43831.Map.Gbx</file>
+  </map>
+  <map>
+    <file>PixelControl/elite/elite-43805.Map.Gbx</file>
+  </map>
 </playlist>

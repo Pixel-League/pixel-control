@@ -6,13 +6,18 @@ use ManiaControl\Admin\AuthenticationManager;
 use ManiaControl\ManiaControl;
 use ManiaControl\Players\PlayerActions;
 use Maniaplanet\DedicatedServer\Structures\VoteRatio;
+use PixelControl\SeriesControl\SeriesControlCatalog;
+use PixelControl\SeriesControl\SeriesControlStateInterface;
 
 class NativeAdminGateway {
 	/** @var ManiaControl $maniaControl */
 	private $maniaControl;
+	/** @var SeriesControlStateInterface|null $seriesControlState */
+	private $seriesControlState;
 
-	public function __construct(ManiaControl $maniaControl) {
+	public function __construct(ManiaControl $maniaControl, ?SeriesControlStateInterface $seriesControlState = null) {
 		$this->maniaControl = $maniaControl;
+		$this->seriesControlState = $seriesControlState;
 	}
 
 	public function execute($actionName, array $parameters = array(), $actorLogin = '', array $executionContext = array()) {
@@ -59,6 +64,18 @@ class NativeAdminGateway {
 					return $this->executeAuthRevoke($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_VOTE_CUSTOM_START:
 					return $this->executeCustomVoteStart($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_MATCH_BO_SET:
+					return $this->executeMatchBoSet($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_MATCH_BO_GET:
+					return $this->executeMatchBoGet($normalizedActionName);
+				case AdminActionCatalog::ACTION_MATCH_MAPS_SET:
+					return $this->executeMatchMapsSet($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_MATCH_MAPS_GET:
+					return $this->executeMatchMapsGet($normalizedActionName);
+				case AdminActionCatalog::ACTION_MATCH_SCORE_SET:
+					return $this->executeMatchScoreSet($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_MATCH_SCORE_GET:
+					return $this->executeMatchScoreGet($normalizedActionName);
 				default:
 					return AdminActionResult::failure($normalizedActionName, 'action_unknown', 'Unknown admin action.');
 			}
@@ -670,6 +687,216 @@ class NativeAdminGateway {
 		));
 	}
 
+	private function executeMatchBoSet($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->seriesControlState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Series control state is unavailable in current runtime.');
+		}
+
+		$normalizedParameters = $this->normalizeSeriesControlParameters($parameters);
+		$bestOfRaw = $this->readStringParameter($normalizedParameters, array('best_of'));
+		if ($bestOfRaw === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires best_of.');
+		}
+
+		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $normalizedParameters);
+		$requestSource = isset($executionContext['request_source']) ? (string) $executionContext['request_source'] : '';
+		$allowActorless = $this->allowActorlessExecution($executionContext);
+		$activeVetoSession = !empty($executionContext['active_veto_session']);
+
+		$updateSource = ($requestSource === 'communication')
+			? SeriesControlCatalog::UPDATE_SOURCE_COMMUNICATION
+			: SeriesControlCatalog::UPDATE_SOURCE_CHAT;
+		$updatedBy = ($resolvedActorLogin !== '')
+			? $resolvedActorLogin
+			: ($allowActorless ? 'server_payload' : 'system');
+
+		$result = $this->seriesControlState->setBestOf(
+			$bestOfRaw,
+			$updateSource,
+			$updatedBy,
+			array('active_session' => $activeVetoSession)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'bo_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Best-of update failed.',
+				array(
+					'series_targets' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->seriesControlState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Best-of updated.', array(
+			'series_targets' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->seriesControlState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'SeriesControlState::setBestOf',
+		));
+	}
+
+	private function executeMatchBoGet($actionName) {
+		if (!$this->seriesControlState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Series control state is unavailable in current runtime.');
+		}
+
+		$seriesSnapshot = $this->seriesControlState->getSnapshot();
+		$bestOf = isset($seriesSnapshot['best_of']) ? (int) $seriesSnapshot['best_of'] : SeriesControlCatalog::DEFAULT_BEST_OF;
+
+		return AdminActionResult::success($actionName, 'Best-of snapshot resolved.', array(
+			'best_of' => $bestOf,
+			'series_targets' => $seriesSnapshot,
+			'native_entrypoint' => 'SeriesControlState::getSnapshot',
+		));
+	}
+
+	private function executeMatchMapsSet($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->seriesControlState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Series control state is unavailable in current runtime.');
+		}
+
+		$normalizedParameters = $this->normalizeSeriesControlParameters($parameters);
+		$targetTeamRaw = $this->readStringParameter($normalizedParameters, array('target_team'));
+		if ($targetTeamRaw === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires target_team.');
+		}
+
+		$mapsScoreRaw = $this->readStringParameter($normalizedParameters, array('maps_score'));
+		if ($mapsScoreRaw === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires maps_score.');
+		}
+
+		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $normalizedParameters);
+		$requestSource = isset($executionContext['request_source']) ? (string) $executionContext['request_source'] : '';
+		$allowActorless = $this->allowActorlessExecution($executionContext);
+		$updateSource = ($requestSource === 'communication')
+			? SeriesControlCatalog::UPDATE_SOURCE_COMMUNICATION
+			: SeriesControlCatalog::UPDATE_SOURCE_CHAT;
+		$updatedBy = ($resolvedActorLogin !== '')
+			? $resolvedActorLogin
+			: ($allowActorless ? 'server_payload' : 'system');
+
+		$result = $this->seriesControlState->setMatchMapsScore(
+			$targetTeamRaw,
+			$mapsScoreRaw,
+			$updateSource,
+			$updatedBy,
+			array('active_session' => !empty($executionContext['active_veto_session']))
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'maps_score_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Match maps score update failed.',
+				array(
+					'series_targets' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->seriesControlState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Match maps score updated.', array(
+			'series_targets' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->seriesControlState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'SeriesControlState::setMatchMapsScore',
+		));
+	}
+
+	private function executeMatchMapsGet($actionName) {
+		if (!$this->seriesControlState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Series control state is unavailable in current runtime.');
+		}
+
+		$seriesSnapshot = $this->seriesControlState->getSnapshot();
+		$mapsScore = (isset($seriesSnapshot['maps_score']) && is_array($seriesSnapshot['maps_score']))
+			? $seriesSnapshot['maps_score']
+			: array('team_a' => 0, 'team_b' => 0);
+
+		return AdminActionResult::success($actionName, 'Match maps score snapshot resolved.', array(
+			'maps_score' => array(
+				'team_a' => isset($mapsScore['team_a']) ? (int) $mapsScore['team_a'] : 0,
+				'team_b' => isset($mapsScore['team_b']) ? (int) $mapsScore['team_b'] : 0,
+			),
+			'series_targets' => $seriesSnapshot,
+			'native_entrypoint' => 'SeriesControlState::getSnapshot',
+		));
+	}
+
+	private function executeMatchScoreSet($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->seriesControlState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Series control state is unavailable in current runtime.');
+		}
+
+		$normalizedParameters = $this->normalizeSeriesControlParameters($parameters);
+		$targetTeamRaw = $this->readStringParameter($normalizedParameters, array('target_team'));
+		if ($targetTeamRaw === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires target_team.');
+		}
+
+		$scoreRaw = $this->readStringParameter($normalizedParameters, array('score'));
+		if ($scoreRaw === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires score.');
+		}
+
+		$resolvedActorLogin = $this->resolveActorLogin($actorLogin, $normalizedParameters);
+		$requestSource = isset($executionContext['request_source']) ? (string) $executionContext['request_source'] : '';
+		$allowActorless = $this->allowActorlessExecution($executionContext);
+		$updateSource = ($requestSource === 'communication')
+			? SeriesControlCatalog::UPDATE_SOURCE_COMMUNICATION
+			: SeriesControlCatalog::UPDATE_SOURCE_CHAT;
+		$updatedBy = ($resolvedActorLogin !== '')
+			? $resolvedActorLogin
+			: ($allowActorless ? 'server_payload' : 'system');
+
+		$result = $this->seriesControlState->setCurrentMapScore(
+			$targetTeamRaw,
+			$scoreRaw,
+			$updateSource,
+			$updatedBy,
+			array('active_session' => !empty($executionContext['active_veto_session']))
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'current_map_score_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Current map score update failed.',
+				array(
+					'series_targets' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->seriesControlState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Current map score updated.', array(
+			'series_targets' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->seriesControlState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'SeriesControlState::setCurrentMapScore',
+		));
+	}
+
+	private function executeMatchScoreGet($actionName) {
+		if (!$this->seriesControlState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Series control state is unavailable in current runtime.');
+		}
+
+		$seriesSnapshot = $this->seriesControlState->getSnapshot();
+		$currentMapScore = (isset($seriesSnapshot['current_map_score']) && is_array($seriesSnapshot['current_map_score']))
+			? $seriesSnapshot['current_map_score']
+			: array('team_a' => 0, 'team_b' => 0);
+
+		return AdminActionResult::success($actionName, 'Current map score snapshot resolved.', array(
+			'current_map_score' => array(
+				'team_a' => isset($currentMapScore['team_a']) ? (int) $currentMapScore['team_a'] : 0,
+				'team_b' => isset($currentMapScore['team_b']) ? (int) $currentMapScore['team_b'] : 0,
+			),
+			'series_targets' => $seriesSnapshot,
+			'native_entrypoint' => 'SeriesControlState::getSnapshot',
+		));
+	}
+
 	private function guardScriptMode($actionName) {
 		$scriptManager = $this->maniaControl->getServer()->getScriptManager();
 		if (!$scriptManager->isScriptMode()) {
@@ -750,6 +977,26 @@ class NativeAdminGateway {
 		}
 
 		return $this->readStringParameter($parameters, array('actor_login', 'admin_login', 'initiator_login'));
+	}
+
+	private function normalizeSeriesControlParameters(array $parameters) {
+		$normalized = $parameters;
+
+		if (isset($normalized['bo']) && !isset($normalized['best_of'])) {
+			$normalized['best_of'] = $normalized['bo'];
+		}
+		if (isset($normalized['team']) && !isset($normalized['target_team'])) {
+			$normalized['target_team'] = $normalized['team'];
+		}
+		if (isset($normalized['target']) && !isset($normalized['target_team'])) {
+			$normalized['target_team'] = $normalized['target'];
+		}
+
+		if (isset($normalized['_positionals'])) {
+			unset($normalized['_positionals']);
+		}
+
+		return $normalized;
 	}
 
 	private function resolveTeamId(array $parameters) {

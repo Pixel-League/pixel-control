@@ -17,7 +17,7 @@ COMM_SOCKET_ENABLED=""
 METHOD_EXECUTE="PixelControl.Admin.ExecuteAction"
 METHOD_LIST="PixelControl.Admin.ListActions"
 
-OUTPUT_ROOT="${PROJECT_DIR}/logs/qa"
+OUTPUT_ROOT="${PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT:-${PROJECT_DIR}/logs/qa}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 RUN_DIR="${OUTPUT_ROOT}/admin-payload-sim-${TIMESTAMP}"
 
@@ -30,6 +30,10 @@ MATRIX_AUTH_LEVEL="${PIXEL_SM_ADMIN_SIM_AUTH_LEVEL:-admin}"
 MATRIX_VOTE_COMMAND="${PIXEL_SM_ADMIN_SIM_VOTE_COMMAND:-nextmap}"
 MATRIX_VOTE_RATIO="${PIXEL_SM_ADMIN_SIM_VOTE_RATIO:-0.60}"
 MATRIX_VOTE_INDEX="${PIXEL_SM_ADMIN_SIM_VOTE_INDEX:-0}"
+MATRIX_BO="${PIXEL_SM_ADMIN_SIM_BO:-7}"
+MATRIX_MAPS_SCORE="${PIXEL_SM_ADMIN_SIM_MAPS_SCORE:-1}"
+MATRIX_ROUND_SCORE="${PIXEL_SM_ADMIN_SIM_ROUND_SCORE:-2}"
+MATRIX_ACTION_SPECS_DIR="${PIXEL_SM_ADMIN_SIM_ACTION_SPECS_DIR:-${SCRIPT_DIR}/qa-admin-matrix-actions}"
 
 COMPOSE_FILE_ARGS=()
 
@@ -75,6 +79,9 @@ Commands:
         vote_command=<command>
         vote_ratio=<0..1>
         vote_index=<int>
+        bo=<odd>
+        maps_score=<int>
+        round_score=<int>
 
 Env overrides:
   PIXEL_SM_ADMIN_SIM_ENV_FILE
@@ -83,7 +90,9 @@ Env overrides:
   PIXEL_SM_ADMIN_SIM_COMM_HOST (default: 127.0.0.1)
   PIXEL_SM_ADMIN_SIM_COMM_PORT (default: auto from mc_settings, else 31501)
   PIXEL_SM_ADMIN_SIM_COMM_PASSWORD (default: auto from mc_settings, else empty string)
+  PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT (default: pixel-sm-server/logs/qa)
   PIXEL_SM_ADMIN_SIM_MX_ID (default placeholder for matrix map.add simulation)
+  PIXEL_SM_ADMIN_SIM_ACTION_SPECS_DIR (default: scripts/qa-admin-matrix-actions)
 
 Notes:
   - This tool simulates server-originated payloads to Pixel Control admin communication methods.
@@ -153,11 +162,21 @@ ensure_prerequisites() {
   command -v docker >/dev/null 2>&1 || fail "docker command not found."
   [[ -f "$ENV_FILE" ]] || fail "Env file not found: $ENV_FILE"
 
-  local running_services
-  running_services="$(compose ps --status running --services 2>/dev/null || true)"
-  if ! printf '%s\n' "$running_services" | grep -Fxq "$SERVICE_NAME"; then
-    fail "Service '$SERVICE_NAME' is not running. Start stack first (e.g. docker compose up -d --build)."
-  fi
+  local running_services=""
+  local attempt=1
+  local max_attempts=30
+
+  while [ "$attempt" -le "$max_attempts" ]; do
+    running_services="$(compose ps --status running --services 2>/dev/null || true)"
+    if printf '%s\n' "$running_services" | grep -Fxq "$SERVICE_NAME"; then
+      return 0
+    fi
+
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+
+  fail "Service '$SERVICE_NAME' is not running. Start stack first (e.g. docker compose up -d --build)."
 }
 
 resolve_socket_settings_from_db() {
@@ -323,37 +342,48 @@ invoke_communication_method() {
   local payload_json="$2"
   local output_file="$3"
   local payload_b64
+  local attempt=1
+  local max_attempts=12
+  local exit_code=0
 
   payload_b64="$(printf '%s' "$payload_json" | base64 | tr -d '\n')"
 
-  compose exec -T \
-    -e PIXEL_SM_ADMIN_SIM_COMM_HOST="$COMM_HOST" \
-    -e PIXEL_SM_ADMIN_SIM_COMM_PORT="$COMM_PORT" \
-    -e PIXEL_SM_ADMIN_SIM_COMM_PASSWORD="$COMM_PASSWORD" \
-    -e PIXEL_SM_ADMIN_SIM_METHOD="$method_name" \
-    -e PIXEL_SM_ADMIN_SIM_DATA_B64="$payload_b64" \
-    "$SERVICE_NAME" php <<'PHP' > "$output_file"
+  while true; do
+    set +e
+    compose exec -T \
+      -e PIXEL_SM_ADMIN_SIM_COMM_HOST="$COMM_HOST" \
+      -e PIXEL_SM_ADMIN_SIM_COMM_PORT="$COMM_PORT" \
+      -e PIXEL_SM_ADMIN_SIM_COMM_PASSWORD="$COMM_PASSWORD" \
+      -e PIXEL_SM_ADMIN_SIM_METHOD="$method_name" \
+      -e PIXEL_SM_ADMIN_SIM_DATA_B64="$payload_b64" \
+      "$SERVICE_NAME" php <<'PHP' > "$output_file"
 <?php
 $host = getenv('PIXEL_SM_ADMIN_SIM_COMM_HOST') ?: '127.0.0.1';
 $port = (int) (getenv('PIXEL_SM_ADMIN_SIM_COMM_PORT') ?: '31501');
 $password = (string) getenv('PIXEL_SM_ADMIN_SIM_COMM_PASSWORD');
 $method = (string) getenv('PIXEL_SM_ADMIN_SIM_METHOD');
 $dataB64 = (string) getenv('PIXEL_SM_ADMIN_SIM_DATA_B64');
+$stderr = @fopen('php://stderr', 'w');
+$writeStderr = static function ($message) use ($stderr) {
+    if (is_resource($stderr)) {
+        fwrite($stderr, (string) $message);
+    }
+};
 
 if ($method === '') {
-    fwrite(STDERR, "Missing method name.\n");
+    $writeStderr("Missing method name.\n");
     exit(2);
 }
 
 $decodedJson = base64_decode($dataB64, true);
 if ($decodedJson === false) {
-    fwrite(STDERR, "Invalid base64 payload data.\n");
+    $writeStderr("Invalid base64 payload data.\n");
     exit(2);
 }
 
 $data = json_decode($decodedJson, true);
 if ($decodedJson !== '' && $data === null && json_last_error() !== JSON_ERROR_NONE) {
-    fwrite(STDERR, "Invalid JSON payload: " . json_last_error_msg() . "\n");
+    $writeStderr("Invalid JSON payload: " . json_last_error_msg() . "\n");
     exit(2);
 }
 if (!is_array($data)) {
@@ -369,13 +399,13 @@ $request = json_encode(
 );
 
 if ($request === false) {
-    fwrite(STDERR, "Failed to encode request JSON.\n");
+    $writeStderr("Failed to encode request JSON.\n");
     exit(2);
 }
 
 $encrypted = openssl_encrypt($request, 'aes-192-cbc', $password, OPENSSL_RAW_DATA, 'kZ2Kt0CzKUjN2MJX');
 if ($encrypted === false) {
-    fwrite(STDERR, "OpenSSL encryption failed.\n");
+    $writeStderr("OpenSSL encryption failed.\n");
     exit(3);
 }
 
@@ -383,7 +413,7 @@ $errno = 0;
 $errstr = '';
 $socket = @fsockopen($host, $port, $errno, $errstr, 5.0);
 if (!$socket) {
-    fwrite(STDERR, "Socket connect failed to {$host}:{$port} ({$errno} {$errstr})\n");
+    $writeStderr("Socket connect failed to {$host}:{$port} ({$errno} {$errstr})\n");
     exit(4);
 }
 
@@ -397,7 +427,7 @@ while ($written < $frameLength) {
     $bytes = fwrite($socket, substr($frame, $written));
     if ($bytes === false || $bytes === 0) {
         fclose($socket);
-        fwrite(STDERR, "Socket write failed.\n");
+        $writeStderr("Socket write failed.\n");
         exit(5);
     }
     $written += $bytes;
@@ -406,14 +436,14 @@ while ($written < $frameLength) {
 $lengthLine = fgets($socket);
 if ($lengthLine === false) {
     fclose($socket);
-    fwrite(STDERR, "Socket read failed (length prefix missing).\n");
+    $writeStderr("Socket read failed (length prefix missing).\n");
     exit(6);
 }
 
 $expectedLength = (int) trim($lengthLine);
 if ($expectedLength <= 0) {
     fclose($socket);
-    fwrite(STDERR, "Invalid response length prefix: {$lengthLine}\n");
+    $writeStderr("Invalid response length prefix: {$lengthLine}\n");
     exit(6);
 }
 
@@ -422,14 +452,14 @@ while (strlen($responseEncrypted) < $expectedLength && !feof($socket)) {
     $chunk = fread($socket, $expectedLength - strlen($responseEncrypted));
     if ($chunk === false) {
         fclose($socket);
-        fwrite(STDERR, "Socket read failed while receiving encrypted response.\n");
+        $writeStderr("Socket read failed while receiving encrypted response.\n");
         exit(7);
     }
     if ($chunk === '') {
         $meta = stream_get_meta_data($socket);
         if (!empty($meta['timed_out'])) {
             fclose($socket);
-            fwrite(STDERR, "Socket read timeout while receiving encrypted response.\n");
+            $writeStderr("Socket read timeout while receiving encrypted response.\n");
             exit(7);
         }
         continue;
@@ -440,24 +470,39 @@ while (strlen($responseEncrypted) < $expectedLength && !feof($socket)) {
 fclose($socket);
 
 if (strlen($responseEncrypted) !== $expectedLength) {
-    fwrite(STDERR, "Incomplete encrypted response payload.\n");
+    $writeStderr("Incomplete encrypted response payload.\n");
     exit(7);
 }
 
 $responseJson = openssl_decrypt($responseEncrypted, 'aes-192-cbc', $password, OPENSSL_RAW_DATA, 'kZ2Kt0CzKUjN2MJX');
 if ($responseJson === false) {
-    fwrite(STDERR, "OpenSSL decrypt failed (check socket password).\n");
+    $writeStderr("OpenSSL decrypt failed (check socket password).\n");
     exit(8);
 }
 
 $response = json_decode($responseJson, true);
 if (!is_array($response)) {
-    fwrite(STDERR, "Invalid response JSON from communication socket.\n");
+    $writeStderr("Invalid response JSON from communication socket.\n");
     exit(9);
 }
 
 echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 PHP
+
+    exit_code=$?
+    set -e
+
+    if [ "$exit_code" -eq 0 ]; then
+      return 0
+    fi
+
+    if [ "$attempt" -ge "$max_attempts" ]; then
+      return "$exit_code"
+    fi
+
+    attempt=$((attempt + 1))
+    sleep 1
+  done
 }
 
 extract_response_triplet() {
@@ -570,6 +615,28 @@ run_matrix() {
       >> "$summary_file"
   }
 
+  run_matrix_action_specs() {
+    local action_spec_file=""
+    local spec_count=0
+
+    if [[ ! -d "$MATRIX_ACTION_SPECS_DIR" ]]; then
+      fail "Missing matrix action specs directory: ${MATRIX_ACTION_SPECS_DIR}"
+    fi
+
+    shopt -s nullglob
+    for action_spec_file in "$MATRIX_ACTION_SPECS_DIR"/*.sh; do
+      [[ -f "$action_spec_file" ]] || continue
+      spec_count=$((spec_count + 1))
+      # shellcheck source=/dev/null
+      source "$action_spec_file"
+    done
+    shopt -u nullglob
+
+    if [[ "$spec_count" -eq 0 ]]; then
+      fail "No matrix action spec scripts found in ${MATRIX_ACTION_SPECS_DIR}"
+    fi
+  }
+
   if [[ "$MATRIX_TARGET_LOGIN" == "__pixel_target_login__" ]]; then
     warn "target_login is using placeholder value. Player/auth force actions may return target errors."
   fi
@@ -580,24 +647,7 @@ run_matrix() {
     warn "mx_id is using placeholder value. map.add may return missing/invalid parameter errors."
   fi
 
-  matrix_step 'map.skip'
-  matrix_step 'map.restart'
-  matrix_step 'map.jump' "map_uid=${MATRIX_MAP_UID}"
-  matrix_step 'map.queue' "map_uid=${MATRIX_MAP_UID}"
-  matrix_step 'map.add' "mx_id=${MATRIX_MX_ID}"
-  matrix_step 'map.remove' "map_uid=${MATRIX_MAP_UID}"
-  matrix_step 'warmup.extend' 'seconds=30'
-  matrix_step 'warmup.end'
-  matrix_step 'pause.start'
-  matrix_step 'pause.end'
-  matrix_step 'vote.cancel'
-  matrix_step 'vote.set_ratio' "command=${MATRIX_VOTE_COMMAND}" "ratio=${MATRIX_VOTE_RATIO}"
-  matrix_step 'vote.custom_start' "vote_index=${MATRIX_VOTE_INDEX}"
-  matrix_step 'player.force_team' "target_login=${MATRIX_TARGET_LOGIN}" "team=${MATRIX_TEAM}"
-  matrix_step 'player.force_play' "target_login=${MATRIX_TARGET_LOGIN}"
-  matrix_step 'player.force_spec' "target_login=${MATRIX_TARGET_LOGIN}"
-  matrix_step 'auth.grant' "target_login=${MATRIX_TARGET_LOGIN}" "auth_level=${MATRIX_AUTH_LEVEL}"
-  matrix_step 'auth.revoke' "target_login=${MATRIX_TARGET_LOGIN}"
+  run_matrix_action_specs
 
   log "Matrix simulation complete."
   log "Summary: ${summary_file}"
@@ -646,6 +696,15 @@ parse_kv_assignments() {
         ;;
       vote_index)
         MATRIX_VOTE_INDEX="$value"
+        ;;
+      bo)
+        MATRIX_BO="$value"
+        ;;
+      maps_score)
+        MATRIX_MAPS_SCORE="$value"
+        ;;
+      round_score)
+        MATRIX_ROUND_SCORE="$value"
         ;;
       comm_host)
         COMM_HOST="$value"

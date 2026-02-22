@@ -22,6 +22,12 @@ use PixelControl\Domain\Lifecycle\LifecycleDomainTrait;
 use PixelControl\Domain\Match\MatchDomainTrait;
 use PixelControl\Domain\Pipeline\PipelineDomainTrait;
 use PixelControl\Domain\Player\PlayerDomainTrait;
+use PixelControl\Domain\SeriesControl\SeriesControlDomainTrait;
+use PixelControl\Domain\VetoDraft\VetoDraftDomainTrait;
+use PixelControl\SeriesControl\SeriesControlStateInterface;
+use PixelControl\VetoDraft\MapPoolService;
+use PixelControl\VetoDraft\VetoDraftCoordinator;
+use PixelControl\VetoDraft\VetoDraftQueueApplier;
 
 class PixelControlPlugin implements CallbackListener, TimerListener, CommandListener, CommunicationListener, Plugin {
 	use CoreDomainTrait;
@@ -32,6 +38,8 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	use MatchDomainTrait;
 	use CombatDomainTrait;
 	use PipelineDomainTrait;
+	use SeriesControlDomainTrait;
+	use VetoDraftDomainTrait;
 
 	const ID = 100001;
 	const VERSION = '0.1.0-dev';
@@ -53,6 +61,18 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	const SETTING_ADMIN_CONTROL_ENABLED = 'Pixel Control Native Admin Control Enabled';
 	const SETTING_ADMIN_CONTROL_COMMAND = 'Pixel Control Native Admin Command';
 	const SETTING_ADMIN_CONTROL_PAUSE_STATE_MAX_AGE_SECONDS = 'Pixel Control Pause State Max Age Seconds';
+	const SETTING_VETO_DRAFT_ENABLED = 'Pixel Control Veto Draft Enabled';
+	const SETTING_VETO_DRAFT_COMMAND = 'Pixel Control Veto Draft Command';
+	const SETTING_VETO_DRAFT_DEFAULT_MODE = 'Pixel Control Veto Draft Default Mode';
+	const SETTING_VETO_DRAFT_MATCHMAKING_DURATION_SECONDS = 'Pixel Control Veto Draft Matchmaking Duration Seconds';
+	const SETTING_VETO_DRAFT_MATCHMAKING_AUTOSTART_MIN_PLAYERS = 'Pixel Control Veto Draft Matchmaking Auto-start Min Players';
+	const SETTING_VETO_DRAFT_TOURNAMENT_ACTION_TIMEOUT_SECONDS = 'Pixel Control Veto Draft Tournament Action Timeout Seconds';
+	const SETTING_VETO_DRAFT_DEFAULT_BEST_OF = 'Pixel Control Veto Draft Default Best Of';
+	const SETTING_VETO_DRAFT_LAUNCH_IMMEDIATELY = 'Pixel Control Veto Draft Launch Immediately';
+	const SETTING_SERIES_CONTROL_MAPS_SCORE_TEAM_A = 'Pixel Control Series Maps Score Team A';
+	const SETTING_SERIES_CONTROL_MAPS_SCORE_TEAM_B = 'Pixel Control Series Maps Score Team B';
+	const SETTING_SERIES_CONTROL_CURRENT_MAP_SCORE_TEAM_A = 'Pixel Control Series Current Map Score Team A';
+	const SETTING_SERIES_CONTROL_CURRENT_MAP_SCORE_TEAM_B = 'Pixel Control Series Current Map Score Team B';
 
 	/** @var ManiaControl|null $maniaControl */
 	private $maniaControl = null;
@@ -156,4 +176,42 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	private $vetoDraftActionLimit = 64;
 	/** @var int $vetoDraftActionSequence */
 	private $vetoDraftActionSequence = 0;
+	/** @var bool $vetoDraftEnabled */
+	private $vetoDraftEnabled = false;
+	/** @var string $vetoDraftCommandName */
+	private $vetoDraftCommandName = 'pcveto';
+	/** @var string $vetoDraftDefaultMode */
+	private $vetoDraftDefaultMode = 'matchmaking_vote';
+	/** @var int $vetoDraftMatchmakingDurationSeconds */
+	private $vetoDraftMatchmakingDurationSeconds = 60;
+	/** @var int $vetoDraftMatchmakingAutostartMinPlayers */
+	private $vetoDraftMatchmakingAutostartMinPlayers = 2;
+	/** @var bool $vetoDraftMatchmakingAutostartArmed */
+	private $vetoDraftMatchmakingAutostartArmed = true;
+	/** @var bool $vetoDraftMatchmakingAutostartSuppressed */
+	private $vetoDraftMatchmakingAutostartSuppressed = false;
+	/** @var int $vetoDraftTournamentActionTimeoutSeconds */
+	private $vetoDraftTournamentActionTimeoutSeconds = 45;
+	/** @var int $vetoDraftDefaultBestOf */
+	private $vetoDraftDefaultBestOf = 3;
+	/** @var bool $vetoDraftLaunchImmediately */
+	private $vetoDraftLaunchImmediately = true;
+	/** @var MapPoolService|null $vetoDraftMapPoolService */
+	private $vetoDraftMapPoolService = null;
+	/** @var VetoDraftQueueApplier|null $vetoDraftQueueApplier */
+	private $vetoDraftQueueApplier = null;
+	/** @var VetoDraftCoordinator|null $vetoDraftCoordinator */
+	private $vetoDraftCoordinator = null;
+	/** @var SeriesControlStateInterface|null $seriesControlState */
+	private $seriesControlState = null;
+	/** @var array|null $vetoDraftCompatibilitySnapshot */
+	private $vetoDraftCompatibilitySnapshot = null;
+	/** @var string $vetoDraftLastAppliedSessionId */
+	private $vetoDraftLastAppliedSessionId = '';
+	/** @var array|null $vetoDraftMatchmakingLifecycleContext */
+	private $vetoDraftMatchmakingLifecycleContext = null;
+	/** @var array|null $vetoDraftMatchmakingLifecycleLastSnapshot */
+	private $vetoDraftMatchmakingLifecycleLastSnapshot = null;
+	/** @var int $vetoDraftMatchmakingLifecycleHistoryLimit */
+	private $vetoDraftMatchmakingLifecycleHistoryLimit = 32;
 }

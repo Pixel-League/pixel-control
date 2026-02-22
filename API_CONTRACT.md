@@ -57,6 +57,27 @@ Compatibility note for native-admin delegation refactor:
 - Plugin-to-API transport routes and required envelope fields are unchanged.
 - Any new admin-control visibility is additive under connectivity capability payload (`payload.capabilities.admin_control.*`) and does not change route contracts.
 - Current communication control path is intentionally temporary/trusted (`authentication_mode=none_temporary`): payload-sourced admin actions can execute without `actor_login` while server-side payload authentication is pending.
+- Additive communication action extensions (local control-surface contract, no new plugin->API route):
+  - `match.bo.set` (`best_of`)
+  - `match.bo.get` (no parameters)
+  - `match.maps.set` (`target_team`, `maps_score`)
+  - `match.maps.get` (no parameters)
+  - `match.score.set` (`target_team`, `score`)
+  - `match.score.get` (no parameters)
+- Additive communication status/list snapshots:
+  - `PixelControl.Admin.ListActions` includes top-level `series_targets`
+  - `PixelControl.VetoDraft.Status` includes top-level `matchmaking_autostart_min_players`
+  - `PixelControl.VetoDraft.Status` includes top-level `series_targets`
+  - `PixelControl.VetoDraft.Status` includes top-level `matchmaking_lifecycle` snapshot (`status`, `stage`, `ready_for_next_players`, action summaries, bounded history)
+- Team selector normalization for recovery actions:
+  - `target_team` accepts `0|1|red|blue` (plus aliases `team_a|team_b|a|b`) and normalizes to `team_a|team_b`.
+- Additive veto control-surface behavior notes:
+  - matchmaking countdown announcements run from configured duration with deterministic cadence `N, N-10, ..., 10, 5..1` and per-session dedupe,
+  - role-based chat/status visibility is control-surface only (non-admin map/status output narrowed, admin output retains UID/operational diagnostics),
+  - `PixelControl.VetoDraft.Status` payload schema is unchanged by visibility scoping,
+  - completion queue/apply policy is branch-based (`opener_differs` => queue full order + `map.skip`; `opener_already_current` => queue remaining maps only, no skip/restart),
+  - matchmaking post-veto lifecycle automation is additive and mode-guarded (`matchmaking_vote` only) with deterministic stage progression (`veto_completed -> selected_map_loaded -> match_started -> selected_map_finished -> players_removed -> map_changed -> match_ended -> ready_for_next_players`),
+  - lifecycle boundary detection prefers callbacks and uses timer fallback inference when map callback coverage is missing in local runtime.
 
 Identity guardrails (wave-5 runtime hardening):
 
@@ -119,8 +140,14 @@ Wave-4 additive lifecycle payload fields:
   - `map_pool` + `map_pool_size`,
   - `current_map`, `current_map_index`, `next_maps`,
   - `played_map_order` / `played_map_count`,
-  - `veto_draft_actions` additive action stream (`ban|pick|pass|lock` where exposed, inferred fallback where not),
-  - `veto_result` projection with explicit `partial|unavailable` fallback semantics when runtime veto callbacks are incomplete.
+  - `series_targets` runtime policy snapshot (`best_of`, `maps_score`, `current_map_score`, metadata),
+  - additive veto mode metadata (`veto_draft_mode`, `veto_draft_session_status`),
+  - `veto_draft_actions` authoritative draft/veto action stream (`ban|pick|pass|lock`) emitted by plugin-side draft sessions,
+  - `veto_result` projection with explicit `running|completed|cancelled|unavailable` semantics,
+  - additive `matchmaking_lifecycle` projection (`status`, `stage`, `ready_for_next_players`, action summaries, bounded history).
+- Tournament BO precedence note:
+  - explicit start payload `best_of` is honored first,
+  - missing `best_of` falls back to runtime series-policy default.
 
 ### 3) Admin actions
 

@@ -33,7 +33,7 @@ trait AdminControlDomainTrait {
 			return;
 		}
 
-		$this->nativeAdminGateway = new NativeAdminGateway($this->maniaControl);
+		$this->nativeAdminGateway = new NativeAdminGateway($this->maniaControl, $this->seriesControlState);
 		$this->defineAdminControlPermissions();
 
 		$this->adminControlEnabled = $this->resolveRuntimeBoolSetting(
@@ -216,6 +216,7 @@ trait AdminControlDomainTrait {
 					'permission_model' => 'trusted_payload_no_actor',
 				),
 			),
+			'series_targets' => $this->getSeriesControlSnapshot(),
 			'actions' => AdminActionCatalog::getActionDefinitions(),
 		);
 
@@ -227,6 +228,11 @@ trait AdminControlDomainTrait {
 		$actionDefinition = AdminActionCatalog::getActionDefinition($normalizedActionName);
 		if ($actionDefinition === null) {
 			return AdminActionResult::failure($normalizedActionName, 'action_unknown', 'Unknown admin action. Use //'.$this->adminControlCommandName.' help to list actions.');
+		}
+
+		$seriesSnapshotBeforeAction = array();
+		if ($this->shouldPersistSeriesControlAfterAdminAction($normalizedActionName)) {
+			$seriesSnapshotBeforeAction = $this->getSeriesControlSnapshot();
 		}
 
 		$allowActorless = !empty($requestOptions['allow_actorless']);
@@ -281,11 +287,40 @@ trait AdminControlDomainTrait {
 					'allow_actorless' => $allowActorless,
 					'skip_permission_checks' => $skipPermissionChecks,
 					'security_mode' => ($securityMode !== '' ? $securityMode : 'actor_bound'),
+					'active_veto_session' => ($this->vetoDraftCoordinator ? $this->vetoDraftCoordinator->hasActiveSession() : false),
 				)
 			)
 			: AdminActionResult::failure($normalizedActionName, 'gateway_unavailable', 'Native admin gateway is unavailable.');
 
 		if ($result->isSuccess()) {
+			$seriesPersistenceResult = $this->persistSeriesControlAfterAdminAction(
+				$normalizedActionName,
+				$result,
+				$seriesSnapshotBeforeAction
+			);
+			if (empty($seriesPersistenceResult['success'])) {
+				Logger::logWarning(
+					'[PixelControl][admin][action_persistence_failed] action=' . $normalizedActionName
+					. ', source=' . $requestSource
+					. ', actor=' . $logActor
+					. ', code=' . (isset($seriesPersistenceResult['code']) ? (string) $seriesPersistenceResult['code'] : 'setting_write_failed')
+					. '.'
+				);
+
+				$failureDetails = $result->getDetails();
+				$failureDetails['series_targets'] = $this->getSeriesControlSnapshot();
+				$failureDetails['persistence'] = isset($seriesPersistenceResult['details']) && is_array($seriesPersistenceResult['details'])
+					? $seriesPersistenceResult['details']
+					: array();
+
+				return AdminActionResult::failure(
+					$normalizedActionName,
+					isset($seriesPersistenceResult['code']) ? (string) $seriesPersistenceResult['code'] : 'setting_write_failed',
+					isset($seriesPersistenceResult['message']) ? (string) $seriesPersistenceResult['message'] : 'Unable to persist series settings after admin action.',
+					$failureDetails
+				);
+			}
+
 			$this->rememberPauseStateAfterAction($normalizedActionName, $normalizedParameters);
 			$this->rememberAdminActionCorrelationContext(
 				$normalizedActionName,
@@ -314,6 +349,53 @@ trait AdminControlDomainTrait {
 		);
 
 		return $result;
+	}
+
+	private function shouldPersistSeriesControlAfterAdminAction($actionName) {
+		return in_array(
+			$actionName,
+			array(
+				AdminActionCatalog::ACTION_MATCH_BO_SET,
+				AdminActionCatalog::ACTION_MATCH_MAPS_SET,
+				AdminActionCatalog::ACTION_MATCH_SCORE_SET,
+			),
+			true
+		);
+	}
+
+	private function persistSeriesControlAfterAdminAction($actionName, AdminActionResult $actionResult, array $seriesSnapshotBeforeAction) {
+		if (!$this->shouldPersistSeriesControlAfterAdminAction($actionName)) {
+			return array('success' => true, 'code' => 'not_required', 'message' => 'No persistence required.', 'details' => array());
+		}
+
+		$actionDetails = $actionResult->getDetails();
+		$seriesSnapshot = (isset($actionDetails['series_targets']) && is_array($actionDetails['series_targets']))
+			? $actionDetails['series_targets']
+			: $this->getSeriesControlSnapshot();
+
+		$persistenceResult = $this->persistSeriesControlSnapshot($seriesSnapshot, $seriesSnapshotBeforeAction);
+		if (!empty($persistenceResult['success'])) {
+			return $persistenceResult;
+		}
+
+		$rollbackResult = array();
+		if (!empty($seriesSnapshotBeforeAction)) {
+			$rollbackResult = $this->restoreSeriesControlSnapshot(
+				$seriesSnapshotBeforeAction,
+				'setting',
+				'admin_action_persistence_rollback'
+			);
+		}
+
+		return array(
+			'success' => false,
+			'code' => isset($persistenceResult['code']) ? (string) $persistenceResult['code'] : 'setting_write_failed',
+			'message' => 'Series settings persistence failed; runtime update rolled back.',
+			'details' => array(
+				'persistence' => isset($persistenceResult['details']) && is_array($persistenceResult['details']) ? $persistenceResult['details'] : array(),
+				'rollback' => isset($rollbackResult['details']) && is_array($rollbackResult['details']) ? $rollbackResult['details'] : array(),
+			),
+		);
 	}
 
 	private function rememberAdminActionCorrelationContext($actionName, array $parameters, $actorLogin, $requestSource, $securityMode) {
@@ -346,7 +428,7 @@ trait AdminControlDomainTrait {
 	}
 
 	private function resolveAdminActionCorrelationTargetScope($actionName) {
-		switch ($actionName) {
+			switch ($actionName) {
 			case AdminActionCatalog::ACTION_PLAYER_FORCE_TEAM:
 			case AdminActionCatalog::ACTION_PLAYER_FORCE_PLAY:
 			case AdminActionCatalog::ACTION_PLAYER_FORCE_SPEC:
@@ -367,6 +449,12 @@ trait AdminControlDomainTrait {
 			case AdminActionCatalog::ACTION_VOTE_CANCEL:
 			case AdminActionCatalog::ACTION_VOTE_SET_RATIO:
 			case AdminActionCatalog::ACTION_VOTE_CUSTOM_START:
+			case AdminActionCatalog::ACTION_MATCH_BO_SET:
+			case AdminActionCatalog::ACTION_MATCH_BO_GET:
+			case AdminActionCatalog::ACTION_MATCH_MAPS_SET:
+			case AdminActionCatalog::ACTION_MATCH_MAPS_GET:
+			case AdminActionCatalog::ACTION_MATCH_SCORE_SET:
+			case AdminActionCatalog::ACTION_MATCH_SCORE_GET:
 				return 'server';
 			default:
 				return 'unknown';
@@ -374,7 +462,7 @@ trait AdminControlDomainTrait {
 	}
 
 	private function resolveAdminActionCorrelationTargetId($actionName, array $parameters, $actorLogin) {
-		switch ($actionName) {
+			switch ($actionName) {
 			case AdminActionCatalog::ACTION_PLAYER_FORCE_TEAM:
 			case AdminActionCatalog::ACTION_PLAYER_FORCE_PLAY:
 			case AdminActionCatalog::ACTION_PLAYER_FORCE_SPEC:
@@ -402,6 +490,20 @@ trait AdminControlDomainTrait {
 				}
 
 				return 'unknown';
+			case AdminActionCatalog::ACTION_MATCH_BO_SET:
+			case AdminActionCatalog::ACTION_MATCH_BO_GET:
+				return 'bo_policy';
+			case AdminActionCatalog::ACTION_MATCH_MAPS_GET:
+				return 'maps_scoreboard';
+			case AdminActionCatalog::ACTION_MATCH_SCORE_GET:
+				return 'current_map_scoreboard';
+			case AdminActionCatalog::ACTION_MATCH_MAPS_SET:
+			case AdminActionCatalog::ACTION_MATCH_SCORE_SET:
+				if (isset($parameters['target_team']) && trim((string) $parameters['target_team']) !== '') {
+					return 'series_team:' . strtolower(trim((string) $parameters['target_team']));
+				}
+
+				return 'series_team';
 			default:
 				return 'unknown';
 		}
@@ -560,6 +662,47 @@ trait AdminControlDomainTrait {
 			case AdminActionCatalog::ACTION_VOTE_CUSTOM_START:
 				if (!isset($normalizedParameters['vote_index']) && !empty($positionals)) {
 					$normalizedParameters['vote_index'] = $positionals[0];
+				}
+			break;
+			case AdminActionCatalog::ACTION_MATCH_BO_SET:
+				if (!isset($normalizedParameters['best_of']) && !empty($positionals)) {
+					$normalizedParameters['best_of'] = $positionals[0];
+				}
+				if (isset($normalizedParameters['bo']) && !isset($normalizedParameters['best_of'])) {
+					$normalizedParameters['best_of'] = $normalizedParameters['bo'];
+				}
+			break;
+			case AdminActionCatalog::ACTION_MATCH_MAPS_SET:
+				if (!isset($normalizedParameters['target_team']) && !empty($positionals)) {
+					$normalizedParameters['target_team'] = $positionals[0];
+				}
+				if (!isset($normalizedParameters['maps_score']) && count($positionals) > 1) {
+					$normalizedParameters['maps_score'] = $positionals[1];
+				}
+
+				if (isset($normalizedParameters['team']) && !isset($normalizedParameters['target_team'])) {
+					$normalizedParameters['target_team'] = $normalizedParameters['team'];
+				}
+				if (isset($normalizedParameters['target']) && !isset($normalizedParameters['target_team'])) {
+					$normalizedParameters['target_team'] = $normalizedParameters['target'];
+				}
+				if (isset($normalizedParameters['score']) && !isset($normalizedParameters['maps_score'])) {
+					$normalizedParameters['maps_score'] = $normalizedParameters['score'];
+				}
+			break;
+			case AdminActionCatalog::ACTION_MATCH_SCORE_SET:
+				if (!isset($normalizedParameters['target_team']) && !empty($positionals)) {
+					$normalizedParameters['target_team'] = $positionals[0];
+				}
+				if (!isset($normalizedParameters['score']) && count($positionals) > 1) {
+					$normalizedParameters['score'] = $positionals[1];
+				}
+
+				if (isset($normalizedParameters['team']) && !isset($normalizedParameters['target_team'])) {
+					$normalizedParameters['target_team'] = $normalizedParameters['team'];
+				}
+				if (isset($normalizedParameters['target']) && !isset($normalizedParameters['target_team'])) {
+					$normalizedParameters['target_team'] = $normalizedParameters['target'];
 				}
 			break;
 		}
@@ -774,6 +917,7 @@ trait AdminControlDomainTrait {
 				),
 			),
 			'actions' => $actionNames,
+			'series_targets' => $this->getSeriesControlSnapshot(),
 			'ownership_boundary' => array(
 				'telemetry_transport' => 'pixel_plugin',
 				'admin_execution' => 'native_maniacontrol',

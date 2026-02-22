@@ -70,6 +70,7 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - pause-state freshness setting/env: `Pixel Control Pause State Max Age Seconds` / `PIXEL_CONTROL_ADMIN_PAUSE_STATE_MAX_AGE_SECONDS`
 - Control entry points:
   - admin chat command: `//pcadmin` (or configured alias)
+  - veto chat command: `//pcveto` runtime status/config helpers (`status`, `maps`, admin-only `config`)
   - communication methods: `PixelControl.Admin.ExecuteAction`, `PixelControl.Admin.ListActions`
 - Permission model:
   - chat command path is actor-bound and gated by native `AuthenticationManager` plugin rights (`definePluginPermissionLevel` + `checkPluginPermission`)
@@ -79,6 +80,8 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - warmup/pause: `warmup.extend`, `warmup.end`, `pause.start`, `pause.end`
   - votes: `vote.cancel`, `vote.set_ratio`, optional `vote.custom_start`
   - player/auth: `player.force_team`, `player.force_play`, `player.force_spec`, `auth.grant`, `auth.revoke`
+  - BO policy: `match.bo.set`, `match.bo.get`
+  - score recovery: `match.maps.set`, `match.maps.get`, `match.score.set`, `match.score.get`
 - Deterministic delegated-action observability markers:
   - `[PixelControl][admin][action_requested]`
   - `[PixelControl][admin][action_success]`
@@ -101,6 +104,26 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - round start/end
 - Pause request context enrichment (`requested_by_login`, `requested_by_team_id`, `requested_by_team_side`, `active`)
 - Bounded recent admin-action history for player correlation
+
+## Series policy controls
+
+- Dedicated plugin-side state owner for runtime series policy defaults (`SeriesControlState`)
+- Canonical runtime fields:
+  - `best_of` (odd, bounded)
+  - `maps_score.team_a`, `maps_score.team_b` (maps won in current BO)
+  - `current_map_score.team_a`, `current_map_score.team_b` (rounds won in current map)
+  - metadata (`updated_at`, `updated_by`, `update_source`)
+- Update surfaces:
+  - chat: `//pcveto config`, `//pcadmin match.bo.set best_of=<odd>`, `//pcadmin match.bo.get`, `//pcadmin match.maps.set target_team=<0|1|red|blue> maps_score=<int>`, `//pcadmin match.maps.get`, `//pcadmin match.score.set target_team=<0|1|red|blue> score=<int>`, `//pcadmin match.score.get`
+  - communication: `PixelControl.Admin.ExecuteAction` with `match.bo.set|match.bo.get|match.maps.set|match.maps.get|match.score.set|match.score.get`
+- Mutation behavior:
+  - BO updates (`match.bo.set`) are applied immediately to runtime default policy state
+  - active tournament sessions keep their current sequence; updated defaults apply to next start
+  - score-recovery setters (`match.maps.set`, `match.score.set`) apply immediately to runtime BO/map progress state
+  - score-recovery getters (`match.maps.get`, `match.score.get`) return current runtime values for teams 0/1
+  - successful BO/maps/score mutations are persisted through ManiaControl settings with rollback on write failure (`setting_write_failed`), so runtime and stored state stay aligned
+  - `target_team` accepts `0|1|red|blue` and aliases (`team_a|team_b|a|b`), normalized internally to `team_a|team_b`
+  - deterministic validation failures use `missing_parameters` / `invalid_parameters`
 
 ## Players
 
@@ -183,9 +206,58 @@ Additional combat observability:
   - current index + next map hints
   - played map order history
   - normalized map identifiers (`uid`, `name`, optional `external_ids.mx_id`)
-  - additive veto/draft stream (`veto_draft_actions`) with action metadata (`action_kind`, actor context, order index, timestamp/source, map identity)
-  - final-selection projection (`veto_result`) with explicit `partial|unavailable` fallback semantics when dedicated veto callbacks are incomplete
-- Veto action kinds normalized to `ban|pick|pass|lock` (with inferred `lock` fallback when needed)
+  - series policy snapshot (`series_targets`)
+  - additive matchmaking lifecycle snapshot (`matchmaking_lifecycle`) with stage/status/action/history observability
+  - additive veto/draft mode metadata (`veto_draft_mode`, `veto_draft_session_status`)
+  - authoritative veto/draft stream (`veto_draft_actions`) emitted by in-plugin draft engine with action metadata (`action_kind`, actor context, order index, timestamp/source, map identity)
+  - final-selection projection (`veto_result`) with explicit `running|completed|cancelled|unavailable` status semantics
+- Veto action kinds normalized to `ban|pick|pass|lock`
+- Supported draft modes:
+  - `matchmaking_vote`: all eligible players vote on map pool; top-vote winner selected; ties resolved by random draw among tied top-vote maps
+  - `tournament_draft`: captain-driven ban phase then ordered pick phase with automatic decider lock for odd best-of formats
+- Runtime default policy controls (admin-configurable):
+  - `mode <matchmaking|tournament>` updates default session mode
+  - `duration <seconds>` updates default matchmaking vote window
+  - `min_players <int>` updates matchmaking threshold auto-start minimum connected human players
+  - default settings are persisted through ManiaControl plugin settings
+- Matchmaking player-first launch behavior:
+  - when no veto session is active and default mode is `matchmaking_vote`, first player `vote` request auto-starts a matchmaking session with configured duration
+  - auto-start is intentionally limited to matchmaking mode for current rollout phase
+- Matchmaking threshold auto-start behavior:
+  - when default mode is `matchmaking_vote`, timer path auto-starts a session once connected human players reach configured `min_players`
+  - anti-loop gating is transition-based (`armed`, `triggered`, `suppressed`, `below_threshold`) to avoid repeated start churn while count stays above threshold
+- Matchmaking countdown UX:
+  - running matchmaking sessions broadcast countdown from configured duration with deterministic cadence `N, N-10, ..., 10, 5, 4, 3, 2, 1`
+  - per-session second-level dedupe avoids duplicate countdown spam for the same remaining second
+- Matchmaking post-veto lifecycle automation (matchmaking mode only):
+  - lifecycle context is armed only after successful queue apply for a completed `matchmaking_vote` session
+  - deterministic stage sequence: `veto_completed -> selected_map_loaded -> match_started -> selected_map_finished -> players_removed -> map_changed -> match_ended -> ready_for_next_players`
+  - selected-map load triggers match-start signaling (mode-script event first, warmup/pause compatibility fallback)
+  - selected-map end triggers kick-all policy, map skip, and explicit match-end mark before lifecycle closure
+  - stage progression prefers lifecycle map callbacks and keeps a timer-based fallback inference path when callback coverage is missing in local runtime/QA
+  - lifecycle state is additive in `PixelControl.VetoDraft.Status.matchmaking_lifecycle` and `payload.map_rotation.matchmaking_lifecycle`
+  - tournament sessions are explicitly excluded from this lifecycle automation path
+- `pcveto help` UX behavior:
+  - role-aware visibility: admin-only docs (`start`, `cancel`, `mode`, `duration`, `config`, override usage) are shown only to users with veto control rights
+  - mode-aware visibility: help output shows only one mode command group at a time based on effective mode policy (`active session mode` when running, else `configured default mode`)
+  - deterministic fallback: unknown mode context falls back to configured default mode and emits a guidance line
+- Chat observability:
+  - explicit launch message on matchmaking session start (`Matchmaking veto launched ...`)
+  - role-scoped map listing at session start:
+    - players receive index+name rows only (`Available maps:` / `Available veto maps:`)
+    - admins receive index+name+uid rows (`Map vote IDs:` / `Available veto IDs:`)
+  - explicit queued-map messages after successful queue apply (`Queued maps:` + ordered map rows)
+  - completion diagnostics (`Series order`, `Completion branch`, `Opener jump`) are admin-only
+- Status command visibility (`/pcveto status`):
+  - players receive veto-result projection only (`running|completed|cancelled|unavailable` + final map/series result when available)
+  - admins keep operational diagnostics (`Map draft/veto status`, no-active-session guidance, vote/turn details, series config)
+- Completion map-order apply policy:
+  - branch `opener_differs`: queue full veto order then execute `map.skip` to opener
+  - branch `opener_already_current`: queue remaining maps only and do not skip/restart current opener map
+  - completion chat and log observability exposes branch + opener/current identities + skip result code
+- Tournament draft BO precedence:
+  - explicit request `best_of` takes priority
+  - when omitted, start flow uses runtime series-policy `best_of` default
 
 ## Mode-specific callbacks
 
@@ -229,7 +301,33 @@ Additional combat observability:
   - modes (`none`, `bearer`, `api_key`)
   - auth value
   - auth header name (API key mode)
+- Veto/draft settings:
+  - feature toggle (`enabled`)
+  - command name (`pcveto` by default)
+  - default mode (`matchmaking_vote` or `tournament_draft`)
+  - matchmaking vote duration
+  - matchmaking auto-start min players threshold
+  - tournament turn timeout
+  - default odd best-of value
+  - immediate-launch toggle for applying selected opener
+- Series policy settings:
+  - persisted keys: veto default BO + runtime series scores (`maps_score.team_a|team_b`, `current_map_score.team_a|team_b`)
+  - no extra series env settings beyond BO default (`PIXEL_CONTROL_VETO_DRAFT_DEFAULT_BEST_OF`)
+- Persistence hardening:
+  - veto default mode, matchmaking duration, and matchmaking auto-start min players persist through `SettingManager->setSetting(...)`
+  - veto default mutations rollback runtime value when setting persistence fails (`setting_write_failed`)
 - Runtime setting precedence: environment override first, ManiaControl setting fallback second
+
+## Rollout and rollback
+
+- Safe rollout default: veto/draft feature is disabled unless explicitly enabled (`PIXEL_CONTROL_VETO_DRAFT_ENABLED=1`).
+- Permission guardrails:
+  - all players can access vote/action command surface,
+  - privileged operations (`start`, `cancel`, override actions) are gated by plugin permission rights.
+- Rollback path:
+  - set `PIXEL_CONTROL_VETO_DRAFT_ENABLED=0` (or disable corresponding ManiaControl setting),
+  - reload plugin/server process,
+  - plugin returns to baseline map-rotation behavior without persistent state migration.
 
 ## Contract artifacts
 

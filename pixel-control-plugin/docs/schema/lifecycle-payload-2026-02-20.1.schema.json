@@ -371,6 +371,9 @@
             "type": "object"
           }
         },
+        "series_targets": {
+          "type": "object"
+        },
         "veto_draft_actions": {
           "type": "object"
         },

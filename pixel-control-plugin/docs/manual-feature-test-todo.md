@@ -11,6 +11,16 @@ Chaque item contient le titre de la feature + une User Story (one-liner) + comme
 - Commande rapide NDJSON: `rg -n '<pattern>' pixel-sm-server/logs/manual/manual-feature-test-payload.ndjson`
 - Commande rapide logs: `rg -n '<pattern>' pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log`
 
+## 0.ter) Frontiere auto vs manuel
+
+- Le suite runner automatise (`bash pixel-sm-server/scripts/test-automated-suite.sh`) couvre uniquement les verifications deterministes et simulables.
+- Les callbacks combat reel restent explicitement hors pass/fail automatique et doivent etre valides en session manuelle:
+  - `OnShoot`
+  - `OnHit`
+  - `OnNearMiss`
+  - `OnArmorEmpty`
+  - `OnCapture`
+
 ## 0) Preparation (a faire une seule fois)
 
 - [x] Stack dev et plugin charges

@@ -158,6 +158,39 @@ Wave-3 replay writes deterministic artifacts with prefix `logs/qa/wave3-telemetr
 Wave-4 replay writes deterministic artifacts with prefix `logs/qa/wave4-telemetry-<timestamp>-*`.
 By default it injects deterministic fixture envelopes in addition to captured plugin traffic so required markers can be validated without real client gameplay.
 
+### Automated suite orchestrator (all automatable checks)
+
+Run the top-level orchestrator to execute the current automatable QA coverage in one command:
+
+```bash
+bash scripts/test-automated-suite.sh
+```
+
+Default behavior:
+
+- Covers `elite,joust` mode profiles.
+- Runs launch smoke + wave-4 plugin-only replay per mode.
+- Runs strict wave-3 and wave-4 replay gate in `elite`.
+- Runs admin response assertions, admin payload capture assertions, and response/payload correlation checks.
+- Exits non-zero when a required check fails.
+- Keeps real-client combat callbacks out of automated pass/fail: `OnShoot`, `OnHit`, `OnNearMiss`, `OnArmorEmpty`, `OnCapture`.
+
+Useful variants:
+
+```bash
+bash scripts/test-automated-suite.sh --modes elite
+bash scripts/test-automated-suite.sh --modes elite,joust --with-mode-smoke
+```
+
+Run artifacts are written under:
+
+- `logs/qa/automated-suite-<timestamp>/run-manifest.json`
+- `logs/qa/automated-suite-<timestamp>/coverage-inventory.json`
+- `logs/qa/automated-suite-<timestamp>/check-results.ndjson`
+- `logs/qa/automated-suite-<timestamp>/suite-summary.json`
+- `logs/qa/automated-suite-<timestamp>/suite-summary.md`
+- `logs/qa/automated-suite-<timestamp>/manual-handoff.md`
+
 ### Admin payload simulation (future server -> plugin)
 
 Use this helper to simulate external server payloads sent to delegated admin communication methods:
@@ -177,6 +210,7 @@ Behavior notes:
   - `PixelControl.Admin.ListActions`
   - `PixelControl.Admin.ExecuteAction`
 - Matrix mode replays the full delegated admin action catalog and writes artifacts under `logs/qa/admin-payload-sim-<timestamp>/`.
+- Override output root with `PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT` when you need run-local artifact directories.
 - If no communication password/port is provided, the helper tries to auto-read socket settings from `mc_settings` and falls back to `127.0.0.1:31501` with empty password.
 
 ### Wave-5 manual real-client evidence workflow

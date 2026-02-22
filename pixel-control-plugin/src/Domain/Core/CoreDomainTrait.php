@@ -60,7 +60,9 @@ trait CoreDomainTrait {
 		$this->initializeSettings();
 		$this->initializeSourceSequence();
 		$this->initializeEventPipeline();
+		$this->initializeSeriesControlState();
 		$this->initializeAdminDelegationLayer();
+		$this->initializeVetoDraftFeature();
 		$this->callbackRegistry = new CallbackRegistry();
 		$this->callbackRegistry->register($maniaControl, $this);
 		$this->registerPeriodicTimers();
@@ -83,6 +85,7 @@ trait CoreDomainTrait {
 	public function unload() {
 		Logger::log('[PixelControl] Unloading plugin.');
 		$this->unregisterAdminControlEntryPoints();
+		$this->unregisterVetoDraftEntryPoints();
 
 		$this->nativeAdminGateway = null;
 		$this->adminControlEnabled = false;
@@ -112,6 +115,24 @@ trait CoreDomainTrait {
 		$this->playerConstraintPolicyErrorLogAt = 0;
 		$this->vetoDraftActions = array();
 		$this->vetoDraftActionSequence = 0;
+		$this->vetoDraftEnabled = false;
+		$this->vetoDraftCommandName = 'pcveto';
+		$this->vetoDraftDefaultMode = 'matchmaking_vote';
+		$this->vetoDraftMatchmakingDurationSeconds = 60;
+		$this->vetoDraftMatchmakingAutostartMinPlayers = 2;
+		$this->vetoDraftMatchmakingAutostartArmed = true;
+		$this->vetoDraftMatchmakingAutostartSuppressed = false;
+		$this->vetoDraftTournamentActionTimeoutSeconds = 45;
+		$this->vetoDraftDefaultBestOf = 3;
+		$this->vetoDraftLaunchImmediately = true;
+		$this->vetoDraftMapPoolService = null;
+		$this->vetoDraftQueueApplier = null;
+		$this->vetoDraftCoordinator = null;
+		$this->seriesControlState = null;
+		$this->vetoDraftCompatibilitySnapshot = null;
+		$this->vetoDraftLastAppliedSessionId = '';
+		$this->vetoDraftMatchmakingLifecycleContext = null;
+		$this->vetoDraftMatchmakingLifecycleLastSnapshot = null;
 		$this->heartbeatIntervalSeconds = 120;
 		$this->resetDeliveryTelemetry();
 		$this->maniaControl = null;
@@ -120,6 +141,7 @@ trait CoreDomainTrait {
 	}
 
 	public function handleLifecycleCallback(...$callbackArguments) {
+		$this->handleMatchmakingLifecycleFromCallback($callbackArguments);
 		$this->queueCallbackEvent('lifecycle', $callbackArguments);
 	}
 
@@ -174,6 +196,8 @@ trait CoreDomainTrait {
 		$settingManager->initSetting($this, self::SETTING_DISPATCH_BATCH_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1));
 		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1));
 		$this->initializeAdminControlSettings();
+		$this->initializeVetoDraftSettings();
+		$this->initializeSeriesControlSettings();
 	}
 
 	private function initializeEventPipeline() {
@@ -244,8 +268,9 @@ trait CoreDomainTrait {
 		$timerManager = $this->maniaControl->getTimerManager();
 		$timerManager->registerTimerListening($this, 'handleDispatchTimerTick', 1000);
 		$timerManager->registerTimerListening($this, 'handleHeartbeatTimerTick', $this->heartbeatIntervalSeconds * 1000);
+		$timerManager->registerTimerListening($this, 'handleVetoDraftTimerTick', 1000);
 
-		Logger::log('[PixelControl] Timers registered: dispatch=1s, heartbeat=' . $this->heartbeatIntervalSeconds . 's.');
+		Logger::log('[PixelControl] Timers registered: dispatch=1s, heartbeat=' . $this->heartbeatIntervalSeconds . 's, veto_tick=1s.');
 	}
 
 	private function resolveRuntimeStringSetting($settingName, $environmentVariableName, $fallback) {

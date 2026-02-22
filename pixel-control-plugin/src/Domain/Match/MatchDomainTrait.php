@@ -1022,6 +1022,24 @@ trait MatchDomainTrait {
 
 		$vetoDraftActions = $this->buildVetoDraftActionSnapshot($currentMapSnapshot);
 		$vetoResult = $this->buildVetoResultSnapshot($vetoDraftActions, $currentMapSnapshot, $mapPool, $variant);
+		$vetoDraftMode = '';
+		$vetoDraftSessionStatus = '';
+		$seriesTargets = $this->getSeriesControlSnapshot();
+		$matchmakingLifecycle = $this->buildMatchmakingLifecycleStatusSnapshot();
+
+		$authoritativeVetoSnapshots = $this->resolveAuthoritativeVetoDraftSnapshots();
+		if (is_array($authoritativeVetoSnapshots)) {
+			if (isset($authoritativeVetoSnapshots['actions']) && is_array($authoritativeVetoSnapshots['actions'])) {
+				$vetoDraftActions = $authoritativeVetoSnapshots['actions'];
+			}
+
+			if (isset($authoritativeVetoSnapshots['result']) && is_array($authoritativeVetoSnapshots['result'])) {
+				$vetoResult = $authoritativeVetoSnapshots['result'];
+			}
+
+			$vetoDraftMode = isset($authoritativeVetoSnapshots['mode']) ? trim((string) $authoritativeVetoSnapshots['mode']) : '';
+			$vetoDraftSessionStatus = isset($authoritativeVetoSnapshots['status']) ? trim((string) $authoritativeVetoSnapshots['status']) : '';
+		}
 
 		$fieldAvailability = array(
 			'map_pool' => !empty($mapPool),
@@ -1031,6 +1049,10 @@ trait MatchDomainTrait {
 			'played_map_order' => !empty($this->playedMapHistory),
 			'veto_draft_actions' => isset($vetoDraftActions['available']) ? (bool) $vetoDraftActions['available'] : false,
 			'veto_result' => is_array($vetoResult) && isset($vetoResult['status']),
+			'veto_draft_mode' => $vetoDraftMode !== '',
+			'veto_draft_session_status' => $vetoDraftSessionStatus !== '',
+			'series_targets' => is_array($seriesTargets) && !empty($seriesTargets),
+			'matchmaking_lifecycle' => is_array($matchmakingLifecycle) && isset($matchmakingLifecycle['status']),
 		);
 
 		$missingFields = array();
@@ -1051,6 +1073,10 @@ trait MatchDomainTrait {
 			'map_pool' => $mapPool,
 			'played_map_count' => count($this->playedMapHistory),
 			'played_map_order' => $this->playedMapHistory,
+			'veto_draft_mode' => $vetoDraftMode,
+			'veto_draft_session_status' => $vetoDraftSessionStatus,
+			'series_targets' => $seriesTargets,
+			'matchmaking_lifecycle' => $matchmakingLifecycle,
 			'veto_draft_actions' => $vetoDraftActions,
 			'veto_result' => $vetoResult,
 			'field_availability' => $fieldAvailability,

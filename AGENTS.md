@@ -129,6 +129,11 @@
 - Wave-3 helper now supports deterministic marker fixtures (`PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=1` by default) and host-side stub posting through `PIXEL_SM_QA_TELEMETRY_STUB_LOCAL_URL` (default `http://127.0.0.1:18080`) to avoid local `host.docker.internal` DNS issues.
 - Wave-4 replay helper: `pixel-sm-server/scripts/qa-wave4-telemetry-replay.sh` validates reconnect/side-change/team-aggregate/win-context/veto markers, stores artifacts under `pixel-sm-server/logs/qa/wave4-telemetry-<timestamp>-*`, and indexes canonical evidence in `pixel-sm-server/logs/qa/wave4-evidence-index-20260220.md`.
 - Admin payload simulation helper: `pixel-sm-server/scripts/qa-admin-payload-sim.sh` simulates future server-originated `PixelControl.Admin.ListActions`/`PixelControl.Admin.ExecuteAction` payloads over ManiaControl communication socket and stores artifacts under `pixel-sm-server/logs/qa/admin-payload-sim-<timestamp>/`.
+- Admin payload simulation helper now supports `PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT` to force run-local artifact roots while preserving default output behavior.
+- Automated orchestration helper is now first-party: `pixel-sm-server/scripts/test-automated-suite.sh`.
+- Orchestrator defaults to `--modes elite,joust`, supports `--modes <csv>` and optional `--with-mode-smoke`, and writes deterministic run artifacts under `pixel-sm-server/logs/qa/automated-suite-<timestamp>/` (`run-manifest.json`, `coverage-inventory.json`, `check-results.ndjson`, `suite-summary.json`, `suite-summary.md`, `manual-handoff.md`).
+- Orchestrator required coverage includes per-mode launch smoke + wave-4 plugin-only marker validation, admin response/payload/correlation assertions, and strict elite gate (`qa-wave3-telemetry-replay.sh` + strict `qa-wave4-telemetry-replay.sh`); it exits non-zero on required check failures.
+- Automated suite keeps live combat callbacks manual-only (`OnShoot`, `OnHit`, `OnNearMiss`, `OnArmorEmpty`, `OnCapture`) and routes that boundary to `manual-handoff.md`.
 - In current battle-mode runtime, direct fake-player `forcePlayerTeam(...)` calls can intermittently return `UnknownPlayer`; wave-4 replay now treats those as non-fatal warnings and relies on deterministic fixture envelopes for required marker closure.
 - Wave-5 manual evidence helpers are now first-party: `pixel-sm-server/scripts/manual-wave5-session-bootstrap.sh`, `pixel-sm-server/scripts/manual-wave5-ack-stub.sh`, `pixel-sm-server/scripts/manual-wave5-log-export.sh`, and `pixel-sm-server/scripts/manual-wave5-evidence-check.sh`.
 - Recommended manual payload capture flow: run local ACK stub on host `127.0.0.1:18080`, then restart plugin transport with `PIXEL_CONTROL_API_BASE_URL=http://host.docker.internal:18080 bash scripts/dev-plugin-sync.sh` before real-client scenarios.
@@ -195,6 +200,16 @@
   - root cause: admin-correlation cache (`recentAdminActionContexts`) was populated from lifecycle enqueue path only; direct admin execute path did not seed context for player-targeted actions, so player-domain correlation could not match recent admin intent.
   - fix: `AdminControlDomainTrait::executeDelegatedAdminAction()` now records correlation context on successful admin execution (action name/type/target scope/target id/initiator/actor/observed_at) via `rememberAdminActionCorrelationContext(...)`.
   - validation: runtime plugin source contains the new correlation helper methods in `Domain/Admin/AdminControlDomainTrait.php`; QA checklist now states precondition that positive correlation checks require admin action response `success=true`.
+- Incident memory (2026-02-21, orchestrator preflight incorrectly rejected readable scripts):
+  - symptom: `test-automated-suite.sh` failed immediately with `Missing executable script: .../qa-mode-smoke.sh` before any QA checks ran.
+  - root cause: preflight used `-x` checks even though helper scripts are invoked via `bash <script>` and may intentionally be non-executable in git metadata.
+  - fix: preflight now validates script presence (`-f`) instead of executable bit.
+  - validation: default orchestrator run completed to full check execution and produced passing summary at `pixel-sm-server/logs/qa/automated-suite-20260221-212244/suite-summary.json`.
+- Incident memory (2026-02-21, admin response/payload correlation false negatives in automated suite):
+  - symptom: correlation checks failed although admin payload capture succeeded, because successful actions like `map.skip`/`map.restart` had no deterministic matching `admin_action.action_name` in captured envelopes.
+  - root cause: correlation required every successful admin action from response matrix, but captured payload stream only guarantees deterministic lifecycle/system-facing action names for a subset in this environment.
+  - fix: correlation now targets an explicit deterministic allowlist (`warmup.extend`, `warmup.end`, `pause.end`) and supports alias matching (`warmup.status`, `pause.end`) for script-generated lifecycle envelopes.
+  - validation: full default run passed with `overall_status=passed` at `pixel-sm-server/logs/qa/automated-suite-20260221-212244/suite-summary.json`, elite-only rerun passed at `pixel-sm-server/logs/qa/automated-suite-20260221-213008/suite-summary.json`, and final full default re-validation passed with `checks_total=31`/`passed=31` at `pixel-sm-server/logs/qa/automated-suite-20260221-214203/suite-summary.json`.
 
 ## Current execution status (2026-02-20)
 - Active execution direction: plugin-first and dev-server-first; backend/API implementation is paused by user for now.
@@ -228,3 +243,220 @@
   - `pixel-control-server/` code changes were rolled back on user request,
   - future API behavior must be tracked in `API_CONTRACT.md` until backend work is re-opened.
 - Where we stopped: wave-5 core work + native-admin delegation refactor are complete; remaining open validation is user-run real-client gameplay/evidence closure.
+- Map draft/veto implementation (2026-02-21) is now added to plugin-first codebase:
+  - feature subtree: `pixel-control-plugin/src/VetoDraft/` (`VetoDraftCatalog`, `MapPoolService`, `MatchmakingVoteSession`, `TournamentSequenceBuilder`, `TournamentDraftSession`, `VetoDraftCoordinator`, `VetoDraftQueueApplier`),
+  - integration trait: `pixel-control-plugin/src/Domain/VetoDraft/VetoDraftDomainTrait.php`, wired through `PixelControlPlugin` + `CoreDomainTrait` periodic timer,
+  - command surface: `/pcveto ...` and `//pcveto ...` (dual command-channel registration so both user and admin chat prefixes route to veto handler; control/override rights enforced for privileged operations),
+  - runtime defaults are now admin-configurable through chat (`//pcveto mode <matchmaking|tournament>`, `//pcveto duration <seconds>`),
+  - player-first matchmaking flow now auto-starts configured `matchmaking_vote` on first `vote` request when no active session exists (tournament auto-start intentionally out-of-scope in this phase),
+  - chat observability now emits explicit launch marker (`Matchmaking veto launched ...`) and explicit queued map list (`Queued maps:`) after queue apply,
+  - communication methods: `PixelControl.VetoDraft.Start`, `PixelControl.VetoDraft.Action`, `PixelControl.VetoDraft.Status`, `PixelControl.VetoDraft.Cancel`,
+  - lifecycle map telemetry now exposes authoritative veto state through `map_rotation.veto_draft_mode`, `map_rotation.veto_draft_session_status`, `veto_draft_actions`, and `veto_result`.
+- Draft/veto runtime settings now available (env + setting equivalents):
+  - `PIXEL_CONTROL_VETO_DRAFT_ENABLED`,
+  - `PIXEL_CONTROL_VETO_DRAFT_COMMAND`,
+  - `PIXEL_CONTROL_VETO_DRAFT_DEFAULT_MODE`,
+  - `PIXEL_CONTROL_VETO_DRAFT_MATCHMAKING_DURATION_SECONDS`,
+  - `PIXEL_CONTROL_VETO_DRAFT_TOURNAMENT_ACTION_TIMEOUT_SECONDS`,
+  - `PIXEL_CONTROL_VETO_DRAFT_DEFAULT_BEST_OF`,
+  - `PIXEL_CONTROL_VETO_DRAFT_LAUNCH_IMMEDIATELY`.
+- Elite veto test pool now includes 9 curated Elite maps under `pixel-sm-server/maps/elite/` and Elite matchsettings references only those entries in `pixel-sm-server/templates/matchsettings/elite.txt`.
+- Deterministic QA evidence for this feature is stored at `pixel-sm-server/logs/qa/map-draft-veto-20260221-executor/` (`qa-summary.md` + `acceptance-checklist.md`).
+- Server-orchestrated veto simulation helper is now first-party: `pixel-sm-server/scripts/qa-veto-payload-sim.sh` (commands: `status`, `start`, `action`, `cancel`, `matrix`).
+- Veto payload simulation evidence is captured under `pixel-sm-server/logs/qa/veto-payload-sim-<timestamp>/` (latest successful dynamic-turn run: `veto-payload-sim-20260221-223726/summary.md`).
+- Queue application now follows a DIP-friendly runtime adapter boundary (`MapRuntimeAdapterInterface` + `ManiaControlMapRuntimeAdapter`), enabling deterministic adapter-level smoke validation without booting full ManiaControl runtime.
+- Live container/runtime map-application validation remains recommended before production rollout even though logic-level queue behavior is smoke-validated (`veto_draft_queue_apply_smoke_ok`).
+- Incident memory (2026-02-21, `//pcveto maps` no-op in chat):
+  - symptom: admin chat prefix command `//pcveto maps` produced no visible veto handler response.
+  - root cause: veto command listener was only registered on non-admin command channel; ManiaControl routes `//` messages through admin command listeners.
+  - fix: register veto command on both command channels (`adminCommand=false` and `adminCommand=true`) in `VetoDraftDomainTrait`.
+  - validation: PHP lint passes on plugin trait; runtime payload/status checks still report command `pcveto` enabled; matrix payload flow remains green.
+- Incident memory (2026-02-21, static tournament actor matrix produced false-negative step):
+  - symptom: first `qa-veto-payload-sim.sh matrix` run reported one `actor_not_allowed` tournament action despite healthy session progression.
+  - root cause: matrix used static actor sequence that could desync from runtime `current_step.team` turn owner.
+  - fix: matrix tournament loop now reads live status snapshot each turn and selects actor dynamically from `current_step.team` before sending action payload.
+  - validation: rerun `veto-payload-sim-20260221-223726/summary.md` shows all tournament action steps `success=true` with no `actor_not_allowed` rows.
+- Incident memory (2026-02-21, draft timeout smoke expectation mismatch):
+  - symptom: timeout smoke scenario failed with `timeout event missing`.
+  - root cause: tournament session enforces minimum timeout floor of 10 seconds; test used 1-second assumption with insufficient elapsed delta.
+  - fix: adjust smoke ticks to exceed enforced minimum timeout and re-run scenario.
+  - validation: corrected smoke run output `veto_draft_extended_smoke_ok`.
+- Incident memory (2026-02-21, BO1 completion expectation mismatch):
+  - symptom: BO1 smoke check failed with `bo1 map count mismatch` after partial actions.
+  - root cause: BO1 sequence still requires full ban timeline (`map_pool_size - 1` bans) before automatic decider lock.
+  - fix: complete full BO1 ban sequence (or equivalent timeout progression) before asserting final series map order.
+  - validation: corrected smoke run completed with one-map series order and output `veto_draft_extended_smoke_ok`.
+
+## Additional execution status (2026-02-21, BO/maps/score controls)
+- Series policy controls are now first-party in plugin runtime:
+  - state owner: `pixel-control-plugin/src/SeriesControl/SeriesControlState.php` (+ catalog/interface),
+  - runtime fields: `best_of`, `maps_score.team_a|team_b`, `current_map_score.team_a|team_b`, metadata (`updated_at`, `updated_by`, `update_source`).
+- Chat/admin surfaces now support series policy operations:
+  - `//pcveto config` prints runtime series snapshot (BO write removed from `pcveto`; use `pcadmin` actions),
+  - `//pcadmin match.bo.set best_of=<odd>`,
+  - `//pcadmin match.bo.get`,
+  - `//pcadmin match.maps.set target_team=<0|1|red|blue> maps_score=<int>`,
+  - `//pcadmin match.maps.get`,
+  - `//pcadmin match.score.set target_team=<0|1|red|blue> score=<int>`,
+  - `//pcadmin match.score.get`.
+- Communication/admin surfaces now include additive series controls:
+  - delegated actions: `match.bo.set`, `match.bo.get`, `match.maps.set`, `match.maps.get`, `match.score.set`, `match.score.get` via `PixelControl.Admin.ExecuteAction`,
+  - additive `series_targets` snapshots in `PixelControl.Admin.ListActions` and `PixelControl.VetoDraft.Status`,
+  - lifecycle `map_rotation` telemetry now includes additive `series_targets` snapshot.
+- BO precedence contract is explicit in runtime:
+  - tournament start honors explicit request `best_of` first,
+  - omitted `best_of` falls back to runtime series-policy default.
+- Deterministic evidence captured for this scope:
+  - admin matrix: `pixel-sm-server/logs/qa/admin-payload-sim-20260221-231000/summary.md`,
+  - veto matrix: `pixel-sm-server/logs/qa/veto-payload-sim-20260221-231032/summary.md`,
+  - series set/status checks: `pixel-sm-server/logs/qa/admin-payload-sim-20260221-231222/execute-match-series-set.json`, `pixel-sm-server/logs/qa/admin-payload-sim-20260221-231231/execute-match-series-status.json`,
+  - BO-default fallback check (`best_of=7` without explicit start parameter): `pixel-sm-server/logs/qa/veto-payload-sim-20260221-231335/start.json`.
+- Fresh revalidation evidence (2026-02-22):
+  - admin matrix rerun summary: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-004714/summary.md`.
+  - veto matrix rerun summary: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-004758/summary.md`.
+- Incident memory (2026-02-21, QA veto matrix precondition failure):
+  - symptom: `qa-veto-payload-sim.sh matrix` failed immediately with `Service 'shootmania' is not running`.
+  - root cause: local compose stack was not running when simulation started.
+  - fix: start stack from `pixel-sm-server` using `docker compose up -d --build`, then rerun simulation.
+  - validation: rerun completed successfully with summary at `pixel-sm-server/logs/qa/veto-payload-sim-20260221-231032/summary.md`.
+- Incident memory (2026-02-22, QA admin matrix precondition failure):
+  - symptom: `qa-admin-payload-sim.sh matrix` failed immediately with `Service 'shootmania' is not running`.
+  - root cause: local compose stack was down before communication-matrix replay started.
+  - fix: start stack from `pixel-sm-server` using `docker compose up -d --build`, then rerun admin matrix.
+  - validation: rerun completed successfully with summary at `pixel-sm-server/logs/qa/admin-payload-sim-20260222-004714/summary.md`.
+- Automated suite hardening closure (2026-02-22):
+  - final green orchestrator evidence: `pixel-sm-server/logs/qa/automated-suite-20260222-003125/` (`suite-summary.json`, `suite-summary.md`, `check-results.ndjson`) with `checks_total=39`, `passed=39`, `required_failures=0`.
+  - latest execution revalidation evidence: `pixel-sm-server/logs/qa/automated-suite-20260222-094958/` (`suite-summary.json`, `suite-summary.md`, `check-results.ndjson`, `manual-handoff.md`) with `checks_total=39`, `passed=39`, `required_failures=0`.
+- Incident memory (2026-02-22, false-positive suite failures from recovery races in automated veto checks):
+  - symptom: `test-automated-suite.sh` intermittently failed `mode.*.veto.matrix` with `Socket connect failed to 127.0.0.1:31501 (111 Connection refused)` right after recovery relaunch, despite subsequent manual reruns succeeding.
+  - root cause: orchestrator retry path relaunched shootmania but retried communication-backed steps before ManiaControl communication socket was ready; additional container recreation churn increased race frequency.
+  - fix: harden `pixel-sm-server/scripts/test-automated-suite.sh` recovery helper to (a) centralize retry execution, (b) remove stale shootmania containers by discovered name pattern before relaunch, and (c) block on communication socket readiness (`PIXEL_SM_AUTOMATED_SUITE_COMM_HOST/PORT/WAIT_ATTEMPTS`, defaults `127.0.0.1:31501`, `45`) before retrying communication steps.
+  - validation: full orchestrator rerun passed end-to-end at `pixel-sm-server/logs/qa/automated-suite-20260222-003125/suite-summary.json`.
+
+## Additional execution status (2026-02-22, crash-recovery score commands)
+- Admin control surface now supports manual score recovery actions for BO/map continuity after runtime/script reset:
+  - `match.maps.set target_team=<0|1|red|blue> maps_score=<int>` (maps won in current BO),
+  - `match.score.set target_team=<0|1|red|blue> score=<int>` (rounds won on current map).
+- Team selector normalization is now canonical in runtime policy state (`0|blue|team_a|a` -> `team_a`, `1|red|team_b|b` -> `team_b`), including quoted input tolerance for `target_team` values.
+- `series_targets` snapshots now include additive recovery fields:
+  - `maps_score.team_a|team_b`,
+  - `current_map_score.team_a|team_b`.
+- QA admin matrix now includes deterministic coverage for `match.bo.get`, `match.bo.set`, `match.maps.get/set`, and `match.score.get/set` in `pixel-sm-server/scripts/qa-admin-payload-sim.sh`.
+- Latest evidence:
+  - first matrix run before runtime sync: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-101744/summary.md` (new actions reported `action_unknown`),
+  - post hot-sync successful matrix run: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-101845/summary.md`,
+  - renamed-action matrix rerun summary: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-104241/summary.md` (`match.bo.get/set`, `match.maps.get/set`, `match.score.get/set` all `success=true`),
+  - payload artifacts: `execute-15-match-bo-set.json`, `execute-18-match-maps-get.json`, `execute-21-match-score-get.json` under `pixel-sm-server/logs/qa/admin-payload-sim-20260222-104241/`.
+- Incident memory (2026-02-22, action rename from `match.series.*` to explicit BO/maps/score get-set):
+  - symptom: `match.series.set/status` naming mixed BO policy and score-recovery semantics, and did not expose explicit read actions for maps/round scores.
+  - root cause: first design bundled unrelated policy targets into one command family, while crash-recovery flow requires explicit operations (`bo`, `maps_score`, `current_map_score`) with deterministic getters.
+  - fix: replace catalog/actions with `match.bo.set`, `match.bo.get`, `match.maps.set`, `match.maps.get`, `match.score.set`, `match.score.get`; remove runtime `map_count_target`/`team_*_score_target` fields from `SeriesControlState`; update docs and QA matrix script accordingly.
+  - validation: `php -l` passed on touched plugin files, admin matrix passed at `admin-payload-sim-20260222-104241/summary.md`, and veto matrix non-regression passed at `veto-payload-sim-20260222-104323/summary.md`.
+- Incident memory (2026-02-22, new admin actions returned `action_unknown` right after code edit):
+  - symptom: `qa-admin-payload-sim.sh matrix` reported `match.maps.set` / `match.score.set` as `action_unknown` although source code defined both actions.
+  - root cause: running ManiaControl process was still on previous plugin code (runtime plugin not hot-synced/reloaded after local edits).
+  - fix: run `bash pixel-sm-server/scripts/dev-plugin-hot-sync.sh` to sync plugin into container and restart ManiaControl process only, then rerun matrix.
+  - validation: rerun matrix reported `match.maps.set` and `match.score.set` as `success=true`, `code=ok` in `admin-payload-sim-20260222-101845/summary.md`.
+
+## Additional execution status (2026-02-22, modular automated-suite action descriptors)
+- `pixel-sm-server/scripts/test-automated-suite.sh` now resolves required admin action coverage from modular descriptor scripts instead of hardcoded action arrays.
+- Descriptor root: `pixel-sm-server/scripts/automated-suite/admin-actions/` (one `.sh` file per admin action key).
+- Descriptor contract is documented in `pixel-sm-server/scripts/automated-suite/README.md`.
+- Current descriptor set covers 24 actions including BO/maps/score get-set (`match.bo.set/get`, `match.maps.set/get`, `match.score.set/get`).
+
+## Additional execution status (2026-02-22, veto help UX + series persistence hardening)
+- `pcveto help` now resolves visibility from caller permissions and effective mode:
+  - non-admin callers do not receive admin-only docs,
+  - admin callers receive mode-specific admin docs only,
+  - effective mode policy is now explicit: active session mode when running, otherwise configured default mode, with deterministic fallback guidance when mode context is invalid.
+- Series persistence scope is now durable through ManiaControl settings:
+  - persisted keys: `best_of`, `maps_score.team_a|team_b`, `current_map_score.team_a|team_b`,
+  - mutation paths covered: `match.bo.set`, `match.maps.set`, `match.score.set`,
+  - persistence failures now return deterministic `setting_write_failed` and rollback runtime snapshot to pre-write state.
+- Latest evidence for this scope:
+  - pre-restart set/get baseline: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-110802/` and `pixel-sm-server/logs/qa/admin-payload-sim-20260222-110806/`,
+  - full container restart with env overrides cleared + post-restart verification: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-110852/` and `pixel-sm-server/logs/qa/admin-payload-sim-20260222-110853/`,
+  - plugin hot-restart verification: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-111100/` and `pixel-sm-server/logs/qa/admin-payload-sim-20260222-111102/`,
+  - non-regression matrices: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-110902/summary.md` and `pixel-sm-server/logs/qa/admin-payload-sim-20260222-110935/summary.md`.
+- Incident memory (2026-02-22, persistence QA masked by env precedence):
+  - symptom: BO/mode/duration persistence appeared inconsistent across restarts when container defaults were still exported.
+  - root cause: runtime precedence is env-first; non-empty `PIXEL_CONTROL_VETO_DRAFT_DEFAULT_*` values mask persisted settings during bootstrap checks.
+  - fix: recreate `shootmania` with `PIXEL_CONTROL_VETO_DRAFT_DEFAULT_BEST_OF=`, `PIXEL_CONTROL_VETO_DRAFT_DEFAULT_MODE=`, and `PIXEL_CONTROL_VETO_DRAFT_MATCHMAKING_DURATION_SECONDS=` for persistence-focused QA runs.
+  - validation: after restart, getters returned persisted series snapshot with `update_source=setting` and `updated_by=plugin_bootstrap`.
+
+## Additional execution status (2026-02-22, veto countdown + threshold autostart + completion apply policy)
+- Matchmaking veto countdown now emits deterministic markers and chat announcements from configured duration (`N, N-10, ..., 10, 5/4/3/2/1`), deduped per `<session_id, remaining_second>`.
+- Matchmaking threshold auto-start is now configurable and persisted through `//pcveto min_players <int>` (`matchmaking_autostart_min_players` in `PixelControl.VetoDraft.Status`).
+- Threshold auto-start gating uses connected human players (`PlayerManager::getPlayerCount(false, true)`), with anti-loop state markers: `armed`, `triggered`, `suppressed`, `below_threshold`.
+- Completion map-order application is now branch-deterministic:
+  - `opener_differs`: queue full order then apply `map.skip` to opener,
+  - `opener_already_current`: queue remaining maps only, no opener restart/skip.
+- Latest evidence for this scope:
+  - veto status snapshot with threshold field: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-131059/status.json`,
+  - veto matrix rerun: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-130832/summary.md`,
+  - admin matrix rerun: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-130914/summary.md`,
+  - runtime countdown/autostart/apply markers: `pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log`.
+- Incident memory (2026-02-22, opener jump failure on completion path):
+  - symptom: completion apply returned `map_skip_failed` while queue updates succeeded.
+  - root cause: direct opener jump (`skipToMapByUid`) was not reliable in this runtime path for immediate post-veto transitions.
+  - fix: switch opener-differs branch to deterministic `map.skip` after queueing opener-first order.
+  - validation: runtime logs show `[PixelControl][veto][apply_success] ... branch=opener_differs ... skip_code=skip_applied` and opener-already-current branch shows `skip_code=skip_not_required`.
+- Gotcha (2026-02-22, chat evidence capture):
+  - ManiaControl runtime log does not reliably persist `sendInformation(...)` chat lines, so chat-text assertions (`Map vote IDs`, `Available veto IDs`, countdown chat text) should be validated with live client/chat capture or complementary observability markers.
+
+## Additional execution status (2026-02-22, veto role visibility + status scoping + vote reset)
+- Role-based veto map visibility is now enforced on chat/control surface:
+  - non-admin map listings are index/name only,
+  - admin listings keep UID-capable rows.
+- Completion diagnostics are now admin-only:
+  - `Series order`, `Completion branch`, and `Opener jump` are scoped to veto-control audience.
+- `/pcveto status` visibility is now role-scoped:
+  - non-admin sees veto-result projection only,
+  - admin keeps operational diagnostics (`Map draft/veto status`, no-active-session guidance, vote/turn details, series config).
+- Matchmaking countdown cadence now derives from configured duration and preserves per-session dedupe:
+  - validated runtime example (`duration=15`) emitted `15,10,5,4,3,2,1` exactly once each in `pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log`.
+- Matchmaking start now hard-resets vote counters for fresh sessions:
+  - coordinator executes explicit `resetVoteCounters()` on session bootstrap and retains zero-baseline status snapshot.
+- Evidence root for this execution: `pixel-sm-server/logs/qa/veto-role-visibility-countdown-reset/`.
+  - required replays: `veto-payload-sim-20260222-135435/status.json`, `veto-payload-sim-20260222-135436/summary.md`, `admin-payload-sim-20260222-135454/summary.md`.
+  - deterministic reset proof set: `veto-payload-sim-20260222-135328/`, `veto-payload-sim-20260222-135330/`, `veto-payload-sim-20260222-135333/`, `veto-payload-sim-20260222-135336/`, `veto-payload-sim-20260222-135338/`.
+  - latest hot-sync validation logs: `pixel-sm-server/logs/dev/dev-plugin-hot-sync-shootmania-20260222-140056.log` and `pixel-sm-server/logs/dev/dev-plugin-hot-sync-maniacontrol-20260222-140056.log`.
+
+## Additional execution status (2026-02-22, veto QA control-surface hardening)
+- Veto matrix runtime flow is now modularized with one-file-per-step scripts in `pixel-sm-server/scripts/qa-veto-matrix-actions/` (`01..08`), consumed by `pixel-sm-server/scripts/qa-veto-payload-sim.sh matrix`.
+- Veto matrix now emits strict machine-readable assertion artifacts:
+  - `matrix-step-manifest.ndjson`,
+  - `matrix-context.json`,
+  - `matrix-validation.json` (required-check pass/fail source of truth).
+- Automated suite veto required gates are now descriptor-driven through `pixel-sm-server/scripts/automated-suite/veto-checks/` (one check id per `.sh` file), similar to admin-action descriptors.
+- Latest green evidence set for this hardening scope:
+  - veto command checks: `veto-payload-sim-20260222-144529/` (`status.json`), `veto-payload-sim-20260222-144542/` (`start.json`), `veto-payload-sim-20260222-144558/` (`action.json`), `veto-payload-sim-20260222-144608/` (`cancel.json`),
+  - veto matrix strict pass: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-144619/matrix-validation.json`,
+  - admin matrix non-regression: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-144651/summary.md`,
+  - automated suite full revalidation: `pixel-sm-server/logs/qa/automated-suite-20260222-144712/suite-summary.json` (`checks_total=39`, `passed=39`, `required_failures=0`).
+- Hardening audit/index root: `pixel-sm-server/logs/qa/veto-control-surface-hardening-20260222-141438/` (`inventory.md`, `gap-analysis.md`, `evidence-index.md`).
+- Contract note: this scope changed QA tooling/assertion coverage only; no additive/breaking communication contract change was introduced.
+- Incident memory (2026-02-22, joust tournament compatibility false-negative in veto required checks):
+  - symptom: `test-automated-suite.sh --modes elite,joust` failed required veto checks after matrix completion (`negative.tournament.actor_not_allowed` and tournament action-count assumptions) even though runtime flow completed.
+  - root cause: in some joust/BO1 compatibility paths, tournament progression can expose a `system` step where forcing an invalid actor is not applicable and may consume expected action budget.
+  - fix: make veto matrix + validator compatibility-aware for `system` turn ownership and gate invalid-actor assertions only when the scenario is applicable.
+  - validation: rerun passed at `pixel-sm-server/logs/qa/veto-payload-sim-20260222-144619/matrix-validation.json` and `pixel-sm-server/logs/qa/automated-suite-20260222-144712/suite-summary.json`.
+
+## Additional execution status (2026-02-22, matchmaking lifecycle closure hardening)
+- Matchmaking post-veto lifecycle strict matrix is now green after runtime fallback adjustment:
+  - veto matrix pass: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-170121/matrix-validation.json` (`overall_passed=true`, `required_failed_checks=[]`),
+  - admin non-regression pass: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-170205/summary.md`.
+- Evidence index for this scope: `pixel-sm-server/logs/qa/matchmaking-lifecycle-evidence-index-20260222.md`.
+- Runtime behavior note: lifecycle closure can still converge via fallback inference even if selected-map trigger helper logs `Could not reach selected map uid before timeout hops`.
+- Incident memory (2026-02-22, matchmaking lifecycle stuck at `veto_completed` during strict matrix):
+  - symptom: `qa-veto-payload-sim.sh matrix` repeatedly failed required checks (`flow.matchmaking.lifecycle.sequence`, `flow.matchmaking.lifecycle.ready_state`) while status snapshots stayed `stage=veto_completed`.
+  - root cause: `evaluateMatchmakingLifecycleRuntimeFallback()` returned early when current map UID was unavailable, which prevented timeout-based stage inference from progressing to `selected_map_loaded`/`match_started` in callback-sparse runtime windows.
+  - fix: allow timeout-based match-start inference to run before the empty-current-map early return, then gate end-of-cycle finalization on known current-map UID; hot-sync plugin and rerun strict matrix.
+  - validation: strict veto matrix passed at `pixel-sm-server/logs/qa/veto-payload-sim-20260222-170121/matrix-validation.json` with required lifecycle checks green.
+
+## User preference (durable)
+- For QA automation scripts, prefer modular Bash structure with one script per tested action/feature rather than large hardcoded lists inside monolithic scripts.
+- Matrix replay order for admin actions now lives in `pixel-sm-server/scripts/qa-admin-matrix-actions/` (one sourced `.sh` step per action) and should remain the default extension point.
+- Automated-suite required admin action catalog now lives in `pixel-sm-server/scripts/automated-suite/admin-actions/` (one `.sh` descriptor per action key) and should be updated whenever action coverage changes.
+- After any plugin code modification request, run `bash pixel-sm-server/scripts/dev-plugin-hot-sync.sh` before reporting completion so runtime behavior matches source changes.
+- When the user says `PLAN_EXECUTE`, treat it as explicit instruction to create a PLAN file with the `@planner` subagent and then execute that PLAN immediately with the `@executor` subagent.

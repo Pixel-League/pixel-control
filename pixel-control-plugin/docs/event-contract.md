@@ -58,6 +58,24 @@ This document defines the active plugin-to-server envelope baseline for wave 5.
 - Chat command requests remain actor-bound and permission-gated with ManiaControl plugin rights.
 - Communication payload requests currently run in temporary trusted mode (`authentication_mode=none_temporary`): `actor_login` is optional and plugin permission checks are intentionally skipped.
 - Existing lifecycle `admin_action` telemetry semantics remain unchanged and continue to be emitted by native callback observations.
+- Additive delegated action catalog extension:
+  - `match.bo.set` parameters: `best_of`
+  - `match.bo.get` parameters: none
+  - `match.maps.set` parameters: `target_team`, `maps_score`
+  - `match.maps.get` parameters: none
+  - `match.score.set` parameters: `target_team`, `score`
+  - `match.score.get` parameters: none
+- Additive communication status/list snapshots:
+  - `PixelControl.Admin.ListActions` now includes top-level `series_targets`
+  - `PixelControl.VetoDraft.Status` now includes top-level `matchmaking_autostart_min_players`
+  - `PixelControl.VetoDraft.Status` now includes top-level `series_targets`
+  - `PixelControl.VetoDraft.Status` now includes top-level `matchmaking_lifecycle` snapshot (`status`, `stage`, `ready_for_next_players`, action summaries, bounded history)
+- Series runtime persistence semantics for delegated setters (`match.bo.set`, `match.maps.set`, `match.score.set`):
+  - successful updates persist plugin settings for `best_of`, `maps_score.team_a|team_b`, `current_map_score.team_a|team_b`
+  - persistence failures return deterministic `setting_write_failed` and rollback runtime snapshot to pre-action state
+  - bootstrap restores persisted values from settings whenever env overrides are absent (env remains authoritative when set)
+- Team selector normalization for recovery actions:
+  - `target_team` accepts `0|1|red|blue` (plus aliases `team_a|team_b|a|b`) and normalizes to `team_a|team_b`.
 
 ## Lifecycle variant catalog
 
@@ -181,9 +199,36 @@ Wave-4 lifecycle payloads include additive map/stats context on existing lifecyc
 - `map_rotation` on map boundary variants (`map.begin`, `map.end`):
   - `map_pool`, `map_pool_size`, `current_map_index`, `next_maps`,
   - `played_map_order` runtime history,
+  - `series_targets` runtime policy snapshot (`best_of`, `maps_score`, `current_map_score`, metadata),
   - normalized identifiers (`uid`, `name`, optional `external_ids.mx_id`),
-  - `veto_draft_actions` additive action stream (`ban|pick|pass|lock` where callback data exposes it; inferred `lock` fallback otherwise),
-  - `veto_result` final-selection projection with explicit partial/unavailable semantics when dedicated veto callbacks are not exposed.
+  - additive veto metadata (`veto_draft_mode`, `veto_draft_session_status`),
+  - `veto_draft_actions` authoritative action stream (`ban|pick|pass|lock`) emitted from in-plugin draft/veto sessions,
+  - `veto_result` final-selection projection with explicit `running|completed|cancelled|unavailable` semantics,
+  - additive `matchmaking_lifecycle` projection (same lifecycle snapshot family as `PixelControl.VetoDraft.Status.matchmaking_lifecycle`).
+
+Draft mode notes:
+
+- `matchmaking_vote`: all players vote on map pool entries; highest votes win, ties are resolved by random draw among tied leaders.
+- `tournament_draft`: captain-led ban-first then ordered-pick flow with deterministic odd-BO decider lock.
+- Matchmaking post-veto lifecycle automation is additive and mode-guarded (`matchmaking_vote` only):
+  - stage sequence: `veto_completed -> selected_map_loaded -> match_started -> selected_map_finished -> players_removed -> map_changed -> match_ended -> ready_for_next_players`,
+  - selected-map lifecycle boundaries are callback-driven when available, with timer-based fallback inference to keep local QA deterministic,
+  - tournament sessions do not execute kick-all/map-change/end-mark automation.
+- Matchmaking countdown control-surface behavior is deterministic and additive (`N, N-10, ..., 10, 5..1` from configured session duration, one announcement per `<session_id, remaining_second>`).
+- Role-based chat visibility is control-surface scoped and additive:
+  - non-admin players receive map-name/index views only in chat listings,
+  - admin viewers keep UID-capable listings and completion diagnostics (`Series order`, `Completion branch`, `Opener jump`),
+  - non-admin `/pcveto status` output is veto-result-focused while admin status output keeps operational diagnostics.
+- Communication payload compatibility remains unchanged for this scope (`PixelControl.VetoDraft.Status` field shape is preserved; visibility narrowing is chat/output only).
+- `pcveto help` is additive UX guidance only (not envelope schema):
+  - role-aware: admin-only command docs are shown only to control-right users,
+  - mode-aware: displayed command group follows effective mode policy (`active session mode` else `configured default mode`).
+- Tournament BO precedence is deterministic and additive:
+  - explicit tournament-start request `best_of` is applied first,
+  - when omitted, runtime series-policy `best_of` default is used.
+- Completion queue/apply control-surface behavior is deterministic and additive:
+  - opener differs from current map -> queue full order then `map.skip` to opener,
+  - opener already current -> queue remaining maps only, no skip/restart of opener.
 
 ## Combat stats payload contract
 
