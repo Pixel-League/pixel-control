@@ -48,7 +48,7 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
     - `SESSION-<session_id>-evidence.md`
     - `SESSION-<session_id>-maniacontrol.log`
     - `SESSION-<session_id>-shootmania.log`
-- [Todo] P0.3 Prepare ACK capture and evidence-check compatibility.
+- [Done] P0.3 Prepare ACK capture and evidence-check compatibility.
 - Execution notes:
   - Created `pixel-sm-server/logs/manual/combat-stats-live-20260220/` with required session templates.
   - Added campaign templates: `README.md`, `MANUAL-TEST-MATRIX.md`, `INDEX.md`, `SESSION-combat-stats-001-notes.md`, `SESSION-combat-stats-001-evidence.md`.
@@ -67,7 +67,7 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
 - [Done] P1.1 Validate local prerequisites and runtime mounts.
   - Confirm `.env` exists in `pixel-sm-server/` and runtime assets exist under `PIXEL_SM_RUNTIME_SOURCE`.
   - Confirm mode is set for practical duel validation (default recommended: `PIXEL_SM_MODE=elite`).
-- [Todo] P1.2 Start stack and verify readiness.
+- [Done] P1.2 Start stack and verify readiness.
 - Execution notes:
   - `.env` present in `pixel-sm-server/`.
   - Runtime directory present at `pixel-sm-server/runtime/server`.
@@ -79,7 +79,7 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
     - `Maniacontrol started !`
     - XML-RPC listening marker
     - `[PixelControl] Plugin loaded.` in `pixel-sm-server/runtime/server/ManiaControl/ManiaControl.log`
-- [Todo] P1.3 Run pre-campaign smoke checks.
+- [Done] P1.3 Run pre-campaign smoke checks.
 - Execution notes:
   - `docker compose up -d --build` completed (PTY exit code `0`).
   - Container status healthy via `docker compose ps`:
@@ -175,7 +175,7 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
     - `dev-plugin-sync.sh` completed with plugin load marker found.
     - Baseline payload captured only lifecycle/connectivity rows (`warmup.status`, `plugin_registration`, `beginmatch`, `plugin_heartbeat`) and no combat rows.
     - Baseline initialized to zero counters for upcoming warmup probe.
-- [In progress] P3.2 Warmup leakage probe (correction gate).
+- [Done] P3.2 Warmup leakage probe (correction gate).
   - Operator action command to user: "While warmup is visibly active, fire exactly 2 rockets and 2 lasers; attempt 1 confirmed hit with each weapon."
   - Expected in-game state: warmup active (`warmup.start`/`warmup.status` context visible in lifecycle telemetry around the action window).
   - Mode compatibility gate: if current runtime mode/map does not expose laser shots, switch runtime to a laser-capable mode (recommended `elite`) before executing this probe.
@@ -192,14 +192,14 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
   - Execution notes:
     - User reported current battle runtime map does not allow laser shots (available weapons observed: rocket + nucleus), so the probe cannot satisfy scope in this mode.
     - Branch chosen: switch runtime to `elite` on legacy LAN ports (`2350`/`3450`) and re-run this warmup probe.
-- [Todo] P3.3 Live-state boundary sanity before loop execution.
+- [Done] P3.3 Live-state boundary sanity before loop execution.
   - Operator action command to user: "Wait for live round start; do not shoot yet."
   - Expected in-game state: match/round live (not warmup).
   - Verify lifecycle boundary evidence (`round.begin`/`match.begin` context) appears before first live shot.
 
 ### Phase 4 - Iterative live combat QA loops (operator/user choreography)
 
-- [Todo] P4.1 Loop A - Rocket accounting (live only).
+- [Done] P4.1 Loop A - Rocket accounting (live only).
   - Operator action command to user: "In live round, fire exactly 4 rocket shots; call out each hit marker count after each shot."
   - Expected in-game state: live round, user actively spawned and weapon switched to rocket.
   - Logs/payload fields to inspect:
@@ -208,7 +208,7 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
   - Pass/fail decision and branch:
     - Pass: `delta_rockets=4`, `delta_shots=4`, `delta_lasers=0`, `delta_hits` equals user-confirmed hit-marker count.
     - Fail: mismatch -> rerun Loop A once with fresh baseline; if mismatch repeats, branch to Phase 6 fail outcome.
-- [Todo] P4.2 Loop B - Laser accounting (live only).
+- [Done] P4.2 Loop B - Laser accounting (live only).
   - Operator action command to user: "In live round, fire exactly 4 laser shots; call out each hit marker count after each shot."
   - Expected in-game state: live round, weapon switched to laser.
   - Logs/payload fields to inspect:
@@ -217,7 +217,7 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
   - Pass/fail decision and branch:
     - Pass: `delta_lasers=4`, `delta_shots=4`, `delta_rockets=0`, `delta_hits` equals user-confirmed hit-marker count.
     - Fail: mismatch -> rerun Loop B once; if mismatch repeats, branch to Phase 6 fail outcome.
-- [Todo] P4.3 Loop C - Mixed weapon consistency check.
+- [Done] P4.3 Loop C - Mixed weapon consistency check.
   - Operator action command to user: "In one live round, fire 2 rockets then 2 lasers (4 total), with at least 2 confirmed hits."
   - Expected in-game state: continuous live round segment with no warmup transition.
   - Logs/payload fields to inspect:
@@ -226,7 +226,7 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
   - Pass/fail decision and branch:
     - Pass: `delta_rockets=2`, `delta_lasers=2`, `delta_shots=4`, `delta_hits>=2` and `delta_hits<=4`.
     - Fail: mismatch -> rerun Loop C once; if mismatch repeats, branch to Phase 6 fail outcome.
-- [Todo] P4.4 Post-loop acceptance threshold review (all scoped metrics).
+- [Done] P4.4 Post-loop acceptance threshold review (all scoped metrics).
   - Evaluate metric-specific thresholds across warmup probe + live loops:
     - Rocket shots (`rockets`): warmup `0`, live deltas must match commanded rocket shots.
     - Laser shots (`lasers`): warmup `0`, live deltas must match commanded laser shots.
@@ -238,21 +238,21 @@ Execution rule: keep one active `[In progress]` step during execution; do not pr
 
 ### Phase 5 - Evidence consolidation and collaborative handoff readiness
 
-- [Todo] P5.1 Export runtime logs into session namespace.
+- [Done] P5.1 Export runtime logs into session namespace.
   - Run `bash scripts/manual-wave5-log-export.sh --manual-dir "logs/manual/combat-stats-live-<run_date>" --session-id <session_id>`.
-- [Todo] P5.2 Complete matrix and session evidence files.
+- [Done] P5.2 Complete matrix and session evidence files.
   - Fill scenario rows in `SESSION-<session_id>-evidence.md` with payload line references and verdicts.
   - Update `INDEX.md` status (`passed` or `failed`) with concise rationale.
-- [Todo] P5.3 Run evidence completeness check.
+- [Done] P5.3 Run evidence completeness check.
   - Run `bash scripts/manual-wave5-evidence-check.sh --manual-dir "logs/manual/combat-stats-live-<run_date>"`.
   - If checker fails, fix missing artifacts before closing campaign.
 
 ### Phase 6 - Outcome branching (pass vs correction-required)
 
-- [Todo] P6.1 Pass outcome - campaign accepted.
+- [Done] P6.1 Pass outcome - campaign accepted.
   - Criteria: warmup exclusion passed and all live-loop thresholds passed for all four scoped metrics.
   - Mark session status `passed`; record final acceptance note and reusable replay instructions.
-- [Todo] P6.2 Fail outcome - plugin correction required before re-run.
+- [Done] P6.2 Fail outcome - plugin correction required before re-run (not applicable for this closure).
   - Criteria: any warmup leakage or repeated live-loop mismatch after one rerun.
   - Record a correction ticket block in `SESSION-<session_id>-notes.md` containing:
     - exact failing metric(s)

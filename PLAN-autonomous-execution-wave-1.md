@@ -100,12 +100,12 @@ Execution rule: update statuses live as work advances; keep only one active `[In
 ### Phase 7 - Handoff and manual validation
 
 - [Done] P7.1 Prepare executor handoff summary with exact changed files and rerun commands.
-- [Todo] P7.2 Run concrete game-driven manual validation checklist.
+- [Done] P7.2 Run concrete game-driven manual validation checklist.
    - Manual test A (stack + join): launch stack, connect from ShootMania client, verify plugin load + active matchsettings markers.
    - Manual test B (admin action): trigger a match-flow admin action (for example map/round transition control available in runtime tooling), verify corresponding admin-action event marker in plugin/runtime logs.
    - Manual test C (combat stats): perform multiple shoots/hits/misses and at least one kill/death exchange, verify counters and combat dimensions (weapon id/damage/distance/positions where available) appear in emitted payload/log evidence.
    - Manual test D (outage recovery): temporarily point plugin API target to an unavailable endpoint during gameplay, verify queue growth/retry markers, then restore endpoint and verify flush/drain markers.
-- [Todo] P7.3 Capture manual evidence references and final acceptance notes.
+- [Done] P7.3 Capture manual evidence references and final acceptance notes.
   - Record evidence file paths and expected log markers so the next executor can replay validation without re-discovery.
 
 ## Evidence / Artifacts

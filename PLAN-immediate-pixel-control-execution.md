@@ -85,7 +85,7 @@ Execution rule: update statuses live as work advances; do not mark multiple step
 - [Done] P7.13 Start roadmap `Checkpoint Q`: define shared error envelope + retry semantics contract.
 - [Done] P7.14 Start roadmap `Checkpoint R`: define canonical event naming + JSON schema baseline for envelope payloads.
 - [Done] P7.15 Start roadmap `Checkpoint S`: define at-least-once server ingestion contract baseline (dedupe/idempotency acknowledgment semantics) aligned with plugin envelope identifiers.
-- [In progress] P7.16 Start roadmap `Checkpoint T`: scaffold first server-side ingestion implementation slice aligned with the documented request/response + dedupe contract baseline.
+- [Done] P7.16 Start roadmap `Checkpoint T`: scaffold first server-side ingestion implementation slice aligned with the documented request/response + dedupe contract baseline.
 
 ## Success criteria
 

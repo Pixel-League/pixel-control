@@ -84,7 +84,7 @@ Likely new files to add:
 - [Done] Phase 2 - Implement admin-only vote policy with native-first fallback
 - [Done] Phase 3 - Implement team roster assignment and switch-lock enforcement
 - [Done] Phase 4 - Wire control surface, docs, and contract updates
-- [In progress] Phase 5 - Validation, evidence capture, and handoff
+- [Done] Phase 5 - Validation, evidence capture, and handoff
 
 ### Phase 0 - Capability recon and policy decisions freeze
 
@@ -174,7 +174,7 @@ Likely new files to add:
 - [Done] P5.3 - Run communication/admin QA regression with new policy actions.
   - `bash pixel-sm-server/scripts/qa-admin-payload-sim.sh matrix`
   - Targeted `execute` calls for whitelist/vote-policy/team-roster actions and status checks.
-- [In progress] P5.4 - Validate remaining runtime behavior with split autonomous/manual closure.
+- [Done] P5.4 - Validate remaining runtime behavior with split autonomous/manual closure.
   - [Done] P5.4.a - Autonomous validation now (container + payload/fake-player compatible).
     - Re-run targeted vote-policy scenario and confirm non-admin vote initiation is blocked/canceled with deterministic result codes/markers.
     - Run whitelist/team assignment scenarios with fake players to confirm guard semantics are explicit (`isFakePlayer` short-circuit) and no false "human enforcement" claims are recorded.
@@ -184,7 +184,7 @@ Likely new files to add:
       - `pixel-sm-server/logs/qa/team-vote-whitelist-<timestamp>/p5.4-autonomous/fake-player-guard-observability.log`
     - Captured evidence set: `pixel-sm-server/logs/qa/team-vote-whitelist-20260223-145834/p5.4-autonomous/`.
     - Runtime note: dedicated fake-player vote probe currently reports empty vote initiator login (`callerLogin=""`), so callback-level non-admin cancel verification remains manual-only and is intentionally not over-claimed in autonomous evidence.
-  - [Todo] P5.4.b - Manual real-client validation (required to close P5.4).
+  - [Done] P5.4.b - Manual real-client validation (required to close P5.4, user-validated 2026-02-23).
     - Validate whitelist deny path with a real non-whitelisted login (refused or kicked) and a whitelisted control login (allowed).
     - Validate non-admin vote initiation block with a real non-admin account under selected policy mode.
     - Validate team roster assignment + switch lock in Elite and one additional team mode (Joust/Siege/Battle based on runtime availability) with real players.

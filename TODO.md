@@ -14,7 +14,7 @@
   - [ ] Faire les tests en réel (SM) et faire les fixs nécessaires pour faire fonctionner le veto MM
     - [x] Il faut que le compte a rebours s'affiche dans le chat, a chaque fois que ca passe 10 secondes on affiche un message (il reste 40 secondes, il reste 30 secondes, ... et quand il reste moins de 5 secondes on affiche un message dans le chat a chaque secondes)
     - [x] Il faut 66% des joueurs présents sur le serveur pour que le veto MM se lance
-    - [ ] Faire un test complet pour appliquer le flow MM Veto comme ceci : Lancer un Veto => Aller sur la map => Lancer le match => une fois la map terminé, on kick tout le monde => on change de map => Match terminé => Le veto et ready pour les prochains joueurs.
+    - [x] Faire un test complet pour appliquer le flow MM Veto comme ceci : Lancer un Veto => Aller sur la map => Lancer le match => une fois la map terminé, on kick tout le monde => on change de map => Match terminé => Le veto et ready pour les prochains joueurs.
   - [ ] Ajouter une UI pour faire le veto au lieu d'un simple veot dans le chat
 
 - [x] Ajouter aussi des fonctionnaltiées au Pixel Control Plugin pour set le BO (BO3, BO5, BO7, ...)
