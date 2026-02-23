@@ -582,9 +582,125 @@
   - fix: keep autonomous evidence as equivalent-scope only (no over-claim), and require real-client non-admin vote initiation for direct callback cancellation validation.
   - validation: `vote-policy-non-admin.json` records the limitation and keeps `P5.4.b` manual verification open.
 
+## Additional execution status (2026-02-23, production-readiness refactor phase 0)
+- Plan execution started for `PLAN-pixel-control-plugin-production-readiness-refactor.md`; phase-0 baseline contract (`P0.1..P0.6` + `P0.R`) is complete.
+- Baseline inventory artifact captured at `pixel-control-plugin/logs/refactor-production-readiness/phase-0-baseline-inventory.md`:
+  - plugin source baseline is `50` PHP files / `18,701` LOC,
+  - high-risk hotspots remain `VetoDraftDomainTrait`, `PlayerDomainTrait`, `NativeAdminGateway`, `MatchDomainTrait`, `AdminControlDomainTrait`, and `LifecycleDomainTrait`.
+- Documentation retention matrix captured at `pixel-control-plugin/logs/refactor-production-readiness/phase-0-doc-retention-matrix.md`:
+  - target retained doc set after consolidation is `README.md` + `docs/event-contract.md` + `docs/schema/*`,
+  - current audit/checklist/todo docs and `FEATURES.md` are planned for README merge then removal.
+- Naming migration map captured at `pixel-control-plugin/logs/refactor-production-readiness/script-name-migration-map.md`:
+  - frozen rename scope covers all plugin-facing `qa`/`smoke` scripts and matrix-step directories,
+  - wrapper-based backward compatibility is required during transition.
+- Phase gate matrix captured at `pixel-control-plugin/logs/refactor-production-readiness/phase-gate-acceptance-matrix.md` with measurable pass criteria for phases 1 through 7.
+- Review packet artifact published at `pixel-control-plugin/logs/refactor-production-readiness/phase-0-review.md`.
+
+## Additional execution status (2026-02-23, production-readiness refactor phase 1)
+- Phase 1 (`P1.1..P1.4`) is complete with blueprint artifact at `pixel-control-plugin/logs/refactor-production-readiness/phase-1-architecture-blueprint.md`.
+- Frozen architecture boundary model for extraction:
+  - kernel (`PixelControlPlugin` + core lifecycle wiring),
+  - ingress adapters (callbacks/chat/communication),
+  - domain application services,
+  - state stores,
+  - runtime gateways/adapters,
+  - pure builders/normalizers.
+- Frozen high-risk decomposition target modules for phase-2 execution:
+  - `VetoDraftDomainTrait` split into bootstrap/ingress/presentation/lifecycle/autostart/parser services,
+  - `AdminControlDomainTrait` split into ingress/executor/persistence/correlation/help/normalization services,
+  - `PlayerDomainTrait` split into source/snapshot/delta/correlation/constraint/roster builders,
+  - `MatchDomainTrait` split into aggregate/team-assignment/win-context/map-rotation/veto-mirror services.
+- Frozen compatibility guardrails before refactor coding:
+  - keep admin/veto command names and communication method names stable,
+  - keep envelope schema baseline `2026-02-20.1` unchanged,
+  - keep existing operational marker families stable.
+- Phase-1 review packet published at `pixel-control-plugin/logs/refactor-production-readiness/phase-1-review.md`.
+- User process override applied during plan execution initially deferred user review until final consolidation; this was later superseded by explicit per-phase stop/review instruction (2026-02-23).
+
+## Additional execution status (2026-02-23, production-readiness refactor phase 2)
+- Phase 2 (`P2.1..P2.4`) is complete: high-risk monoliths are decomposed into focused subtraits while preserving runtime entrypoint behavior.
+- New decomposition files are now first-party in plugin runtime:
+  - veto: `pixel-control-plugin/src/Domain/VetoDraft/{VetoDraftBootstrapTrait,VetoDraftIngressTrait,VetoDraftLifecycleTrait,VetoDraftAutostartTrait}.php`,
+  - admin: `pixel-control-plugin/src/Domain/Admin/{AdminControlBootstrapTrait,AdminControlExecutionTrait,AdminControlIngressTrait}.php`,
+  - player: `pixel-control-plugin/src/Domain/Player/{PlayerSourceSnapshotTrait,PlayerContinuityCorrelationTrait,PlayerPolicySignalsTrait}.php`,
+  - match: `pixel-control-plugin/src/Domain/Match/{MatchAggregateTelemetryTrait,MatchWinContextTrait,MatchVetoRotationTrait}.php`.
+- Orchestrator facades now route through focused subtraits:
+  - `pixel-control-plugin/src/Domain/VetoDraft/VetoDraftDomainTrait.php`,
+  - `pixel-control-plugin/src/Domain/Admin/AdminControlDomainTrait.php`,
+  - `pixel-control-plugin/src/Domain/Player/PlayerDomainTrait.php`,
+  - `pixel-control-plugin/src/Domain/Match/MatchDomainTrait.php`.
+- Parity evidence artifact captured at `pixel-control-plugin/logs/refactor-production-readiness/phase-2-parity-check.md`:
+  - target-facade LOC reductions vs baseline are `>=99%` for all four high-risk traits,
+  - method-set parity is exact (`missing=0`, `added=0`) across veto/admin/player/match domains,
+  - plugin lint passed (`php -l` over `pixel-control-plugin/src/**/*.php`).
+- Runtime non-regression evidence (post hot-sync):
+  - hot-sync logs: `pixel-sm-server/logs/dev/dev-plugin-hot-sync-shootmania-20260223-182555.log`, `pixel-sm-server/logs/dev/dev-plugin-hot-sync-maniacontrol-20260223-182555.log`,
+  - admin matrix pass: `pixel-sm-server/logs/qa/admin-payload-sim-20260223-182614/summary.md`,
+  - veto matrix strict pass: `pixel-sm-server/logs/qa/veto-payload-sim-20260223-182645/matrix-validation.json` (`overall_passed=true`, `required_failed_checks=[]`).
+- Phase-2 review packet published at `pixel-control-plugin/logs/refactor-production-readiness/phase-2-review.md`.
+
+## Additional execution status (2026-02-23, production-readiness refactor phase 3)
+- Phase 3 (`P3.0..P3.4`) is now complete with consistency cleanup, setting-resolution centralization, and dead-symbol removal while preserving runtime behavior.
+- User-requested dead-symbol cleanup (`P3.0`) remained part of phase-3 scope and is captured in `pixel-control-plugin/logs/refactor-production-readiness/phase-3-unused-symbol-cleanup.md`.
+- Supporting-domain consistency updates delivered:
+  - `AccessControlDomainTrait`: explicit bootstrap-source helpers + explicit default snapshot builders,
+  - `TeamControlDomainTrait`: explicit default snapshot builder + env-value helper usage,
+  - `SeriesControlDomainTrait`: explicit default snapshot builder + env-value helper usage + removal of dead helper `updateSeriesControlBestOf`.
+- Runtime-setting helper centralization delivered:
+  - canonical `resolveRuntimeBoolSetting(...)`, `isRuntimeEnvDefined(...)`, and `hasRuntimeEnvValue(...)` now live in `pixel-control-plugin/src/Domain/Core/CoreDomainTrait.php`,
+  - duplicate admin-local bool resolver removed from `pixel-control-plugin/src/Domain/Admin/AdminControlBootstrapTrait.php`.
+- Import/readability cleanup now applied across domain traits (including non-refactored support traits):
+  - `pixel-control-plugin/src/Domain/Combat/CombatDomainTrait.php`,
+  - `pixel-control-plugin/src/Domain/Connectivity/ConnectivityDomainTrait.php`,
+  - `pixel-control-plugin/src/Domain/Lifecycle/LifecycleDomainTrait.php`,
+  - `pixel-control-plugin/src/Domain/Pipeline/PipelineDomainTrait.php`,
+  - plus phase-2 split traits already captured in cleanup evidence.
+- Validation after full phase-3 scope:
+  - domain import scans report no remaining unused imports,
+  - plugin lint still passes (`php -l` on `pixel-control-plugin/src/**/*.php`),
+  - hot-sync completed at `pixel-sm-server/logs/dev/dev-plugin-hot-sync-shootmania-20260223-195107.log` and `pixel-sm-server/logs/dev/dev-plugin-hot-sync-maniacontrol-20260223-195107.log`,
+  - admin matrix rerun passed at `pixel-sm-server/logs/qa/admin-payload-sim-20260223-195128/summary.md`,
+  - veto matrix strict rerun passed at `pixel-sm-server/logs/qa/veto-payload-sim-20260223-195131/matrix-validation.json` (`overall_passed=true`, `required_failed_checks=[]`).
+- Phase-3 review packet published at `pixel-control-plugin/logs/refactor-production-readiness/phase-3-review.md`.
+
+## Additional execution status (2026-02-23, production-readiness refactor phase 4)
+- Phase 4 (`P4.1..P4.5`) is complete with plugin-local testing foundation and deterministic regression coverage.
+- Plugin-local test harness is now first-party under `pixel-control-plugin/tests/`:
+  - bootstrap/runner: `tests/bootstrap.php`, `tests/run.php`,
+  - support helpers: `tests/Support/{Assert,Fakes,Harnesses,ManiaControlStubs}.php`,
+  - deterministic cases: `tests/cases/{00HarnessSmokeTest,10StateModuleTest,11VetoSessionStateTest,20IngressNormalizationTest,30OrchestrationSeamTest}.php`.
+- Quality gate command is now first-party: `pixel-control-plugin/scripts/check-quality.sh` (lint `src`+`tests` then run local tests).
+- Phase-4 validation result:
+  - command: `bash pixel-control-plugin/scripts/check-quality.sh`,
+  - output: `Lint OK for 74 files.` and `Result: passed=20, failed=0, total=20`.
+- Phase-4 review packet published at `pixel-control-plugin/logs/refactor-production-readiness/phase-4-review.md`.
+- Plan protocol update recorded: execution now pauses between phases for explicit user review before entering the next phase.
+
+## Additional execution status (2026-02-23, production-readiness refactor phase 5)
+- Phase 5 (`P5.1..P5.4`) is complete with documentation consolidation into a canonical plugin README and essential-only retained docs.
+- `pixel-control-plugin/README.md` is now the canonical operator/developer guide and includes explicit sections for:
+  - admin command/control surface,
+  - veto command/control surface,
+  - test script reference,
+  - other development script reference,
+  - retained machine-contract artifact rationale.
+- Redundant docs were merged/removed from active surface:
+  - removed `pixel-control-plugin/FEATURES.md`,
+  - removed `pixel-control-plugin/docs/admin-capability-delegation.md`,
+  - removed `pixel-control-plugin/docs/veto-system-test-checklist.md`,
+  - removed `pixel-control-plugin/docs/manual-feature-test-todo.md`,
+  - removed audit narratives under `pixel-control-plugin/docs/audit/`.
+- Contract artifacts intentionally retained:
+  - `pixel-control-plugin/docs/event-contract.md`,
+  - `pixel-control-plugin/docs/schema/*.json`.
+- Phase-5 review packet published at `pixel-control-plugin/logs/refactor-production-readiness/phase-5-review.md`.
+
 ## User preference (durable)
 - For QA automation scripts, prefer modular Bash structure with one script per tested action/feature rather than large hardcoded lists inside monolithic scripts.
 - Matrix replay order for admin actions now lives in `pixel-sm-server/scripts/qa-admin-matrix-actions/` (one sourced `.sh` step per action) and should remain the default extension point.
 - Automated-suite required admin action catalog now lives in `pixel-sm-server/scripts/automated-suite/admin-actions/` (one `.sh` descriptor per action key) and should be updated whenever action coverage changes.
 - After any plugin code modification request, run `bash pixel-sm-server/scripts/dev-plugin-hot-sync.sh` before reporting completion so runtime behavior matches source changes.
 - When the user says `PLAN_EXECUTE`, treat it as explicit instruction to create a PLAN file with the `@planner` subagent and then execute that PLAN immediately with the `@executor` subagent.
+- For each completed phase in a PLAN execution, provide an essential-only summary and immediate next steps.
+- Any extra user-requested change/revert during PLAN execution must be appended as a new `[Todo]` step in the active phase before execution.
+- During this production-readiness PLAN execution, continue through remaining phases when explicitly requested by user, create one local commit per phase, and do not push.
