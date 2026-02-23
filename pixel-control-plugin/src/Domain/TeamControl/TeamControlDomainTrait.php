@@ -104,6 +104,10 @@ trait TeamControlDomainTrait {
 			return $this->teamRosterState->getSnapshot();
 		}
 
+		return $this->buildDefaultTeamRosterSnapshot();
+	}
+
+	private function buildDefaultTeamRosterSnapshot() {
 		return array(
 			'policy_enabled' => TeamRosterCatalog::DEFAULT_POLICY_ENABLED,
 			'switch_lock_enabled' => TeamRosterCatalog::DEFAULT_SWITCH_LOCK,
@@ -565,12 +569,7 @@ trait TeamControlDomainTrait {
 		);
 
 		foreach ($envKeys as $envKey) {
-			$rawValue = getenv($envKey);
-			if ($rawValue === false) {
-				continue;
-			}
-
-			if (trim((string) $rawValue) !== '') {
+			if ($this->hasRuntimeEnvValue($envKey)) {
 				return TeamRosterCatalog::UPDATE_SOURCE_ENV;
 			}
 		}

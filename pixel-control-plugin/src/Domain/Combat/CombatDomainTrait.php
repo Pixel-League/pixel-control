@@ -2,30 +2,16 @@
 
 namespace PixelControl\Domain\Combat;
 
-use ManiaControl\Callbacks\CallbackListener;
 use ManiaControl\Callbacks\Structures\ShootMania\OnCaptureStructure;
 use ManiaControl\Callbacks\Structures\ShootMania\OnHitNearMissArmorEmptyBaseStructure;
 use ManiaControl\Callbacks\Structures\ShootMania\OnHitStructure;
 use ManiaControl\Callbacks\Structures\ShootMania\OnScoresStructure;
 use ManiaControl\Callbacks\Structures\ShootMania\Models\Position;
-use ManiaControl\Callbacks\TimerListener;
 use ManiaControl\Logger;
-use ManiaControl\ManiaControl;
-use ManiaControl\Maps\Map;
 use ManiaControl\Plugins\Plugin;
-use ManiaControl\Plugins\PluginManager;
 use ManiaControl\Players\Player;
-use PixelControl\Api\AsyncPixelControlApiClient;
-use PixelControl\Api\DeliveryError;
-use PixelControl\Api\EventEnvelope;
-use PixelControl\Api\PixelControlApiClientInterface;
-use PixelControl\Callbacks\CallbackRegistry;
-use PixelControl\Queue\EventQueueInterface;
-use PixelControl\Queue\InMemoryEventQueue;
-use PixelControl\Queue\QueueItem;
-use PixelControl\Retry\ExponentialBackoffRetryPolicy;
-use PixelControl\Retry\RetryPolicyInterface;
 use PixelControl\Stats\PlayerCombatStatsStore;
+
 trait CombatDomainTrait {
 	private function buildCombatPayload($sourceCallback, array $callbackArguments) {
 		$dimensionsBundle = $this->extractCombatDimensions($callbackArguments);

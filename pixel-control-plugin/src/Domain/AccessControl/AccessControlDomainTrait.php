@@ -54,11 +54,7 @@ trait AccessControlDomainTrait {
 		$this->votePolicyLastCallVoteTimeoutMs = 0;
 		$this->votePolicyStrictRuntimeApplied = false;
 
-		$whitelistEnvEnabledRaw = getenv('PIXEL_CONTROL_WHITELIST_ENABLED');
-		$whitelistEnvLoginsRaw = getenv('PIXEL_CONTROL_WHITELIST_LOGINS');
-		$whitelistSource = ($whitelistEnvEnabledRaw !== false || ($whitelistEnvLoginsRaw !== false && trim((string) $whitelistEnvLoginsRaw) !== ''))
-			? WhitelistCatalog::UPDATE_SOURCE_ENV
-			: WhitelistCatalog::UPDATE_SOURCE_SETTING;
+		$whitelistSource = $this->resolveWhitelistBootstrapSource();
 
 		$whitelistEnabled = $this->resolveRuntimeBoolSetting(
 			self::SETTING_WHITELIST_ENABLED,
@@ -85,9 +81,7 @@ trait AccessControlDomainTrait {
 			'plugin_bootstrap'
 		);
 
-		$votePolicySource = (getenv('PIXEL_CONTROL_VOTE_POLICY_MODE') !== false)
-			? VotePolicyCatalog::UPDATE_SOURCE_ENV
-			: VotePolicyCatalog::UPDATE_SOURCE_SETTING;
+		$votePolicySource = $this->resolveVotePolicyBootstrapSource();
 		$votePolicyMode = VotePolicyCatalog::normalizeMode(
 			$this->resolveRuntimeStringSetting(
 				self::SETTING_VOTE_POLICY_MODE,
@@ -116,11 +110,26 @@ trait AccessControlDomainTrait {
 		);
 	}
 
-	private function getWhitelistSnapshot() {
-		if ($this->whitelistState) {
-			return $this->whitelistState->getSnapshot();
+	private function resolveWhitelistBootstrapSource() {
+		if (
+			$this->isRuntimeEnvDefined('PIXEL_CONTROL_WHITELIST_ENABLED')
+			|| $this->hasRuntimeEnvValue('PIXEL_CONTROL_WHITELIST_LOGINS')
+		) {
+			return WhitelistCatalog::UPDATE_SOURCE_ENV;
 		}
 
+		return WhitelistCatalog::UPDATE_SOURCE_SETTING;
+	}
+
+	private function resolveVotePolicyBootstrapSource() {
+		if ($this->isRuntimeEnvDefined('PIXEL_CONTROL_VOTE_POLICY_MODE')) {
+			return VotePolicyCatalog::UPDATE_SOURCE_ENV;
+		}
+
+		return VotePolicyCatalog::UPDATE_SOURCE_SETTING;
+	}
+
+	private function buildDefaultWhitelistSnapshot() {
 		return array(
 			'enabled' => WhitelistCatalog::DEFAULT_ENABLED,
 			'logins' => array(),
@@ -131,11 +140,7 @@ trait AccessControlDomainTrait {
 		);
 	}
 
-	private function getVotePolicySnapshot() {
-		if ($this->votePolicyState) {
-			return $this->votePolicyState->getSnapshot();
-		}
-
+	private function buildDefaultVotePolicySnapshot() {
 		return array(
 			'mode' => VotePolicyCatalog::DEFAULT_MODE,
 			'strict_mode' => false,
@@ -147,6 +152,22 @@ trait AccessControlDomainTrait {
 				VotePolicyCatalog::MODE_DISABLE_CALLVOTES,
 			),
 		);
+	}
+
+	private function getWhitelistSnapshot() {
+		if ($this->whitelistState) {
+			return $this->whitelistState->getSnapshot();
+		}
+
+		return $this->buildDefaultWhitelistSnapshot();
+	}
+
+	private function getVotePolicySnapshot() {
+		if ($this->votePolicyState) {
+			return $this->votePolicyState->getSnapshot();
+		}
+
+		return $this->buildDefaultVotePolicySnapshot();
 	}
 
 	private function buildWhitelistCapabilitySnapshot() {

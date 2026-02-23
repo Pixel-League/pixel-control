@@ -2,29 +2,13 @@
 
 namespace PixelControl\Domain\Core;
 
-use ManiaControl\Callbacks\CallbackListener;
-use ManiaControl\Callbacks\Structures\ShootMania\OnCaptureStructure;
-use ManiaControl\Callbacks\Structures\ShootMania\OnHitNearMissArmorEmptyBaseStructure;
-use ManiaControl\Callbacks\Structures\ShootMania\OnHitStructure;
-use ManiaControl\Callbacks\Structures\ShootMania\OnScoresStructure;
-use ManiaControl\Callbacks\Structures\ShootMania\Models\Position;
-use ManiaControl\Callbacks\TimerListener;
 use ManiaControl\Logger;
 use ManiaControl\ManiaControl;
-use ManiaControl\Maps\Map;
-use ManiaControl\Plugins\Plugin;
 use ManiaControl\Plugins\PluginManager;
-use ManiaControl\Players\Player;
 use PixelControl\Api\AsyncPixelControlApiClient;
-use PixelControl\Api\DeliveryError;
-use PixelControl\Api\EventEnvelope;
-use PixelControl\Api\PixelControlApiClientInterface;
 use PixelControl\Callbacks\CallbackRegistry;
-use PixelControl\Queue\EventQueueInterface;
 use PixelControl\Queue\InMemoryEventQueue;
-use PixelControl\Queue\QueueItem;
 use PixelControl\Retry\ExponentialBackoffRetryPolicy;
-use PixelControl\Retry\RetryPolicyInterface;
 use PixelControl\Stats\PlayerCombatStatsStore;
 trait CoreDomainTrait {
 	public static function prepare(ManiaControl $maniaControl) {
@@ -331,6 +315,45 @@ trait CoreDomainTrait {
 		}
 
 		return max($minimum, (int) $fallback);
+	}
+
+	private function resolveRuntimeBoolSetting($settingName, $environmentVariableName, $fallback) {
+		$environmentValue = $this->readEnvString($environmentVariableName, '');
+		if ($environmentValue !== '') {
+			$normalizedEnvironmentValue = strtolower(trim($environmentValue));
+			return in_array($normalizedEnvironmentValue, array('1', 'true', 'yes', 'on'), true);
+		}
+
+		$settingValue = $this->maniaControl->getSettingManager()->getSettingValue($this, $settingName);
+		if (is_bool($settingValue)) {
+			return $settingValue;
+		}
+
+		if (is_numeric($settingValue)) {
+			return ((int) $settingValue) !== 0;
+		}
+
+		if (is_string($settingValue)) {
+			$normalizedSettingValue = strtolower(trim($settingValue));
+			if ($normalizedSettingValue !== '') {
+				return in_array($normalizedSettingValue, array('1', 'true', 'yes', 'on'), true);
+			}
+		}
+
+		return (bool) $fallback;
+	}
+
+	private function isRuntimeEnvDefined($environmentVariableName) {
+		return getenv($environmentVariableName) !== false;
+	}
+
+	private function hasRuntimeEnvValue($environmentVariableName) {
+		$rawValue = getenv($environmentVariableName);
+		if ($rawValue === false) {
+			return false;
+		}
+
+		return trim((string) $rawValue) !== '';
 	}
 
 	private function readEnvString($environmentVariableName, $fallback) {

@@ -116,6 +116,10 @@ trait SeriesControlDomainTrait {
 			return $this->seriesControlState->getSnapshot();
 		}
 
+		return $this->buildDefaultSeriesControlSnapshot();
+	}
+
+	private function buildDefaultSeriesControlSnapshot() {
 		return array(
 			SeriesControlCatalog::PARAM_BEST_OF => SeriesControlCatalog::sanitizeBestOf($this->vetoDraftDefaultBestOf, SeriesControlCatalog::DEFAULT_BEST_OF),
 			SeriesControlCatalog::PARAM_MAPS_SCORE => array(
@@ -139,53 +143,6 @@ trait SeriesControlDomainTrait {
 		}
 
 		return SeriesControlCatalog::sanitizeBestOf($this->vetoDraftDefaultBestOf, SeriesControlCatalog::DEFAULT_BEST_OF);
-	}
-
-	private function updateSeriesControlBestOf($bestOf, $updateSource, $updatedBy, array $context = array()) {
-		if (!$this->seriesControlState) {
-			return array(
-				'success' => false,
-				'code' => 'capability_unavailable',
-				'message' => 'Series control state is unavailable.',
-				'snapshot' => $this->getSeriesControlSnapshot(),
-				'details' => array(),
-			);
-		}
-
-		$previousSnapshot = $this->getSeriesControlSnapshot();
-
-		$result = $this->seriesControlState->setBestOf(
-			$bestOf,
-			SeriesControlCatalog::normalizeUpdateSource($updateSource, SeriesControlCatalog::UPDATE_SOURCE_CHAT),
-			SeriesControlCatalog::normalizeUpdatedBy($updatedBy, 'system'),
-			$context
-		);
-
-		if (!empty($result['success']) && isset($result['snapshot']) && is_array($result['snapshot'])) {
-			$this->applySeriesControlSnapshotToRuntime($result['snapshot']);
-
-			$persistenceResult = $this->persistSeriesControlSnapshot($result['snapshot'], $previousSnapshot);
-			if (empty($persistenceResult['success'])) {
-				$rollbackResult = $this->restoreSeriesControlSnapshot(
-					$previousSnapshot,
-					SeriesControlCatalog::UPDATE_SOURCE_SETTING,
-					'series_persistence_rollback'
-				);
-
-				return array(
-					'success' => false,
-					'code' => isset($persistenceResult['code']) ? (string) $persistenceResult['code'] : 'setting_write_failed',
-					'message' => isset($persistenceResult['message']) ? (string) $persistenceResult['message'] : 'Unable to persist series settings.',
-					'snapshot' => $this->getSeriesControlSnapshot(),
-					'details' => array(
-						'persistence' => isset($persistenceResult['details']) && is_array($persistenceResult['details']) ? $persistenceResult['details'] : array(),
-						'rollback' => isset($rollbackResult['details']) && is_array($rollbackResult['details']) ? $rollbackResult['details'] : array(),
-					),
-				);
-			}
-		}
-
-		return $result;
 	}
 
 	private function resolveSeriesControlSettingInt($settingName, $fallback, $minimum) {
@@ -382,12 +339,7 @@ trait SeriesControlDomainTrait {
 		);
 
 		foreach ($envKeys as $envKey) {
-			$rawValue = getenv($envKey);
-			if ($rawValue === false) {
-				continue;
-			}
-
-			if (trim((string) $rawValue) !== '') {
+			if ($this->hasRuntimeEnvValue($envKey)) {
 				return SeriesControlCatalog::UPDATE_SOURCE_ENV;
 			}
 		}
