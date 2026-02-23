@@ -723,6 +723,22 @@
   - `bash pixel-sm-server/scripts/test-automated-suite.sh --help` shows canonical flag/usage,
   - `simulate-admin-control-payloads.sh --help` and `simulate-veto-control-payloads.sh --help` show canonical command paths/default step directories.
 
+## Additional execution status (2026-02-23, production-readiness refactor phase 7)
+- Phase 7 production-readiness validation/handoff is complete.
+- Validation evidence:
+  - plugin quality gate pass via `bash pixel-control-plugin/scripts/check-quality.sh` (`Lint OK for 74 files`, `passed=20 failed=0 total=20`),
+  - full renamed-workflow suite pass via `bash pixel-sm-server/scripts/test-automated-suite.sh --modes elite,joust` with artifacts under `pixel-sm-server/logs/qa/automated-suite-20260223-203704/` (`suite-summary.json`: `total_checks=39`, `passed_checks=39`, `required_failed_checks=0`),
+  - canonical handoff package: `HANDOFF-pixel-control-plugin-production-readiness-refactor-2026-02-23.md`.
+- Compatibility boundary confirmation in this phase:
+  - no intentional plugin runtime contract changes,
+  - control surface remains `PixelControl.Admin.*` + `PixelControl.VetoDraft.*` + `pcadmin` + `pcveto`,
+  - schema baseline remains `2026-02-20.1`.
+- Incident memory (2026-02-23, deprecated wrapper safety check pitfalls):
+  - symptom: running `qa-wave3-telemetry-replay.sh --help` / `qa-wave4-telemetry-replay.sh --help` unexpectedly executed full replay flows and produced runtime failures (`curl: (7)` / stack-state errors) instead of returning lightweight help text.
+  - root cause: replay scripts (and their wrappers) do not implement a `--help` command path; wrapper forwarding executes the target script directly.
+  - fix: validate wrapper migration safety with `bash -n` and with help-capable wrappers (`qa-admin-payload-sim.sh`, `qa-veto-payload-sim.sh`) rather than assuming `--help` works for every wrapper.
+  - validation: script syntax checks stayed green and canonical suite run still passed end-to-end (`automated-suite-20260223-203704`).
+
 ## User preference (durable)
 - For QA automation scripts, prefer modular Bash structure with one script per tested action/feature rather than large hardcoded lists inside monolithic scripts.
 - Matrix replay order for admin actions now lives in `pixel-sm-server/scripts/admin-action-matrix-steps/` (one sourced `.sh` step per action) and should remain the default extension point.

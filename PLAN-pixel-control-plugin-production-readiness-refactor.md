@@ -103,7 +103,7 @@ Likely new files/directories to add:
 - [Done] Phase 4 - Testing foundation and regression coverage
 - [Done] Phase 5 - Documentation consolidation and essential-only docs
 - [Done] Phase 6 - Script/file naming clarity migration
-- [Todo] Phase 7 - Production-readiness validation and handoff
+- [Done] Phase 7 - Production-readiness validation and handoff
 
 ### Phase 0 - Baseline freeze and refactor contract
 
@@ -220,15 +220,15 @@ Likely new files/directories to add:
 
 ### Phase 7 - Production-readiness validation and handoff
 
-- [Todo] P7.1 - Run full validation suite on refactored code.
+- [Done] P7.1 - Run full validation suite on refactored code.
   - PHP lint, plugin-local tests, and renamed script validation flows.
-- [Todo] P7.2 - Execute plugin workflow verification with renamed scripts.
+- [Done] P7.2 - Execute plugin workflow verification with renamed scripts.
   - Validate key admin/veto/dev flows and generated artifacts are still coherent.
-- [Todo] P7.3 - Confirm compatibility boundaries.
+- [Done] P7.3 - Confirm compatibility boundaries.
   - Verify command surface, communication methods, and schema expectations remain stable.
-- [Todo] P7.4 - Prepare migration/handoff summary.
+- [Done] P7.4 - Prepare migration/handoff summary.
   - Include architecture map, rename map, removed docs list, and known follow-ups.
-- [Todo] P7.R - Final review checkpoint with user.
+- [Done] P7.R - Final review checkpoint with user.
   - Approve production-readiness package and finalize refactor scope.
 
 ## Evidence / Artifacts
