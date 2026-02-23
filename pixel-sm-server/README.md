@@ -2,7 +2,7 @@
 
 `pixel-sm-server` is the first-party local development stack for running a ShootMania dedicated server with ManiaControl and MySQL.
 
-It is designed for plugin and integration development in the Pixel Control monorepo, with deterministic startup, smoke checks, and safe local workflows.
+It is designed for plugin and integration development in the Pixel Control monorepo, with deterministic startup, validation checks, and safe local workflows.
 
 ## What you get
 
@@ -10,7 +10,7 @@ It is designed for plugin and integration development in the Pixel Control monor
 - Automatic runtime bootstrap (config rendering, mode/matchsettings resolution, plugin sync)
 - ManiaControl startup with Pixel Control plugin auto-sync from source
 - Healthcheck that validates DB access, plugin load marker, and XML-RPC readiness
-- Smoke helpers for launch validation and multi-mode checks (Elite, Siege, Battle, Joust, Custom)
+- Validation helpers for launch and multi-mode checks (Elite, Siege, Battle, Joust, Custom)
 
 ## Repository layout
 
@@ -21,11 +21,12 @@ It is designed for plugin and integration development in the Pixel Control monor
 - `scripts/healthcheck.sh`: readiness probe used by Compose
 - `scripts/dev-plugin-sync.sh`: fast plugin iteration workflow
 - `scripts/dev-mode-compose.sh`: mode profile launcher/relauncher (`.env.<mode>` -> `.env`)
-- `scripts/qa-launch-smoke.sh`: single launch smoke validation
-- `scripts/qa-mode-smoke.sh`: Elite/Siege/Battle/Joust/Custom smoke matrix
-- `scripts/qa-wave3-telemetry-replay.sh`: deterministic admin/player/aggregate/map telemetry replay with local ACK capture
-- `scripts/qa-wave4-telemetry-replay.sh`: deterministic reconnect/side/team/veto telemetry replay with marker validation
-- `scripts/qa-admin-payload-sim.sh`: simulate server-side admin payloads against `PixelControl.Admin.*` communication methods
+- `scripts/validate-dev-stack-launch.sh`: single launch validation
+- `scripts/validate-mode-launch-matrix.sh`: Elite/Siege/Battle/Joust/Custom mode launch matrix
+- `scripts/replay-core-telemetry-wave3.sh`: deterministic admin/player/aggregate/map telemetry replay with local ACK capture
+- `scripts/replay-extended-telemetry-wave4.sh`: deterministic reconnect/side/team/veto telemetry replay with marker validation
+- `scripts/simulate-admin-control-payloads.sh`: simulate server-side admin payloads against `PixelControl.Admin.*` communication methods
+- `scripts/simulate-veto-control-payloads.sh`: simulate server-side veto payloads against `PixelControl.VetoDraft.*` communication methods
 - `scripts/fetch-titlepack.sh`: title pack downloader helper
 - `scripts/import-reference-runtime.sh`: copy reference runtime into local `runtime/server/`
 - `runtime/server/`: local dedicated server + ManiaControl runtime
@@ -127,36 +128,38 @@ Behavior:
 - Supports compose-file override via `PIXEL_SM_DEV_COMPOSE_FILES`
 - Supports optional image rebuild via `PIXEL_SM_DEV_MODE_BUILD_IMAGES=1`
 
-### Smoke validation
+### Validation flows
 
-Single launch smoke:
+Single launch validation:
 
 ```bash
-bash scripts/qa-launch-smoke.sh
+bash scripts/validate-dev-stack-launch.sh
 ```
 
-Mode matrix smoke (Elite, Siege, Battle, Joust, Custom):
+Mode launch matrix validation (Elite, Siege, Battle, Joust, Custom):
 
 ```bash
-bash scripts/qa-mode-smoke.sh
+bash scripts/validate-mode-launch-matrix.sh
 ```
 
 Wave-3 telemetry replay (admin/player correlation + round/map aggregates + map rotation markers):
 
 ```bash
-bash scripts/qa-wave3-telemetry-replay.sh
+bash scripts/replay-core-telemetry-wave3.sh
 ```
 
 Wave-4 telemetry replay (reconnect/side-change + team aggregate/win-context + veto action/result markers):
 
 ```bash
-bash scripts/qa-wave4-telemetry-replay.sh
+bash scripts/replay-extended-telemetry-wave4.sh
 ```
 
-Smoke artifacts are saved under `logs/qa/`. Dev-sync artifacts are saved under `logs/dev/`.
+Validation artifacts are saved under `logs/qa/`. Dev-sync artifacts are saved under `logs/dev/`.
 Wave-3 replay writes deterministic artifacts with prefix `logs/qa/wave3-telemetry-<timestamp>-*`.
 Wave-4 replay writes deterministic artifacts with prefix `logs/qa/wave4-telemetry-<timestamp>-*`.
 By default it injects deterministic fixture envelopes in addition to captured plugin traffic so required markers can be validated without real client gameplay.
+
+Compatibility note: deprecated `qa-*` script names remain available as wrappers and print migration warnings.
 
 ### Automated suite orchestrator (all automatable checks)
 
@@ -169,7 +172,7 @@ bash scripts/test-automated-suite.sh
 Default behavior:
 
 - Covers `elite,joust` mode profiles.
-- Runs launch smoke + wave-4 plugin-only replay per mode.
+- Runs launch validation + wave-4 plugin-only replay per mode.
 - Runs strict wave-3 and wave-4 replay gate in `elite`.
 - Runs admin response assertions, admin payload capture assertions, and response/payload correlation checks.
 - Exits non-zero when a required check fails.
@@ -179,7 +182,7 @@ Useful variants:
 
 ```bash
 bash scripts/test-automated-suite.sh --modes elite
-bash scripts/test-automated-suite.sh --modes elite,joust --with-mode-smoke
+bash scripts/test-automated-suite.sh --modes elite,joust --with-mode-matrix-validation
 ```
 
 Run artifacts are written under:
@@ -196,12 +199,12 @@ Run artifacts are written under:
 Use this helper to simulate external server payloads sent to delegated admin communication methods:
 
 ```bash
-bash scripts/qa-admin-payload-sim.sh list-actions
-bash scripts/qa-admin-payload-sim.sh execute map.skip
-bash scripts/qa-admin-payload-sim.sh execute map.add mx_id=12345
-bash scripts/qa-admin-payload-sim.sh execute map.remove map_uid=SomeMapUid
-bash scripts/qa-admin-payload-sim.sh execute auth.grant target_login=SomePlayer auth_level=admin
-bash scripts/qa-admin-payload-sim.sh matrix target_login=SomePlayer map_uid=SomeMapUid mx_id=12345
+bash scripts/simulate-admin-control-payloads.sh list-actions
+bash scripts/simulate-admin-control-payloads.sh execute map.skip
+bash scripts/simulate-admin-control-payloads.sh execute map.add mx_id=12345
+bash scripts/simulate-admin-control-payloads.sh execute map.remove map_uid=SomeMapUid
+bash scripts/simulate-admin-control-payloads.sh execute auth.grant target_login=SomePlayer auth_level=admin
+bash scripts/simulate-admin-control-payloads.sh matrix target_login=SomePlayer map_uid=SomeMapUid mx_id=12345
 ```
 
 Behavior notes:
@@ -258,7 +261,7 @@ bash scripts/manual-wave5-evidence-check.sh --manual-dir "logs/manual/wave5-real
 Optional dedicated-action trace (fixture-off plugin-only baseline):
 
 ```bash
-PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/qa-wave4-telemetry-replay.sh
+PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/replay-extended-telemetry-wave4.sh
 ```
 
 Naming conventions:
@@ -292,7 +295,7 @@ Most users only need to adjust these variables in `.env`:
   - `PIXEL_CONTROL_API_BASE_URL`
   - `PIXEL_CONTROL_API_EVENT_PATH`
   - `PIXEL_CONTROL_AUTH_MODE` / `PIXEL_CONTROL_AUTH_VALUE`
-- Optional QA replay knobs (`qa-wave3-telemetry-replay.sh` and `qa-wave4-telemetry-replay.sh`):
+- Optional replay knobs (`replay-core-telemetry-wave3.sh` and `replay-extended-telemetry-wave4.sh`):
   - `PIXEL_SM_QA_COMPOSE_FILES`
   - `PIXEL_SM_QA_XMLRPC_PORT`, `PIXEL_SM_QA_GAME_PORT`, `PIXEL_SM_QA_P2P_PORT`
   - `PIXEL_SM_QA_TELEMETRY_API_HOST`, `PIXEL_SM_QA_TELEMETRY_API_PORT`, `PIXEL_SM_QA_TELEMETRY_API_BASE_URL`

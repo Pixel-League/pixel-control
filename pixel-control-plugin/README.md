@@ -137,17 +137,17 @@ All commands below are launched from repository root unless noted.
 
 - `bash pixel-control-plugin/scripts/check-quality.sh`
   - Lint plugin `src` + `tests`, then run deterministic local test suite.
-- `bash pixel-sm-server/scripts/qa-launch-smoke.sh`
+- `bash pixel-sm-server/scripts/validate-dev-stack-launch.sh`
   - Validate stack launch readiness (health, plugin load marker, XML-RPC reachability).
-- `bash pixel-sm-server/scripts/qa-mode-smoke.sh`
+- `bash pixel-sm-server/scripts/validate-mode-launch-matrix.sh`
   - Validate mode launch matrix (Elite/Siege/Battle/Joust/Custom).
-- `bash pixel-sm-server/scripts/qa-wave3-telemetry-replay.sh`
+- `bash pixel-sm-server/scripts/replay-core-telemetry-wave3.sh`
   - Deterministic wave-3 telemetry replay with marker validation.
-- `bash pixel-sm-server/scripts/qa-wave4-telemetry-replay.sh`
+- `bash pixel-sm-server/scripts/replay-extended-telemetry-wave4.sh`
   - Deterministic wave-4 telemetry replay with marker validation.
-- `bash pixel-sm-server/scripts/qa-admin-payload-sim.sh matrix`
+- `bash pixel-sm-server/scripts/simulate-admin-control-payloads.sh matrix`
   - Replay delegated admin communication action matrix.
-- `bash pixel-sm-server/scripts/qa-veto-payload-sim.sh matrix`
+- `bash pixel-sm-server/scripts/simulate-veto-control-payloads.sh matrix`
   - Replay veto communication matrix with strict assertion artifact output.
 - `bash pixel-sm-server/scripts/test-automated-suite.sh`
   - Orchestrated automatable validation run with summary artifacts.

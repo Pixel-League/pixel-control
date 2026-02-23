@@ -1,3 +1,4 @@
 # Local-only sandboxes for reference experimentation.
 # Use this instead of running mutable workflows inside `ressources/`.
 .local-dev/
+pixel-control-plugin/logs

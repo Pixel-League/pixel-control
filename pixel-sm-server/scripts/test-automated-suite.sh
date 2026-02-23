@@ -9,12 +9,12 @@ ADMIN_ACTION_SPECS_DIR="${AUTOMATED_SUITE_DIR}/admin-actions"
 VETO_CHECK_SPECS_DIR="${AUTOMATED_SUITE_DIR}/veto-checks"
 
 DEV_MODE_SCRIPT="${PROJECT_DIR}/scripts/dev-mode-compose.sh"
-QA_LAUNCH_SMOKE_SCRIPT="${PROJECT_DIR}/scripts/qa-launch-smoke.sh"
-QA_MODE_SMOKE_SCRIPT="${PROJECT_DIR}/scripts/qa-mode-smoke.sh"
-QA_WAVE3_SCRIPT="${PROJECT_DIR}/scripts/qa-wave3-telemetry-replay.sh"
-QA_WAVE4_SCRIPT="${PROJECT_DIR}/scripts/qa-wave4-telemetry-replay.sh"
-QA_ADMIN_SIM_SCRIPT="${PROJECT_DIR}/scripts/qa-admin-payload-sim.sh"
-QA_VETO_SIM_SCRIPT="${PROJECT_DIR}/scripts/qa-veto-payload-sim.sh"
+LAUNCH_VALIDATION_SCRIPT="${PROJECT_DIR}/scripts/validate-dev-stack-launch.sh"
+MODE_MATRIX_VALIDATION_SCRIPT="${PROJECT_DIR}/scripts/validate-mode-launch-matrix.sh"
+WAVE3_REPLAY_SCRIPT="${PROJECT_DIR}/scripts/replay-core-telemetry-wave3.sh"
+WAVE4_REPLAY_SCRIPT="${PROJECT_DIR}/scripts/replay-extended-telemetry-wave4.sh"
+ADMIN_SIMULATION_SCRIPT="${PROJECT_DIR}/scripts/simulate-admin-control-payloads.sh"
+VETO_SIMULATION_SCRIPT="${PROJECT_DIR}/scripts/simulate-veto-control-payloads.sh"
 ACK_STUB_SCRIPT="${PROJECT_DIR}/scripts/manual-wave5-ack-stub.sh"
 DEV_PLUGIN_SYNC_SCRIPT="${PROJECT_DIR}/scripts/dev-plugin-sync.sh"
 
@@ -29,7 +29,7 @@ COMM_SOCKET_WAIT_ATTEMPTS="${PIXEL_SM_AUTOMATED_SUITE_COMM_WAIT_ATTEMPTS:-45}"
 
 DEFAULT_MODES_CSV="elite,joust"
 REQUESTED_MODES_CSV="$DEFAULT_MODES_CSV"
-WITH_MODE_SMOKE=0
+WITH_MODE_MATRIX_VALIDATION=0
 
 RUN_TIMESTAMP=""
 RUN_DIR=""
@@ -61,12 +61,13 @@ CURL_VERSION_LINE=""
 usage() {
   cat <<'USAGE'
 Usage:
-  bash scripts/test-automated-suite.sh [--modes elite,joust] [--with-mode-smoke]
+  bash scripts/test-automated-suite.sh [--modes elite,joust] [--with-mode-matrix-validation]
 
 Options:
-  --modes <csv>       Comma-separated mode list (default: elite,joust)
-  --with-mode-smoke   Run qa-mode-smoke.sh as optional deep smoke coverage
-  -h, --help          Show this help message
+  --modes <csv>                       Comma-separated mode list (default: elite,joust)
+  --with-mode-matrix-validation      Run validate-mode-launch-matrix.sh as optional deep validation coverage
+  --with-mode-smoke                  Deprecated alias of --with-mode-matrix-validation
+  -h, --help                         Show this help message
 
 Notes:
   - Required checks fail the suite with non-zero exit.
@@ -347,12 +348,12 @@ run_logged_command_with_mode_recovery() {
 
 ensure_required_scripts() {
   [ -f "$DEV_MODE_SCRIPT" ] || fail "Missing script: ${DEV_MODE_SCRIPT}"
-  [ -f "$QA_LAUNCH_SMOKE_SCRIPT" ] || fail "Missing script: ${QA_LAUNCH_SMOKE_SCRIPT}"
-  [ -f "$QA_MODE_SMOKE_SCRIPT" ] || fail "Missing script: ${QA_MODE_SMOKE_SCRIPT}"
-  [ -f "$QA_WAVE3_SCRIPT" ] || fail "Missing script: ${QA_WAVE3_SCRIPT}"
-  [ -f "$QA_WAVE4_SCRIPT" ] || fail "Missing script: ${QA_WAVE4_SCRIPT}"
-  [ -f "$QA_ADMIN_SIM_SCRIPT" ] || fail "Missing script: ${QA_ADMIN_SIM_SCRIPT}"
-  [ -f "$QA_VETO_SIM_SCRIPT" ] || fail "Missing script: ${QA_VETO_SIM_SCRIPT}"
+  [ -f "$LAUNCH_VALIDATION_SCRIPT" ] || fail "Missing script: ${LAUNCH_VALIDATION_SCRIPT}"
+  [ -f "$MODE_MATRIX_VALIDATION_SCRIPT" ] || fail "Missing script: ${MODE_MATRIX_VALIDATION_SCRIPT}"
+  [ -f "$WAVE3_REPLAY_SCRIPT" ] || fail "Missing script: ${WAVE3_REPLAY_SCRIPT}"
+  [ -f "$WAVE4_REPLAY_SCRIPT" ] || fail "Missing script: ${WAVE4_REPLAY_SCRIPT}"
+  [ -f "$ADMIN_SIMULATION_SCRIPT" ] || fail "Missing script: ${ADMIN_SIMULATION_SCRIPT}"
+  [ -f "$VETO_SIMULATION_SCRIPT" ] || fail "Missing script: ${VETO_SIMULATION_SCRIPT}"
   [ -f "$ACK_STUB_SCRIPT" ] || fail "Missing script: ${ACK_STUB_SCRIPT}"
   [ -f "$DEV_PLUGIN_SYNC_SCRIPT" ] || fail "Missing script: ${DEV_PLUGIN_SYNC_SCRIPT}"
   [ -d "$ADMIN_ACTION_SPECS_DIR" ] || fail "Missing directory: ${ADMIN_ACTION_SPECS_DIR}"
@@ -394,14 +395,14 @@ run_mode_profile_apply() {
       env PIXEL_SM_DEV_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" bash "$DEV_MODE_SCRIPT" "$mode" relaunch
 }
 
-run_mode_launch_smoke() {
+run_mode_launch_validation() {
   local mode="$1"
   local mode_dir="${RUN_DIR}/modes/${mode}"
-  local smoke_dir="${mode_dir}/launch-smoke"
-  local log_file="${mode_dir}/launch-smoke-run.log"
+  local validation_dir="${mode_dir}/launch-validation"
+  local log_file="${mode_dir}/launch-validation-run.log"
   local build_images="0"
 
-  mkdir -p "$smoke_dir"
+  mkdir -p "$validation_dir"
 
   if [ "$SMOKE_BUILD_PENDING" = "1" ]; then
     build_images="$AUTOMATED_BUILD_FIRST_SMOKE"
@@ -409,18 +410,18 @@ run_mode_launch_smoke() {
   fi
 
   run_check_command \
-    "mode.${mode}.launch_smoke" \
+    "mode.${mode}.launch_validation" \
     "1" \
-    "Run qa-launch-smoke.sh for mode" \
-    "$smoke_dir" \
+    "Run validate-dev-stack-launch.sh for mode" \
+    "$validation_dir" \
     run_logged_command_with_mode_recovery "$mode" "$log_file" \
       env \
         PIXEL_SM_QA_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
-        PIXEL_SM_QA_ARTIFACT_DIR="$smoke_dir" \
+        PIXEL_SM_QA_ARTIFACT_DIR="$validation_dir" \
         PIXEL_SM_QA_BUILD_IMAGES="$build_images" \
         PIXEL_SM_QA_HEALTH_TIMEOUT_SECONDS="120" \
         PIXEL_SM_QA_XMLRPC_WAIT_SECONDS="90" \
-        bash "$QA_LAUNCH_SMOKE_SCRIPT"
+        bash "$LAUNCH_VALIDATION_SCRIPT"
 }
 
 resolve_latest_artifact() {
@@ -509,7 +510,7 @@ run_mode_wave4_plugin_only() {
   run_check_command \
     "mode.${mode}.wave4_plugin_only.replay" \
     "1" \
-    "Run qa-wave4-telemetry-replay.sh with plugin_only profile" \
+    "Run replay-extended-telemetry-wave4.sh with plugin_only profile" \
     "$wave4_dir" \
     run_logged_command_with_mode_recovery "$mode" "$log_file" \
       env \
@@ -517,7 +518,7 @@ run_mode_wave4_plugin_only() {
         PIXEL_SM_QA_ARTIFACT_DIR="$wave4_dir" \
         PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES="0" \
         PIXEL_SM_QA_TELEMETRY_MARKER_PROFILE="plugin_only" \
-        bash "$QA_WAVE4_SCRIPT"
+        bash "$WAVE4_REPLAY_SCRIPT"
 
   markers_file="$(resolve_latest_artifact "${wave4_dir}/wave4-telemetry-*-markers.json" || true)"
   if [ -z "$markers_file" ]; then
@@ -599,7 +600,7 @@ run_elite_strict_gate() {
         PIXEL_SM_QA_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
         PIXEL_SM_QA_ARTIFACT_DIR="$wave3_dir" \
         PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES="1" \
-        bash "$QA_WAVE3_SCRIPT"
+        bash "$WAVE3_REPLAY_SCRIPT"
 
   markers_file="$(resolve_latest_artifact "${wave3_dir}/wave3-telemetry-*-markers.json" || true)"
   if [ -z "$markers_file" ]; then
@@ -624,7 +625,7 @@ run_elite_strict_gate() {
         PIXEL_SM_QA_ARTIFACT_DIR="$wave4_dir" \
         PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES="1" \
         PIXEL_SM_QA_TELEMETRY_MARKER_PROFILE="strict" \
-        bash "$QA_WAVE4_SCRIPT"
+        bash "$WAVE4_REPLAY_SCRIPT"
 
   markers_file="$(resolve_latest_artifact "${wave4_dir}/wave4-telemetry-*-markers.json" || true)"
   if [ -z "$markers_file" ]; then
@@ -639,23 +640,23 @@ run_elite_strict_gate() {
   fi
 }
 
-run_optional_mode_smoke() {
-  local mode_smoke_dir="${RUN_DIR}/optional/mode-smoke"
-  local log_file="${mode_smoke_dir}/qa-mode-smoke.log"
+run_optional_mode_matrix_validation() {
+  local mode_validation_dir="${RUN_DIR}/optional/mode-validation"
+  local log_file="${mode_validation_dir}/mode-validation.log"
 
-  mkdir -p "$mode_smoke_dir"
+  mkdir -p "$mode_validation_dir"
 
   run_check_command_logged \
-    "optional.mode_smoke.matrix" \
+    "optional.mode_validation.matrix" \
     "0" \
-    "Run optional qa-mode-smoke.sh matrix" \
-    "$mode_smoke_dir" \
+    "Run optional validate-mode-launch-matrix.sh" \
+    "$mode_validation_dir" \
     "$log_file" \
     env \
       PIXEL_SM_QA_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
-      PIXEL_SM_QA_ARTIFACT_DIR="$mode_smoke_dir" \
+      PIXEL_SM_QA_ARTIFACT_DIR="$mode_validation_dir" \
       PIXEL_SM_QA_MODE_BUILD_FIRST="0" \
-      bash "$QA_MODE_SMOKE_SCRIPT"
+      bash "$MODE_MATRIX_VALIDATION_SCRIPT"
 }
 
 wait_for_http_health() {
@@ -966,7 +967,7 @@ run_mode_admin_payload_assertions() {
       env \
         PIXEL_SM_ADMIN_SIM_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
         PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT="$payload_output_root" \
-        bash "$QA_ADMIN_SIM_SCRIPT" matrix
+        bash "$ADMIN_SIMULATION_SCRIPT" matrix
 
   run_check_command \
     "mode.${mode}.admin.payload.capture_wait" \
@@ -1248,7 +1249,7 @@ run_mode_veto_response_assertions() {
   run_check_command \
     "mode.${mode}.veto.matrix" \
     "1" \
-    "Run qa-veto-payload-sim.sh matrix" \
+    "Run simulate-veto-control-payloads.sh matrix" \
     "$matrix_output_root" \
     run_logged_command_with_mode_recovery "$mode" "${veto_dir}/matrix-command.log" \
       env \
@@ -1259,7 +1260,7 @@ run_mode_veto_response_assertions() {
         PIXEL_SM_VETO_SIM_MATCHMAKING_DURATION="6" \
         PIXEL_SM_VETO_SIM_WAIT_EXTRA_SECONDS="1" \
         PIXEL_SM_VETO_SIM_TOURNAMENT_BEST_OF="$tournament_best_of" \
-        bash "$QA_VETO_SIM_SCRIPT" matrix
+        bash "$VETO_SIMULATION_SCRIPT" matrix
 
   matrix_run_dir="$(resolve_latest_veto_sim_dir "$matrix_output_root" || true)"
   if [ -z "$matrix_run_dir" ]; then
@@ -1486,24 +1487,24 @@ run_mode_admin_response_assertions() {
   run_check_command \
     "mode.${mode}.admin.list_actions" \
     "1" \
-    "Run qa-admin-payload-sim.sh list-actions" \
+    "Run simulate-admin-control-payloads.sh list-actions" \
     "$list_output_root" \
     run_logged_command_with_mode_recovery "$mode" "${admin_dir}/list-actions-command.log" \
       env \
         PIXEL_SM_ADMIN_SIM_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
         PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT="$list_output_root" \
-        bash "$QA_ADMIN_SIM_SCRIPT" list-actions
+        bash "$ADMIN_SIMULATION_SCRIPT" list-actions
 
   run_check_command \
     "mode.${mode}.admin.matrix" \
     "1" \
-    "Run qa-admin-payload-sim.sh matrix" \
+    "Run simulate-admin-control-payloads.sh matrix" \
     "$matrix_output_root" \
     run_logged_command_with_mode_recovery "$mode" "${admin_dir}/matrix-command.log" \
       env \
         PIXEL_SM_ADMIN_SIM_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
         PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT="$matrix_output_root" \
-        bash "$QA_ADMIN_SIM_SCRIPT" matrix
+        bash "$ADMIN_SIMULATION_SCRIPT" matrix
 
   list_run_dir="$(resolve_latest_admin_sim_dir "$list_output_root" || true)"
   if [ -z "$list_run_dir" ]; then
@@ -1542,8 +1543,13 @@ parse_args() {
         REQUESTED_MODES_CSV="$2"
         shift 2
         ;;
+      --with-mode-matrix-validation)
+        WITH_MODE_MATRIX_VALIDATION=1
+        shift
+        ;;
       --with-mode-smoke)
-        WITH_MODE_SMOKE=1
+        log "Deprecated option --with-mode-smoke detected; using --with-mode-matrix-validation behavior."
+        WITH_MODE_MATRIX_VALIDATION=1
         shift
         ;;
       -h|--help)
@@ -1608,7 +1614,7 @@ emit_run_manifest() {
   local manifest_file="$1"
   shift
 
-  python3 - "$manifest_file" "$RUN_TIMESTAMP" "$RUN_DIR" "$PROJECT_DIR" "$DEFAULT_MODES_CSV" "$REQUESTED_MODES_CSV" "$WITH_MODE_SMOKE" "$DOCKER_VERSION" "$BASH_VERSION_LINE" "$PYTHON3_VERSION" "$PHP_VERSION_LINE" "$CURL_VERSION_LINE" "$@" <<'PY'
+  python3 - "$manifest_file" "$RUN_TIMESTAMP" "$RUN_DIR" "$PROJECT_DIR" "$DEFAULT_MODES_CSV" "$REQUESTED_MODES_CSV" "$WITH_MODE_MATRIX_VALIDATION" "$DOCKER_VERSION" "$BASH_VERSION_LINE" "$PYTHON3_VERSION" "$PHP_VERSION_LINE" "$CURL_VERSION_LINE" "$@" <<'PY'
 import json
 import sys
 import time
@@ -1619,7 +1625,7 @@ run_dir = sys.argv[3]
 project_dir = sys.argv[4]
 default_modes_csv = sys.argv[5]
 requested_modes_csv = sys.argv[6]
-with_mode_smoke = sys.argv[7] == "1"
+with_mode_matrix_validation = sys.argv[7] == "1"
 docker_version = sys.argv[8]
 bash_version_line = sys.argv[9]
 python3_version = sys.argv[10]
@@ -1636,7 +1642,7 @@ payload = {
         "default_modes_csv": default_modes_csv,
         "requested_modes_csv": requested_modes_csv,
         "requested_modes": requested_modes,
-        "with_mode_smoke": with_mode_smoke,
+        "with_mode_matrix_validation": with_mode_matrix_validation,
     },
     "environment": {
         "project_dir": project_dir,
@@ -1682,7 +1688,7 @@ output_file = sys.argv[1]
 payload = {
     "schema": "pixel-sm-automated-suite-coverage.v1",
     "automatable": [
-        "stack.launch_smoke",
+        "stack.launch_validation",
         "telemetry.wave4_plugin_only",
         "telemetry.wave3_strict",
         "telemetry.wave4_strict",
@@ -1723,7 +1729,7 @@ emit_suite_reports() {
   local modes_csv=""
   modes_csv="$(IFS=,; printf '%s' "${REQUESTED_MODES[*]}")"
 
-  python3 - "$CHECK_RESULTS_FILE" "$SUITE_SUMMARY_JSON_FILE" "$SUITE_SUMMARY_MD_FILE" "$MANUAL_HANDOFF_FILE" "$RUN_DIR" "$modes_csv" "$WITH_MODE_SMOKE" <<'PY'
+  python3 - "$CHECK_RESULTS_FILE" "$SUITE_SUMMARY_JSON_FILE" "$SUITE_SUMMARY_MD_FILE" "$MANUAL_HANDOFF_FILE" "$RUN_DIR" "$modes_csv" "$WITH_MODE_MATRIX_VALIDATION" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -1734,7 +1740,7 @@ suite_summary_md_file = Path(sys.argv[3])
 manual_handoff_file = Path(sys.argv[4])
 run_dir = sys.argv[5]
 modes_csv = sys.argv[6]
-with_mode_smoke = sys.argv[7] == "1"
+with_mode_matrix_validation = sys.argv[7] == "1"
 
 checks = []
 if check_results_file.exists():
@@ -1759,7 +1765,7 @@ summary = {
     "run_directory": run_dir,
     "requested_modes_csv": modes_csv,
     "requested_modes": [mode for mode in modes_csv.split(",") if mode],
-    "with_mode_smoke": with_mode_smoke,
+    "with_mode_matrix_validation": with_mode_matrix_validation,
     "overall_status": overall_status,
     "counts": {
         "total_checks": total_checks,
@@ -1795,7 +1801,7 @@ lines.append(f"# Automated suite summary ({overall_status})")
 lines.append("")
 lines.append(f"- Run directory: `{run_dir}`")
 lines.append(f"- Requested modes: `{modes_csv}`")
-lines.append(f"- Optional deep mode smoke: `{with_mode_smoke}`")
+lines.append(f"- Optional mode matrix validation: `{with_mode_matrix_validation}`")
 lines.append(f"- Total checks: `{total_checks}`")
 lines.append(f"- Passed checks: `{passed_checks}`")
 lines.append(f"- Failed checks: `{len(failed_checks)}`")
@@ -1908,7 +1914,7 @@ main() {
   init_run_context
 
   log "Requested modes CSV: ${REQUESTED_MODES_CSV}"
-  log "Optional deep mode smoke: ${WITH_MODE_SMOKE}"
+  log "Optional mode matrix validation: ${WITH_MODE_MATRIX_VALIDATION}"
   log "Compose files: ${AUTOMATED_COMPOSE_FILES}"
   log "Run directory: ${RUN_DIR}"
   log "Run manifest: ${RUN_MANIFEST_FILE}"
@@ -1918,7 +1924,7 @@ main() {
   for mode in "${REQUESTED_MODES[@]}"; do
     mode_index=$((mode_index + 1))
     run_mode_profile_apply "$mode"
-    run_mode_launch_smoke "$mode"
+    run_mode_launch_validation "$mode"
     run_mode_wave4_plugin_only "$mode"
     run_mode_admin_response_assertions "$mode"
     run_mode_admin_payload_assertions "$mode" "$mode_index"
@@ -1928,8 +1934,8 @@ main() {
 
   run_elite_strict_gate
 
-  if [ "$WITH_MODE_SMOKE" = "1" ]; then
-    run_optional_mode_smoke
+  if [ "$WITH_MODE_MATRIX_VALIDATION" = "1" ]; then
+    run_optional_mode_matrix_validation
   fi
 
   finalize_suite_exit

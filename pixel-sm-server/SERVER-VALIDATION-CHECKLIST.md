@@ -22,9 +22,9 @@ Resultat attendu:
 ## 2) Tests automatiques (sans client de jeu)
 
 ```bash
-bash scripts/qa-launch-smoke.sh
-bash scripts/qa-mode-smoke.sh
-bash scripts/qa-admin-payload-sim.sh matrix
+bash scripts/validate-dev-stack-launch.sh
+bash scripts/validate-mode-launch-matrix.sh
+bash scripts/simulate-admin-control-payloads.sh matrix
 bash scripts/test-automated-suite.sh --modes elite,joust
 ```
 
@@ -37,11 +37,11 @@ Resultat attendu:
 Remplace `<LOGIN_TEST>` par le login reel du joueur non-admin que tu veux tester.
 
 ```bash
-bash scripts/qa-admin-payload-sim.sh execute whitelist.clean
-bash scripts/qa-admin-payload-sim.sh execute whitelist.enable
-bash scripts/qa-admin-payload-sim.sh execute vote.policy.set mode=cancel_non_admin_vote_on_callback
-bash scripts/qa-admin-payload-sim.sh execute team.policy.set policy_enabled=true switch_lock_enabled=true
-bash scripts/qa-admin-payload-sim.sh execute team.roster.assign target_login=<LOGIN_TEST> team=blue
+bash scripts/simulate-admin-control-payloads.sh execute whitelist.clean
+bash scripts/simulate-admin-control-payloads.sh execute whitelist.enable
+bash scripts/simulate-admin-control-payloads.sh execute vote.policy.set mode=cancel_non_admin_vote_on_callback
+bash scripts/simulate-admin-control-payloads.sh execute team.policy.set policy_enabled=true switch_lock_enabled=true
+bash scripts/simulate-admin-control-payloads.sh execute team.roster.assign target_login=<LOGIN_TEST> team=blue
 ```
 
 ## 4) Tests manuels obligatoires (avec vrais comptes)
@@ -53,7 +53,7 @@ bash scripts/qa-admin-payload-sim.sh execute team.roster.assign target_login=<LO
 4. Ajoute ensuite ce login dans la whitelist:
 
 ```bash
-bash scripts/qa-admin-payload-sim.sh execute whitelist.add target_login=<LOGIN_TEST>
+bash scripts/simulate-admin-control-payloads.sh execute whitelist.add target_login=<LOGIN_TEST>
 ```
 
 5. Rejoin avec `<LOGIN_TEST>`.
@@ -85,11 +85,11 @@ Optionnel: utiliser les templates deja prets dans
 ## 6) Nettoyage / retour a l'etat neutre
 
 ```bash
-bash scripts/qa-admin-payload-sim.sh execute whitelist.disable
-bash scripts/qa-admin-payload-sim.sh execute whitelist.clean
-bash scripts/qa-admin-payload-sim.sh execute team.roster.unassign target_login=<LOGIN_TEST>
-bash scripts/qa-admin-payload-sim.sh execute team.policy.set policy_enabled=false switch_lock_enabled=false
-bash scripts/qa-admin-payload-sim.sh execute vote.policy.set mode=disable_callvotes_and_use_admin_actions
+bash scripts/simulate-admin-control-payloads.sh execute whitelist.disable
+bash scripts/simulate-admin-control-payloads.sh execute whitelist.clean
+bash scripts/simulate-admin-control-payloads.sh execute team.roster.unassign target_login=<LOGIN_TEST>
+bash scripts/simulate-admin-control-payloads.sh execute team.policy.set policy_enabled=false switch_lock_enabled=false
+bash scripts/simulate-admin-control-payloads.sh execute vote.policy.set mode=disable_callvotes_and_use_admin_actions
 ```
 
 Si tu veux arreter la stack:

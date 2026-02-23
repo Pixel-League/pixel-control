@@ -127,7 +127,7 @@ pass/fail criteria, and deterministic artifact destinations for each scenario id
 
 Run without fixture injection when you need plugin-only envelopes:
 
-PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/qa-wave4-telemetry-replay.sh
+PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/replay-extended-telemetry-wave4.sh
 
 ## Suggested operator workflow
 
@@ -146,7 +146,7 @@ PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/qa-wave4-telemetry-replay.s
 
 Optional plugin-only dedicated-action trace (fixture-off):
 
-- PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/qa-wave4-telemetry-replay.sh
+- PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/replay-extended-telemetry-wave4.sh
 
 ## Deterministic scenario mapping
 
@@ -164,7 +164,7 @@ Use this matrix for real-client validation. Run all scenarios before marking wav
 
 ## Common prerequisites
 
-- CP-1: bash scripts/qa-launch-smoke.sh passed recently.
+- CP-1: bash scripts/validate-dev-stack-launch.sh passed recently.
 - CP-2: local ACK stub capture is running for the target session payload file.
 - CP-3: plugin transport targets the stub (PIXEL_CONTROL_API_BASE_URL=http://host.docker.internal:18080).
 - CP-4: stack is running in a mode compatible with the scenario (veto/draft scenarios require mode+map flow exposing map rotation callbacks).
@@ -215,7 +215,7 @@ write_template "$SESSION_NOTES_FILE" <<EOF
 
 ## Prerequisites
 
-- Stack healthy (bash scripts/qa-launch-smoke.sh passed recently)
+- Stack healthy (bash scripts/validate-dev-stack-launch.sh passed recently)
 - Local ACK capture target configured
 - Real ShootMania client connected to the local server
 - Matrix loaded from MANUAL-TEST-MATRIX.md
@@ -334,4 +334,4 @@ EOF
 log "Manual wave-5 scaffolding ready: ${MANUAL_DIR}"
 log "Manual test matrix: ${MATRIX_FILE}"
 log "Session templates: SESSION-${SESSION_ID}-{notes.md,payload.ndjson,evidence.md}"
-log "Fixture-off deterministic capture: PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/qa-wave4-telemetry-replay.sh"
+log "Fixture-off deterministic capture: PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES=0 bash scripts/replay-extended-telemetry-wave4.sh"

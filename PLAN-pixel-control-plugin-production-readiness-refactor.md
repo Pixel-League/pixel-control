@@ -102,7 +102,7 @@ Likely new files/directories to add:
 - [Done] Phase 3 - Remaining domain cleanup and consistency pass
 - [Done] Phase 4 - Testing foundation and regression coverage
 - [Done] Phase 5 - Documentation consolidation and essential-only docs
-- [In progress] Phase 6 - Script/file naming clarity migration
+- [Done] Phase 6 - Script/file naming clarity migration
 - [Todo] Phase 7 - Production-readiness validation and handoff
 
 ### Phase 0 - Baseline freeze and refactor contract
@@ -207,15 +207,15 @@ Likely new files/directories to add:
 
 ### Phase 6 - Script/file naming clarity migration
 
-- [Todo] P6.1 - Rename plugin-related scripts to explicit names.
+- [Done] P6.1 - Rename plugin-related scripts to explicit names.
   - Remove `qa`/`smoke` terminology from active script names in plugin-facing workflows.
-- [Todo] P6.2 - Rename matrix/descriptors directories where needed while preserving modular structure.
+- [Done] P6.2 - Rename matrix/descriptors directories where needed while preserving modular structure.
   - Keep one-file-per-action/feature extension pattern intact.
-- [Todo] P6.3 - Update all call sites and documentation references.
+- [Done] P6.3 - Update all call sites and documentation references.
   - README, script internals, helper docs, and automation runners.
-- [Todo] P6.4 - Add temporary backward-compatible wrappers/aliases.
+- [Done] P6.4 - Add temporary backward-compatible wrappers/aliases.
   - Old script names should forward to new names with deprecation notice to reduce migration risk.
-- [Todo] P6.R - Review checkpoint with user.
+- [Done] P6.R - Review checkpoint with user.
   - Validate naming choices and migration compatibility before final hardening.
 
 ### Phase 7 - Production-readiness validation and handoff

@@ -36,9 +36,9 @@
   - `docker compose down`
   - `docker compose logs -f`
   - `bash scripts/dev-plugin-sync.sh`
-  - `bash scripts/qa-wave3-telemetry-replay.sh`
-  - `bash scripts/qa-wave4-telemetry-replay.sh`
-  - `bash scripts/qa-admin-stats-replay.sh`
+  - `bash scripts/replay-core-telemetry-wave3.sh`
+  - `bash scripts/replay-extended-telemetry-wave4.sh`
+  - `bash scripts/replay-admin-player-combat-telemetry.sh`
 - ManiaControl sandbox workflow (copy reference first, then run from `.local-dev/`):
   - `mkdir -p .local-dev`
   - `cp -R ressources/ManiaControl .local-dev/maniacontrol`
@@ -63,7 +63,7 @@
 - Build new product code in `pixel-control-plugin/` and `pixel-sm-server/` for now; keep `pixel-control-server/` implementation-deferred until explicitly resumed.
 - Build first-party dev server automation in `pixel-sm-server/` (do not evolve the imported Docker reference directly unless explicitly requested).
 - Keep `API_CONTRACT.md` (repo root) updated whenever plugin->API route expectations change.
-- Keep `pixel-control-plugin/FEATURES.md` updated whenever plugin capabilities change.
+- Keep `pixel-control-plugin/README.md` updated whenever plugin capabilities or operator workflows change.
 - For plugin implementation, follow ManiaControl plugin contract conventions:
   - implement `ManiaControl\Plugins\Plugin` methods (`prepare`, `load`, `unload`, metadata getters),
   - wire callbacks/commands via managers,
@@ -695,9 +695,37 @@
   - `pixel-control-plugin/docs/schema/*.json`.
 - Phase-5 review packet published at `pixel-control-plugin/logs/refactor-production-readiness/phase-5-review.md`.
 
+## Additional execution status (2026-02-23, production-readiness refactor phase 6)
+- Phase 6 script/file naming migration is now aligned to explicit, non-`qa` command names on active surfaces.
+- Canonical renamed script entrypoints:
+  - `pixel-sm-server/scripts/simulate-admin-control-payloads.sh` (replaces `qa-admin-payload-sim.sh`),
+  - `pixel-sm-server/scripts/simulate-veto-control-payloads.sh` (replaces `qa-veto-payload-sim.sh`),
+  - `pixel-sm-server/scripts/replay-admin-player-combat-telemetry.sh` (replaces `qa-admin-stats-replay.sh`),
+  - `pixel-sm-server/scripts/validate-dev-stack-launch.sh` (replaces `qa-launch-smoke.sh`),
+  - `pixel-sm-server/scripts/validate-mode-launch-matrix.sh` (replaces `qa-mode-smoke.sh`),
+  - `pixel-sm-server/scripts/replay-core-telemetry-wave3.sh` (replaces `qa-wave3-telemetry-replay.sh`),
+  - `pixel-sm-server/scripts/replay-extended-telemetry-wave4.sh` (replaces `qa-wave4-telemetry-replay.sh`).
+- Compatibility wrappers remain available on the old script names and print deprecation messages while forwarding to canonical scripts.
+- Canonical matrix-step extension roots are now:
+  - `pixel-sm-server/scripts/admin-action-matrix-steps/`,
+  - `pixel-sm-server/scripts/veto-action-matrix-steps/`.
+- Automated-suite naming migration is now active:
+  - optional flag `--with-mode-matrix-validation` is canonical,
+  - deprecated alias `--with-mode-smoke` is still accepted with warning,
+  - check ids use `launch_validation` / `optional.mode_validation.matrix` naming.
+- Active docs/checklists updated to canonical names:
+  - `pixel-control-plugin/README.md`,
+  - `pixel-sm-server/README.md`,
+  - `pixel-sm-server/SERVER-VALIDATION-CHECKLIST.md`,
+  - `pixel-sm-server/scripts/automated-suite/README.md`.
+- Validation signal for this migration scope:
+  - `bash -n` passed for all touched/added scripts (renamed entrypoints + automated suite + compatibility wrappers),
+  - `bash pixel-sm-server/scripts/test-automated-suite.sh --help` shows canonical flag/usage,
+  - `simulate-admin-control-payloads.sh --help` and `simulate-veto-control-payloads.sh --help` show canonical command paths/default step directories.
+
 ## User preference (durable)
 - For QA automation scripts, prefer modular Bash structure with one script per tested action/feature rather than large hardcoded lists inside monolithic scripts.
-- Matrix replay order for admin actions now lives in `pixel-sm-server/scripts/qa-admin-matrix-actions/` (one sourced `.sh` step per action) and should remain the default extension point.
+- Matrix replay order for admin actions now lives in `pixel-sm-server/scripts/admin-action-matrix-steps/` (one sourced `.sh` step per action) and should remain the default extension point.
 - Automated-suite required admin action catalog now lives in `pixel-sm-server/scripts/automated-suite/admin-actions/` (one `.sh` descriptor per action key) and should be updated whenever action coverage changes.
 - After any plugin code modification request, run `bash pixel-sm-server/scripts/dev-plugin-hot-sync.sh` before reporting completion so runtime behavior matches source changes.
 - When the user says `PLAN_EXECUTE`, treat it as explicit instruction to create a PLAN file with the `@planner` subagent and then execute that PLAN immediately with the `@executor` subagent.
