@@ -9,8 +9,10 @@ use ManiaControl\Communication\CommunicationListener;
 use ManiaControl\ManiaControl;
 use ManiaControl\Plugins\Plugin;
 use PixelControl\Admin\NativeAdminGateway;
+use PixelControl\AccessControl\WhitelistStateInterface;
 use PixelControl\Api\PixelControlApiClientInterface;
 use PixelControl\Callbacks\CallbackRegistry;
+use PixelControl\Domain\AccessControl\AccessControlDomainTrait;
 use PixelControl\Domain\Admin\AdminControlDomainTrait;
 use PixelControl\Queue\EventQueueInterface;
 use PixelControl\Retry\RetryPolicyInterface;
@@ -23,14 +25,18 @@ use PixelControl\Domain\Match\MatchDomainTrait;
 use PixelControl\Domain\Pipeline\PipelineDomainTrait;
 use PixelControl\Domain\Player\PlayerDomainTrait;
 use PixelControl\Domain\SeriesControl\SeriesControlDomainTrait;
+use PixelControl\Domain\TeamControl\TeamControlDomainTrait;
 use PixelControl\Domain\VetoDraft\VetoDraftDomainTrait;
 use PixelControl\SeriesControl\SeriesControlStateInterface;
+use PixelControl\TeamControl\TeamRosterStateInterface;
 use PixelControl\VetoDraft\MapPoolService;
 use PixelControl\VetoDraft\VetoDraftCoordinator;
 use PixelControl\VetoDraft\VetoDraftQueueApplier;
+use PixelControl\VoteControl\VotePolicyStateInterface;
 
 class PixelControlPlugin implements CallbackListener, TimerListener, CommandListener, CommunicationListener, Plugin {
 	use CoreDomainTrait;
+	use AccessControlDomainTrait;
 	use AdminControlDomainTrait;
 	use ConnectivityDomainTrait;
 	use LifecycleDomainTrait;
@@ -39,6 +45,7 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	use CombatDomainTrait;
 	use PipelineDomainTrait;
 	use SeriesControlDomainTrait;
+	use TeamControlDomainTrait;
 	use VetoDraftDomainTrait;
 
 	const ID = 100001;
@@ -58,6 +65,12 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	const SETTING_QUEUE_MAX_SIZE = 'Pixel Control Queue Max Size';
 	const SETTING_DISPATCH_BATCH_SIZE = 'Pixel Control Dispatch Batch Size';
 	const SETTING_HEARTBEAT_INTERVAL_SECONDS = 'Pixel Control Heartbeat Interval Seconds';
+	const SETTING_WHITELIST_ENABLED = 'Pixel Control Whitelist Enabled';
+	const SETTING_WHITELIST_LOGINS = 'Pixel Control Whitelist Logins';
+	const SETTING_VOTE_POLICY_MODE = 'Pixel Control Vote Policy Mode';
+	const SETTING_TEAM_POLICY_ENABLED = 'Pixel Control Team Policy Enabled';
+	const SETTING_TEAM_SWITCH_LOCK_ENABLED = 'Pixel Control Team Switch Lock Enabled';
+	const SETTING_TEAM_ROSTER_ASSIGNMENTS = 'Pixel Control Team Roster Assignments';
 	const SETTING_ADMIN_CONTROL_ENABLED = 'Pixel Control Native Admin Control Enabled';
 	const SETTING_ADMIN_CONTROL_COMMAND = 'Pixel Control Native Admin Command';
 	const SETTING_ADMIN_CONTROL_PAUSE_STATE_MAX_AGE_SECONDS = 'Pixel Control Pause State Max Age Seconds';
@@ -98,6 +111,38 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	private $heartbeatIntervalSeconds = 120;
 	/** @var NativeAdminGateway|null $nativeAdminGateway */
 	private $nativeAdminGateway = null;
+	/** @var WhitelistStateInterface|null $whitelistState */
+	private $whitelistState = null;
+	/** @var VotePolicyStateInterface|null $votePolicyState */
+	private $votePolicyState = null;
+	/** @var TeamRosterStateInterface|null $teamRosterState */
+	private $teamRosterState = null;
+	/** @var int[] $whitelistRecentDeniedAt */
+	private $whitelistRecentDeniedAt = array();
+	/** @var int $whitelistDenyCooldownSeconds */
+	private $whitelistDenyCooldownSeconds = 5;
+	/** @var string $whitelistGuestListLastSyncHash */
+	private $whitelistGuestListLastSyncHash = '';
+	/** @var int $whitelistGuestListLastSyncAt */
+	private $whitelistGuestListLastSyncAt = 0;
+	/** @var int $votePolicyLastCallVoteTimeoutMs */
+	private $votePolicyLastCallVoteTimeoutMs = 0;
+	/** @var bool $votePolicyStrictRuntimeApplied */
+	private $votePolicyStrictRuntimeApplied = false;
+	/** @var bool|null $teamControlForcedTeamsState */
+	private $teamControlForcedTeamsState = null;
+	/** @var int $teamControlLastRuntimeApplyAt */
+	private $teamControlLastRuntimeApplyAt = 0;
+	/** @var string $teamControlLastRuntimeApplySource */
+	private $teamControlLastRuntimeApplySource = 'bootstrap';
+	/** @var int[] $teamControlRecentForcedAt */
+	private $teamControlRecentForcedAt = array();
+	/** @var int $teamControlForceCooldownSeconds */
+	private $teamControlForceCooldownSeconds = 4;
+	/** @var int $teamControlReconcileIntervalSeconds */
+	private $teamControlReconcileIntervalSeconds = 3;
+	/** @var int $teamControlLastReconcileAt */
+	private $teamControlLastReconcileAt = 0;
 	/** @var bool $adminControlEnabled */
 	private $adminControlEnabled = false;
 	/** @var string $adminControlCommandName */
@@ -190,6 +235,12 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	private $vetoDraftMatchmakingAutostartArmed = true;
 	/** @var bool $vetoDraftMatchmakingAutostartSuppressed */
 	private $vetoDraftMatchmakingAutostartSuppressed = false;
+	/** @var array|null $vetoDraftMatchmakingAutostartPending */
+	private $vetoDraftMatchmakingAutostartPending = null;
+	/** @var string $vetoDraftMatchmakingAutostartLastCancellation */
+	private $vetoDraftMatchmakingAutostartLastCancellation = '';
+	/** @var bool $vetoDraftMatchmakingReadyArmed */
+	private $vetoDraftMatchmakingReadyArmed = false;
 	/** @var int $vetoDraftTournamentActionTimeoutSeconds */
 	private $vetoDraftTournamentActionTimeoutSeconds = 45;
 	/** @var int $vetoDraftDefaultBestOf */

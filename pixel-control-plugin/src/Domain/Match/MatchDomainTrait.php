@@ -1026,6 +1026,7 @@ trait MatchDomainTrait {
 		$vetoDraftSessionStatus = '';
 		$seriesTargets = $this->getSeriesControlSnapshot();
 		$matchmakingLifecycle = $this->buildMatchmakingLifecycleStatusSnapshot();
+		$matchmakingReadyArmed = (bool) $this->vetoDraftMatchmakingReadyArmed;
 
 		$authoritativeVetoSnapshots = $this->resolveAuthoritativeVetoDraftSnapshots();
 		if (is_array($authoritativeVetoSnapshots)) {
@@ -1051,6 +1052,7 @@ trait MatchDomainTrait {
 			'veto_result' => is_array($vetoResult) && isset($vetoResult['status']),
 			'veto_draft_mode' => $vetoDraftMode !== '',
 			'veto_draft_session_status' => $vetoDraftSessionStatus !== '',
+			'matchmaking_ready_armed' => true,
 			'series_targets' => is_array($seriesTargets) && !empty($seriesTargets),
 			'matchmaking_lifecycle' => is_array($matchmakingLifecycle) && isset($matchmakingLifecycle['status']),
 		);
@@ -1075,6 +1077,7 @@ trait MatchDomainTrait {
 			'played_map_order' => $this->playedMapHistory,
 			'veto_draft_mode' => $vetoDraftMode,
 			'veto_draft_session_status' => $vetoDraftSessionStatus,
+			'matchmaking_ready_armed' => $matchmakingReadyArmed,
 			'series_targets' => $seriesTargets,
 			'matchmaking_lifecycle' => $matchmakingLifecycle,
 			'veto_draft_actions' => $vetoDraftActions,

@@ -220,14 +220,6 @@ class MatchmakingVoteSession {
 		return $this->mapPool;
 	}
 
-	public function getStatus() {
-		return $this->status;
-	}
-
-	public function getWinnerMapUid() {
-		return $this->winnerMapUid;
-	}
-
 	public function getWinnerMapIdentity() {
 		if ($this->winnerMapUid === '') {
 			return null;

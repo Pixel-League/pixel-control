@@ -12,7 +12,12 @@ This document defines the delegated admin-control routing boundary for `pixel-co
   - permission enforcement and auth hierarchy,
   - map/match-flow command execution,
   - player force and auth grant/revoke execution,
-  - vote cancellation/ratio mutation and optional custom-vote execution.
+  - vote cancellation/ratio mutation and optional custom-vote execution,
+  - team-mode runtime guards (`modeIsTeamMode`) and forced-team primitives (`setForcedTeams`, `forcePlayerTeam`).
+- Pixel plugin state modules own:
+  - whitelist registry persistence and guest-list sync orchestration,
+  - vote policy mode state (`cancel_non_admin_vote_on_callback` vs strict fallback),
+  - login->team roster assignments and team policy persistence (`policy_enabled`, `switch_lock_enabled`).
 
 ## Control entry points
 
@@ -37,8 +42,8 @@ Feature toggle and runtime controls:
   - plugin permission checks are skipped by design,
   - this is temporary until signed/authenticated payload verification is introduced.
 - Effective minimum rights for chat-command path:
-  - Moderator: map skip/restart/jump/queue, warmup/pause, vote-cancel, player-force, custom-vote-start
-  - Admin: map.add/map.remove, vote-ratio, auth-grant/auth-revoke
+  - Moderator: map skip/restart/jump/queue, warmup/pause, vote-cancel, player-force, custom-vote-start, whitelist add/remove/list, vote policy get, team roster assign/unassign/list, team policy get
+  - Admin: map.add/map.remove, vote-ratio, auth-grant/auth-revoke, whitelist enable/disable/clean/sync, vote policy set, team policy set
 
 ## Action routing matrix
 
@@ -56,12 +61,26 @@ Feature toggle and runtime controls:
 | `pause.end` | `ModeScriptEventManager::endPause` | requires `modeUsesPause()` |
 | `vote.cancel` | `Client::cancelVote` | native failure when no vote running |
 | `vote.set_ratio` | `Client::setCallVoteRatios` | validates command + ratio range |
+| `vote.policy.get` | `VotePolicyState::getSnapshot` | plugin-state snapshot exposure |
+| `vote.policy.set` | `VotePolicyState::setMode` | persists selected vote governance mode |
 | `player.force_team` | `PlayerActions::forcePlayerToTeam` | team-mode guard; actorless payload path uses native `calledByAdmin=false` |
 | `player.force_play` | `PlayerActions::forcePlayerToPlay` | actorless payload path uses native `calledByAdmin=false` |
 | `player.force_spec` | `PlayerActions::forcePlayerToSpectator` | actorless payload path uses native `calledByAdmin=false` |
 | `auth.grant` | `PlayerActions::grantAuthLevel` or `AuthenticationManager::grantAuthLevel` | actor-bound chat path keeps native hierarchy checks; actorless payload path uses AuthenticationManager direct grant |
 | `auth.revoke` | `PlayerActions::revokeAuthLevel` or `AuthenticationManager::grantAuthLevel(AUTH_LEVEL_PLAYER)` | actor-bound chat path keeps native hierarchy checks; actorless payload path applies direct fallback-to-player level |
 | `vote.custom_start` | `MCTeam\CustomVotesPlugin::startVote` | capability unavailable when plugin inactive; actorless payload path uses fallback connected initiator player |
+| `whitelist.enable` | `WhitelistState::setEnabled(true)` + guest sync | plugin persists and syncs dedicated guest list |
+| `whitelist.disable` | `WhitelistState::setEnabled(false)` + guest sync | plugin persists and syncs dedicated guest list |
+| `whitelist.add` | `WhitelistState::addLogin` + guest sync | canonical lowercase login registry |
+| `whitelist.remove` | `WhitelistState::removeLogin` + guest sync | canonical lowercase login registry |
+| `whitelist.list` | `WhitelistState::getSnapshot` | plugin-state snapshot exposure |
+| `whitelist.clean` | `WhitelistState::clean` + guest sync | clears persisted whitelist registry |
+| `whitelist.sync` | `AccessControlDomain::syncWhitelistGuestList` | forced re-sync of native guest list from plugin snapshot |
+| `team.policy.get` | `TeamRosterState::getSnapshot` | plugin-state policy + assignment snapshot |
+| `team.policy.set` | `TeamRosterState::setPolicy` + runtime apply | persists `policy_enabled`/`switch_lock_enabled` |
+| `team.roster.assign` | `TeamRosterState::assign` + runtime reconcile | stores login->team mapping (`0|blue|team_a`, `1|red|team_b`) |
+| `team.roster.unassign` | `TeamRosterState::unassign` + runtime reconcile | removes login assignment |
+| `team.roster.list` | `TeamRosterState::getSnapshot` | plugin-state assignment snapshot exposure |
 
 ## Capability and fallback semantics
 
@@ -69,6 +88,12 @@ Feature toggle and runtime controls:
   - script-only actions return `unsupported_mode` when script mode is unavailable,
   - pause actions return `capability_unavailable` when pause is not supported in current mode,
   - team-force action returns `capability_unavailable` when mode is not team-based.
+- Team-roster runtime enforcement is mode-scoped:
+  - assignment/policy mutation actions remain configurable in any mode,
+  - runtime forced-team apply/reconcile paths return or emit `capability_unavailable` when current mode is not team-based.
+- Vote governance fallback is explicit:
+  - native-first mode cancels non-admin votes on `ManiaPlanet.VoteUpdated`,
+  - strict mode sets global callvote timeout to `0` and relies on privileged admin actions for vote operations.
 - Native rejections and exceptions are normalized to deterministic result codes/messages.
 
 ## Rollout and rollback

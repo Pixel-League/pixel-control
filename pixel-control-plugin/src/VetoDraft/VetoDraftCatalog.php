@@ -28,10 +28,12 @@ class VetoDraftCatalog {
 	const COMMUNICATION_ACTION = 'PixelControl.VetoDraft.Action';
 	const COMMUNICATION_STATUS = 'PixelControl.VetoDraft.Status';
 	const COMMUNICATION_CANCEL = 'PixelControl.VetoDraft.Cancel';
+	const COMMUNICATION_READY = 'PixelControl.VetoDraft.Ready';
 
 	const DEFAULT_COMMAND = 'pcveto';
 	const DEFAULT_MATCHMAKING_DURATION_SECONDS = 60;
 	const DEFAULT_MATCHMAKING_AUTOSTART_MIN_PLAYERS = 2;
+	const MATCHMAKING_AUTOSTART_PRESTART_SECONDS = 15;
 	const DEFAULT_TOURNAMENT_ACTION_TIMEOUT_SECONDS = 45;
 	const DEFAULT_BEST_OF = 3;
 	const MAX_BEST_OF = 9;

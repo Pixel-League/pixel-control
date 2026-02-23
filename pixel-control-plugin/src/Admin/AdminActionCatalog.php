@@ -23,6 +23,20 @@ class AdminActionCatalog {
 	const ACTION_AUTH_GRANT = 'auth.grant';
 	const ACTION_AUTH_REVOKE = 'auth.revoke';
 	const ACTION_VOTE_CUSTOM_START = 'vote.custom_start';
+	const ACTION_WHITELIST_ENABLE = 'whitelist.enable';
+	const ACTION_WHITELIST_DISABLE = 'whitelist.disable';
+	const ACTION_WHITELIST_ADD = 'whitelist.add';
+	const ACTION_WHITELIST_REMOVE = 'whitelist.remove';
+	const ACTION_WHITELIST_LIST = 'whitelist.list';
+	const ACTION_WHITELIST_CLEAN = 'whitelist.clean';
+	const ACTION_WHITELIST_SYNC = 'whitelist.sync';
+	const ACTION_VOTE_POLICY_GET = 'vote.policy.get';
+	const ACTION_VOTE_POLICY_SET = 'vote.policy.set';
+	const ACTION_TEAM_POLICY_GET = 'team.policy.get';
+	const ACTION_TEAM_POLICY_SET = 'team.policy.set';
+	const ACTION_TEAM_ROSTER_ASSIGN = 'team.roster.assign';
+	const ACTION_TEAM_ROSTER_UNASSIGN = 'team.roster.unassign';
+	const ACTION_TEAM_ROSTER_LIST = 'team.roster.list';
 	const ACTION_MATCH_BO_SET = 'match.bo.set';
 	const ACTION_MATCH_BO_GET = 'match.bo.get';
 	const ACTION_MATCH_MAPS_SET = 'match.maps.set';
@@ -48,6 +62,20 @@ class AdminActionCatalog {
 	const RIGHT_AUTH_GRANT = 'Pixel Control Admin: Grant Auth';
 	const RIGHT_AUTH_REVOKE = 'Pixel Control Admin: Revoke Auth';
 	const RIGHT_VOTE_CUSTOM_START = 'Pixel Control Admin: Custom Vote Start';
+	const RIGHT_WHITELIST_ENABLE = 'Pixel Control Admin: Whitelist Enable';
+	const RIGHT_WHITELIST_DISABLE = 'Pixel Control Admin: Whitelist Disable';
+	const RIGHT_WHITELIST_ADD = 'Pixel Control Admin: Whitelist Add';
+	const RIGHT_WHITELIST_REMOVE = 'Pixel Control Admin: Whitelist Remove';
+	const RIGHT_WHITELIST_LIST = 'Pixel Control Admin: Whitelist List';
+	const RIGHT_WHITELIST_CLEAN = 'Pixel Control Admin: Whitelist Clean';
+	const RIGHT_WHITELIST_SYNC = 'Pixel Control Admin: Whitelist Sync';
+	const RIGHT_VOTE_POLICY_GET = 'Pixel Control Admin: Vote Policy Get';
+	const RIGHT_VOTE_POLICY_SET = 'Pixel Control Admin: Vote Policy Set';
+	const RIGHT_TEAM_POLICY_GET = 'Pixel Control Admin: Team Policy Get';
+	const RIGHT_TEAM_POLICY_SET = 'Pixel Control Admin: Team Policy Set';
+	const RIGHT_TEAM_ROSTER_ASSIGN = 'Pixel Control Admin: Team Roster Assign';
+	const RIGHT_TEAM_ROSTER_UNASSIGN = 'Pixel Control Admin: Team Roster Unassign';
+	const RIGHT_TEAM_ROSTER_LIST = 'Pixel Control Admin: Team Roster List';
 	const RIGHT_MATCH_BO_SET = 'Pixel Control Admin: Match BO Set';
 	const RIGHT_MATCH_BO_GET = 'Pixel Control Admin: Match BO Get';
 	const RIGHT_MATCH_MAPS_SET = 'Pixel Control Admin: Match Maps Set';
@@ -83,6 +111,18 @@ class AdminActionCatalog {
 			'auth.grant_level' => self::ACTION_AUTH_GRANT,
 			'auth.revoke_level' => self::ACTION_AUTH_REVOKE,
 			'custom_vote.start' => self::ACTION_VOTE_CUSTOM_START,
+			'whitelist.on' => self::ACTION_WHITELIST_ENABLE,
+			'whitelist.off' => self::ACTION_WHITELIST_DISABLE,
+			'whitelist.rm' => self::ACTION_WHITELIST_REMOVE,
+			'whitelist.status' => self::ACTION_WHITELIST_LIST,
+			'whitelist.clear' => self::ACTION_WHITELIST_CLEAN,
+			'vote.policy' => self::ACTION_VOTE_POLICY_GET,
+			'vote.policy.status' => self::ACTION_VOTE_POLICY_GET,
+			'team.policy.status' => self::ACTION_TEAM_POLICY_GET,
+			'team.roster.rm' => self::ACTION_TEAM_ROSTER_UNASSIGN,
+			'team.assign' => self::ACTION_TEAM_ROSTER_ASSIGN,
+			'team.unassign' => self::ACTION_TEAM_ROSTER_UNASSIGN,
+			'team.list' => self::ACTION_TEAM_ROSTER_LIST,
 			'bo.set' => self::ACTION_MATCH_BO_SET,
 			'bo.get' => self::ACTION_MATCH_BO_GET,
 			'match.bo' => self::ACTION_MATCH_BO_GET,
@@ -238,6 +278,105 @@ class AdminActionCatalog {
 				'required_parameters' => array('vote_index'),
 				'native_entrypoint' => 'MCTeam\\CustomVotesPlugin::startVote',
 				'ownership' => 'mixed',
+			),
+			self::ACTION_WHITELIST_ENABLE => array(
+				'permission_setting' => self::RIGHT_WHITELIST_ENABLE,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'WhitelistState::setEnabled(true)',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_WHITELIST_DISABLE => array(
+				'permission_setting' => self::RIGHT_WHITELIST_DISABLE,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'WhitelistState::setEnabled(false)',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_WHITELIST_ADD => array(
+				'permission_setting' => self::RIGHT_WHITELIST_ADD,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array('target_login'),
+				'native_entrypoint' => 'WhitelistState::addLogin',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_WHITELIST_REMOVE => array(
+				'permission_setting' => self::RIGHT_WHITELIST_REMOVE,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array('target_login'),
+				'native_entrypoint' => 'WhitelistState::removeLogin',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_WHITELIST_LIST => array(
+				'permission_setting' => self::RIGHT_WHITELIST_LIST,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'WhitelistState::getSnapshot',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_WHITELIST_CLEAN => array(
+				'permission_setting' => self::RIGHT_WHITELIST_CLEAN,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_ADMIN,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'WhitelistState::clean',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_WHITELIST_SYNC => array(
+				'permission_setting' => self::RIGHT_WHITELIST_SYNC,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_ADMIN,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'AccessControlDomain::syncWhitelistGuestList',
+				'ownership' => 'mixed',
+			),
+			self::ACTION_VOTE_POLICY_GET => array(
+				'permission_setting' => self::RIGHT_VOTE_POLICY_GET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'VotePolicyState::getSnapshot',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_VOTE_POLICY_SET => array(
+				'permission_setting' => self::RIGHT_VOTE_POLICY_SET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_ADMIN,
+				'required_parameters' => array('mode'),
+				'native_entrypoint' => 'VotePolicyState::setMode',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_TEAM_POLICY_GET => array(
+				'permission_setting' => self::RIGHT_TEAM_POLICY_GET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'TeamRosterState::getSnapshot',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_TEAM_POLICY_SET => array(
+				'permission_setting' => self::RIGHT_TEAM_POLICY_SET,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_ADMIN,
+				'required_parameters' => array('enabled|switch_lock'),
+				'optional_parameters' => array('enabled', 'switch_lock'),
+				'native_entrypoint' => 'TeamRosterState::setPolicy',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_TEAM_ROSTER_ASSIGN => array(
+				'permission_setting' => self::RIGHT_TEAM_ROSTER_ASSIGN,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array('target_login', 'team'),
+				'native_entrypoint' => 'TeamRosterState::assign',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_TEAM_ROSTER_UNASSIGN => array(
+				'permission_setting' => self::RIGHT_TEAM_ROSTER_UNASSIGN,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array('target_login'),
+				'native_entrypoint' => 'TeamRosterState::unassign',
+				'ownership' => 'plugin_state',
+			),
+			self::ACTION_TEAM_ROSTER_LIST => array(
+				'permission_setting' => self::RIGHT_TEAM_ROSTER_LIST,
+				'minimum_auth_level' => AuthenticationManager::AUTH_LEVEL_MODERATOR,
+				'required_parameters' => array(),
+				'native_entrypoint' => 'TeamRosterState::getSnapshot',
+				'ownership' => 'plugin_state',
 			),
 			self::ACTION_MATCH_BO_SET => array(
 				'permission_setting' => self::RIGHT_MATCH_BO_SET,

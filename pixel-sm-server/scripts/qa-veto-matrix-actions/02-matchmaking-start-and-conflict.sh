@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+matrix_run_step "start.matchmaking.not_ready" "$METHOD_START" \
+  "mode=matchmaking_vote" \
+  "duration_seconds=${MATRIX_MATCHMAKING_DURATION}" \
+  "launch_immediately=0"
+
+matrix_run_step "ready.matchmaking.arm" "$METHOD_READY"
+
+matrix_run_step "status.matchmaking.after_ready" "$METHOD_STATUS"
+matrix_refresh_status_from_last
+
 matrix_run_step "start.matchmaking" "$METHOD_START" \
   "mode=matchmaking_vote" \
   "duration_seconds=${MATRIX_MATCHMAKING_DURATION}" \

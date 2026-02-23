@@ -18,6 +18,7 @@ METHOD_START="PixelControl.VetoDraft.Start"
 METHOD_ACTION="PixelControl.VetoDraft.Action"
 METHOD_STATUS="PixelControl.VetoDraft.Status"
 METHOD_CANCEL="PixelControl.VetoDraft.Cancel"
+METHOD_READY="PixelControl.VetoDraft.Ready"
 
 OUTPUT_ROOT="${PIXEL_SM_VETO_SIM_OUTPUT_ROOT:-${PROJECT_DIR}/logs/qa}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
@@ -34,7 +35,7 @@ MATRIX_MATCHMAKING_DURATION="${PIXEL_SM_VETO_SIM_MATCHMAKING_DURATION:-8}"
 MATRIX_TOURNAMENT_BEST_OF="${PIXEL_SM_VETO_SIM_TOURNAMENT_BEST_OF:-3}"
 MATRIX_TOURNAMENT_STARTER="${PIXEL_SM_VETO_SIM_TOURNAMENT_STARTER:-team_a}"
 MATRIX_TOURNAMENT_TIMEOUT="${PIXEL_SM_VETO_SIM_TOURNAMENT_TIMEOUT:-45}"
-MATRIX_WAIT_EXTRA_SECONDS="${PIXEL_SM_VETO_SIM_WAIT_EXTRA_SECONDS:-2}"
+MATRIX_WAIT_EXTRA_SECONDS="${PIXEL_SM_VETO_SIM_WAIT_EXTRA_SECONDS:-20}"
 
 COMPOSE_FILE_ARGS=()
 MATRIX_LAST_RESPONSE_FILE=""
@@ -81,6 +82,7 @@ Usage:
   bash scripts/qa-veto-payload-sim.sh start [key=value ...]
   bash scripts/qa-veto-payload-sim.sh action [key=value ...]
   bash scripts/qa-veto-payload-sim.sh cancel [key=value ...]
+  bash scripts/qa-veto-payload-sim.sh ready
   bash scripts/qa-veto-payload-sim.sh matrix [key=value ...]
 
 Commands:
@@ -114,6 +116,9 @@ Commands:
       Common keys:
         reason=<text>
 
+  ready
+      Calls PixelControl.VetoDraft.Ready.
+
   matrix [key=value ...]
       Runs deterministic matchmaking + tournament veto simulation matrix
       through modular scenario scripts + strict response assertions.
@@ -145,6 +150,7 @@ Env overrides:
 Notes:
   - This tool simulates future Pixel Control Server orchestration over ManiaControl communication socket.
   - It targets PixelControl.VetoDraft.Start|Action|Status|Cancel methods.
+  - Ready gate arming is available through PixelControl.VetoDraft.Ready.
   - Matrix command emits strict validation artifacts (matrix-context.json + matrix-validation.json).
 USAGE
 }
@@ -703,6 +709,11 @@ run_cancel() {
   invoke_with_pairs "$METHOD_CANCEL" "$output_file" "$@"
 }
 
+run_ready() {
+  local output_file="$1"
+  invoke_with_pairs "$METHOD_READY" "$output_file"
+}
+
 sanitize_name() {
   local name="$1"
   name="${name//./-}"
@@ -988,6 +999,7 @@ METHOD_STATUS = "PixelControl.VetoDraft.Status"
 METHOD_START = "PixelControl.VetoDraft.Start"
 METHOD_ACTION = "PixelControl.VetoDraft.Action"
 METHOD_CANCEL = "PixelControl.VetoDraft.Cancel"
+METHOD_READY = "PixelControl.VetoDraft.Ready"
 
 checks = []
 compatibility_notes = []
@@ -1038,6 +1050,7 @@ method_stats = {
     "start": {"invoked": 0, "shape_failures": []},
     "action": {"invoked": 0, "shape_failures": []},
     "cancel": {"invoked": 0, "shape_failures": []},
+    "ready": {"invoked": 0, "shape_failures": []},
 }
 error_true_steps = []
 transport_error_inconsistencies = []
@@ -1052,6 +1065,8 @@ def method_kind(method_name: str) -> str:
         return "action"
     if method_name == METHOD_CANCEL:
         return "cancel"
+    if method_name == METHOD_READY:
+        return "ready"
     return "unknown"
 
 
@@ -1145,7 +1160,7 @@ for row in manifest_rows:
             step_info["shape_errors"].append("status_missing_communication")
             method_stats[kind]["shape_failures"].append({"label": label, "artifact": artifact, "reason": "status_missing_communication"})
         else:
-            required_comm_keys = ("start", "action", "status", "cancel")
+            required_comm_keys = ("start", "action", "status", "cancel", "ready")
             missing_comm_keys = [key for key in required_comm_keys if not str(communication.get(key) or "").strip()]
             if missing_comm_keys:
                 step_info["shape_ok"] = False
@@ -1207,6 +1222,13 @@ for row in manifest_rows:
                 step_info["shape_ok"] = False
                 step_info["shape_errors"].append("status_matchmaking_lifecycle_history_not_list")
                 method_stats[kind]["shape_failures"].append({"label": label, "artifact": artifact, "reason": "status_matchmaking_lifecycle_history_not_list"})
+
+        if not isinstance(data.get("matchmaking_ready_armed"), bool):
+            step_info["shape_ok"] = False
+            step_info["shape_errors"].append("status_matchmaking_ready_armed_not_bool")
+            method_stats[kind]["shape_failures"].append(
+                {"label": label, "artifact": artifact, "reason": "status_matchmaking_ready_armed_not_bool"}
+            )
     else:
         success = data.get("success")
         code = str(data.get("code") or "").strip()
@@ -1317,6 +1339,19 @@ def status_step_matchmaking_lifecycle(label: str):
     return lifecycle_payload
 
 
+def status_step_matchmaking_ready_armed(label: str):
+    row = get_step(label)
+    if row is None:
+        return None
+    payload = row.get("payload") if isinstance(row, dict) else None
+    if not isinstance(payload, dict):
+        return None
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        return None
+    return data.get("matchmaking_ready_armed")
+
+
 def has_stage_sequence(history_rows, expected_stages):
     if not isinstance(history_rows, list) or not history_rows:
         return False
@@ -1336,7 +1371,7 @@ def has_stage_sequence(history_rows, expected_stages):
     return cursor == len(expected_stages)
 
 
-for kind in ("status", "start", "action", "cancel"):
+for kind in ("status", "start", "action", "cancel", "ready"):
     invoked = method_stats[kind]["invoked"]
     shape_failures = method_stats[kind]["shape_failures"]
     passed = invoked > 0 and not shape_failures
@@ -1354,6 +1389,25 @@ matchmaking_started = False
 matchmaking_limited = False
 tournament_started = False
 tournament_limited = False
+
+ok, detail = expect_action_code("start.matchmaking.not_ready", False, "matchmaking_ready_required")
+add_check("negative.matchmaking.ready_required_initial", ok, detail, status="passed" if ok else "failed")
+
+ready_arm_ok, ready_arm_detail = expect_action_code_any(
+    "ready.matchmaking.arm",
+    True,
+    {"matchmaking_ready_armed", "matchmaking_ready_already_armed"},
+)
+add_check("flow.matchmaking.ready_arm", ready_arm_ok, ready_arm_detail, status="passed" if ready_arm_ok else "failed")
+
+ready_status_value = status_step_matchmaking_ready_armed("status.matchmaking.after_ready")
+ready_status_ok = ready_status_value is True
+add_check(
+    "flow.matchmaking.ready_status",
+    ready_status_ok,
+    f"status.matchmaking.after_ready.matchmaking_ready_armed={ready_status_value}",
+    status="passed" if ready_status_ok else "failed",
+)
 
 start_matchmaking = get_step("start.matchmaking")
 if start_matchmaking is None:
@@ -1381,7 +1435,11 @@ cancel_missing_detail = f"initial={cancel_initial_detail}; post_matchmaking={can
 add_check("negative.cancel.session_not_running", cancel_missing_ok, cancel_missing_detail, status="passed" if cancel_missing_ok else "failed")
 
 if matchmaking_started:
-    ok, detail = expect_action_code("start.matchmaking.conflict", False, "session_active")
+    ok, detail = expect_action_code_any(
+        "start.matchmaking.conflict",
+        False,
+        {"session_active", "matchmaking_ready_required"},
+    )
     add_check("negative.start.session_active", ok, detail, status="passed" if ok else "failed")
 
     vote_labels = [
@@ -1455,6 +1513,29 @@ if matchmaking_started:
 else:
     add_check("flow.matchmaking.lifecycle.sequence", True, "not applicable (matchmaking did not start)", status="compatibility")
     add_check("flow.matchmaking.lifecycle.ready_state", True, "not applicable (matchmaking did not start)", status="compatibility")
+
+if matchmaking_started:
+    ok, detail = expect_action_code("start.matchmaking.post_cycle_without_ready", False, "matchmaking_ready_required")
+    add_check("negative.matchmaking.ready_required_post_cycle", ok, detail, status="passed" if ok else "failed")
+
+    ready_rearm_ok, ready_rearm_detail = expect_action_code_any(
+        "ready.matchmaking.rearm",
+        True,
+        {"matchmaking_ready_armed", "matchmaking_ready_already_armed"},
+    )
+    add_check("flow.matchmaking.ready_rearm", ready_rearm_ok, ready_rearm_detail, status="passed" if ready_rearm_ok else "failed")
+
+    rearmed_vote_ok, rearmed_vote_detail = expect_action_code("action.matchmaking.vote.rearmed_bootstrap", True, "vote_recorded")
+    add_check(
+        "flow.matchmaking.rearmed_vote_bootstrap",
+        rearmed_vote_ok,
+        rearmed_vote_detail,
+        status="passed" if rearmed_vote_ok else "failed",
+    )
+else:
+    add_check("negative.matchmaking.ready_required_post_cycle", True, "not applicable (matchmaking did not start)", status="compatibility")
+    add_check("flow.matchmaking.ready_rearm", True, "not applicable (matchmaking did not start)", status="compatibility")
+    add_check("flow.matchmaking.rearmed_vote_bootstrap", True, "not applicable (matchmaking did not start)", status="compatibility")
 
 ok, detail = expect_action_code("start.tournament.captain_missing", False, "captain_missing")
 add_check("negative.tournament.captain_missing", ok, detail, status="passed" if ok else "failed")
@@ -1806,6 +1887,12 @@ main() {
       output_file="${RUN_DIR}/cancel.json"
       run_cancel "$output_file" "${command_pairs[@]}"
       log "Cancel response: ${output_file}"
+      cat "$output_file"
+      ;;
+    ready)
+      output_file="${RUN_DIR}/ready.json"
+      run_ready "$output_file"
+      log "Ready response: ${output_file}"
       cat "$output_file"
       ;;
     matrix)

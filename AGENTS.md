@@ -453,6 +453,134 @@
   - root cause: `evaluateMatchmakingLifecycleRuntimeFallback()` returned early when current map UID was unavailable, which prevented timeout-based stage inference from progressing to `selected_map_loaded`/`match_started` in callback-sparse runtime windows.
   - fix: allow timeout-based match-start inference to run before the empty-current-map early return, then gate end-of-cycle finalization on known current-map UID; hot-sync plugin and rerun strict matrix.
   - validation: strict veto matrix passed at `pixel-sm-server/logs/qa/veto-payload-sim-20260222-170121/matrix-validation.json` with required lifecycle checks green.
+- Incident memory (2026-02-23, strict veto matrix flaky during lifecycle closure):
+  - symptom: repeated `qa-veto-payload-sim.sh matrix` runs failed strict lifecycle checks (`flow.matchmaking.lifecycle.sequence`, `flow.matchmaking.lifecycle.ready_state`) with selected-map trigger warnings (`Change in progress` / map-end trigger timeout).
+  - root cause: default matrix wait margin (`PIXEL_SM_VETO_SIM_WAIT_EXTRA_SECONDS=2`) can be too short for this runtime timing window, so lifecycle closure does not always converge before assertions execute.
+  - fix: increase matrix default wait margin in `pixel-sm-server/scripts/qa-veto-payload-sim.sh` to `PIXEL_SM_VETO_SIM_WAIT_EXTRA_SECONDS=20` (still overridable by env/CLI) to reduce lifecycle-closure flake in default runs.
+  - validation: first default rerun still failed on lifecycle completion (`map_change_failed`) at `pixel-sm-server/logs/qa/veto-payload-sim-20260223-123403/matrix-validation.json`; immediate default rerun passed at `pixel-sm-server/logs/qa/veto-payload-sim-20260223-123548/matrix-validation.json` (`overall_passed=true`, `required_failed_checks=[]`).
+
+## Additional execution status (2026-02-22, explicit matchmaking ready gate)
+- Matchmaking veto cycles are now explicitly armed per cycle (`//pcveto ready` on chat/admin surface and `PixelControl.VetoDraft.Ready` on communication surface).
+- Start-path gating is unified for matchmaking mode only:
+  - timer threshold auto-start,
+  - vote bootstrap path,
+  - direct start payload/chat path.
+- Ready token semantics are now deterministic:
+  - one-cycle token consumed on successful matchmaking start,
+  - no automatic re-arm on completion/map transition,
+  - explicit re-arm required for next cycle.
+- Additive observability/contract fields now expose gate state:
+  - `PixelControl.VetoDraft.Status.matchmaking_ready_armed`,
+  - `PixelControl.VetoDraft.Status.communication.ready` method availability,
+  - lifecycle `map_rotation.matchmaking_ready_armed` telemetry.
+- Ready-gate evidence index root: `pixel-sm-server/logs/qa/veto-ready-gate-20260222-1807/` (`summary.md`, `evidence-index.md`).
+- Canonical QA runs for this scope:
+  - veto matrix strict pass: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-180544/matrix-validation.json` (`overall_passed=true`, `required_failed_checks=[]`),
+  - admin matrix non-regression pass: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-180638/summary.md`,
+  - optional automated suite revalidation pass: `pixel-sm-server/logs/qa/automated-suite-20260222-180955/suite-summary.json` (`checks_total=39`, `passed=39`, `required_failures=0`).
+- Incident memory (2026-02-22, matchmaking veto auto-restarted without operator intent):
+  - symptom: after matchmaking completion + transition, a new default-duration matchmaking cycle could restart without explicit operator action.
+  - root cause: matchmaking start entrypoints were ungated and completion logic could re-arm autostart while threshold conditions remained satisfied.
+  - fix: introduce explicit one-cycle ready token and enforce gating on all matchmaking start paths; remove automatic re-arming after completion.
+  - validation: strict matrix checks `negative.matchmaking.ready_required_initial`, `flow.matchmaking.ready_arm`, `flow.matchmaking.ready_status`, `negative.matchmaking.ready_required_post_cycle`, and `flow.matchmaking.rearmed_vote_bootstrap` all passed in `pixel-sm-server/logs/qa/veto-payload-sim-20260222-180544/matrix-validation.json`.
+
+## Additional execution status (2026-02-22, veto system refactor cleanup)
+- Veto cleanup/refactor plan `PLAN-veto-system-refactor-cleanup.md` executed end-to-end with backward-compatible behavior.
+- Dead-code removals (explicit zero-call-site audit before deletion):
+  - `pixel-control-plugin/src/VetoDraft/MatchmakingVoteSession.php`: removed `getStatus()` and `getWinnerMapUid()`.
+  - `pixel-control-plugin/src/VetoDraft/VetoDraftCoordinator.php`: removed `buildMapOrderFromStatus()`.
+  - `pixel-control-plugin/src/VetoDraft/VetoDraftQueueApplier.php`: removed `applyMatchmakingWinner()`.
+- Duplication cleanup in `pixel-control-plugin/src/Domain/VetoDraft/VetoDraftDomainTrait.php`:
+  - centralized feature-disabled chat/communication answers,
+  - centralized draft-default summary line builder + sender helper.
+- Validation evidence for this cleanup:
+  - hot-sync: `pixel-sm-server/logs/dev/dev-plugin-hot-sync-shootmania-20260222-190852.log`, `pixel-sm-server/logs/dev/dev-plugin-hot-sync-maniacontrol-20260222-190852.log`,
+  - veto checks: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-190923/status.json`, `pixel-sm-server/logs/qa/veto-payload-sim-20260222-191018/start.json`, `pixel-sm-server/logs/qa/veto-payload-sim-20260222-191117/action.json`, `pixel-sm-server/logs/qa/veto-payload-sim-20260222-191139/cancel.json`, `pixel-sm-server/logs/qa/veto-payload-sim-20260222-191154/matrix-validation.json`,
+  - admin matrix: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-191239/summary.md`,
+  - automated suite: `pixel-sm-server/logs/qa/automated-suite-20260222-191321/suite-summary.json` (`total_checks=39`, `passed_checks=39`, `required_failed_checks=0`).
+- Contract note: no additive/breaking veto communication contract change in this cleanup scope.
+- Incident memory (2026-02-22, standalone veto command replay can false-fail around ready gate timing):
+  - symptom: standalone `qa-veto-payload-sim.sh start ... duration_seconds=8` / `action ... vote` runs intermittently returned `matchmaking_ready_required` during manual step-by-step replay.
+  - root cause: one-cycle ready token is consumed on successful matchmaking start, and short-duration windows can close before delayed follow-up action calls.
+  - fix: for deterministic manual command replays, run `ready` immediately before the start/action check (or use a chained `ready && action` sequence) so assertions execute inside an armed/active window.
+  - validation: chained run succeeded with `vote_recorded` at `pixel-sm-server/logs/qa/veto-payload-sim-20260222-191117/action.json`.
+
+## Additional execution status (2026-02-22, ready-gate unexpected player-kick guard)
+- Matchmaking lifecycle cleanup policy is now non-destructive for real users:
+  - cleanup eligibility is explicit allowlist only (`fake_players_only`),
+  - human players are always skipped,
+  - unknown/unclassified identities are skipped conservatively,
+  - lifecycle finalization still continues when no players are eligible.
+- Runtime observability was expanded for cleanup outcomes:
+  - lifecycle action payload now includes additive `skipped_count`, `skipped_logins`, and `cleanup_policy`,
+  - per-player markers are emitted as `[PixelControl][veto][matchmaking_lifecycle][kick_applied]` / `[...][kick_skipped]`.
+- Validation evidence for this scope:
+  - plugin lint: `php -l pixel-control-plugin/src/Domain/VetoDraft/VetoDraftDomainTrait.php`,
+  - hot sync logs: `pixel-sm-server/logs/dev/dev-plugin-hot-sync-shootmania-20260222-210605.log`, `pixel-sm-server/logs/dev/dev-plugin-hot-sync-maniacontrol-20260222-210605.log`,
+  - veto matrix pass: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-210658/matrix-validation.json`,
+  - admin matrix pass: `pixel-sm-server/logs/qa/admin-payload-sim-20260222-210805/summary.md`,
+  - full automated-suite rerun pass: `pixel-sm-server/logs/qa/automated-suite-20260222-212207/suite-summary.json` (`checks_total=39`, `passed=39`, `required_failures=0`),
+  - lifecycle action snapshot with cleanup policy: `pixel-sm-server/logs/qa/veto-payload-sim-20260222-210658/step-14-status-matchmaking-lifecycle-after_map_end.json` (`actions.kick_all_players.cleanup_policy=fake_players_only`).
+- Incident replay note:
+  - second real-account join/kick loop cannot be fully automated in this environment;
+  - closest deterministic replay with fake-player injection is captured at `pixel-sm-server/logs/qa/veto-payload-sim-20260222-211206/` (strict lifecycle checks can remain timing-sensitive when selected-map end trigger does not converge).
+- Incident memory (2026-02-22, unintended kick after `//pcveto ready` + second-account join):
+  - symptom: after ready-gate arming and subsequent join flow, players could be disconnected unexpectedly during matchmaking lifecycle completion.
+  - root cause: lifecycle cleanup path (`executeMatchmakingLifecycleKickAllPlayersAction`) previously applied broad kick behavior and did not enforce a strict human-exclusion policy.
+  - fix: enforce fake-only cleanup eligibility with conservative fallback (`unknown => skip`) and keep lifecycle completion independent from cleanup eligibility count.
+  - validation: required lint/hot-sync/veto-matrix/admin-matrix checks passed with additive cleanup-policy evidence in status artifacts.
+
+## Additional execution status (2026-02-23, whitelist + vote policy + team roster milestone-1)
+- Plan execution status: `PLAN-whitelist-vote-policy-team-control-milestone-1.md` phases 1-4 are implemented; phase 5 is partially complete with deterministic QA evidence captured, while real-client/team-mode gameplay verification remains pending.
+- New plugin state modules are now first-party and wired into runtime bootstrap + admin delegation:
+  - whitelist: `pixel-control-plugin/src/AccessControl/{WhitelistCatalog,WhitelistStateInterface,WhitelistState}.php`,
+  - vote policy: `pixel-control-plugin/src/VoteControl/{VotePolicyCatalog,VotePolicyStateInterface,VotePolicyState}.php`,
+  - team roster: `pixel-control-plugin/src/TeamControl/{TeamRosterCatalog,TeamRosterStateInterface,TeamRosterState}.php`.
+- New runtime domain traits are now integrated in plugin load/timers/callback flow:
+  - `pixel-control-plugin/src/Domain/AccessControl/AccessControlDomainTrait.php`,
+  - `pixel-control-plugin/src/Domain/TeamControl/TeamControlDomainTrait.php`.
+- Callback registry now includes vote callback wiring (`CallbackManager::CB_MP_VOTEUPDATED`) to `handleVoteCallback(...)` for non-admin vote cancellation policy.
+- Admin delegated action surface now includes additive whitelist/vote-policy/team-roster controls:
+  - `whitelist.enable|disable|add|remove|list|clean|sync`,
+  - `vote.policy.get|set`,
+  - `team.policy.get|set`,
+  - `team.roster.assign|unassign|list`.
+- New policy settings/env surface:
+  - whitelist: `Pixel Control Whitelist Enabled` / `PIXEL_CONTROL_WHITELIST_ENABLED`, `Pixel Control Whitelist Logins` / `PIXEL_CONTROL_WHITELIST_LOGINS`,
+  - vote policy: `Pixel Control Vote Policy Mode` / `PIXEL_CONTROL_VOTE_POLICY_MODE`,
+  - team control: `Pixel Control Team Policy Enabled` / `PIXEL_CONTROL_TEAM_POLICY_ENABLED`, `Pixel Control Team Switch Lock Enabled` / `PIXEL_CONTROL_TEAM_SWITCH_LOCK_ENABLED`, `Pixel Control Team Roster Assignments` / `PIXEL_CONTROL_TEAM_ROSTER_ASSIGNMENTS`.
+- QA module extensions for this scope are now first-party:
+  - matrix action steps: `pixel-sm-server/scripts/qa-admin-matrix-actions/27-whitelist-enable.sh`, `28-whitelist-add.sh`, `29-whitelist-list.sh`, `30-vote-policy-set.sh`, `31-team-roster-assign.sh`,
+  - automated-suite admin descriptors now include the full new access/team policy families under `pixel-sm-server/scripts/automated-suite/admin-actions/` (`whitelist-*`, `vote-policy-*`, `team-policy-*`, `team-roster-*`).
+- Validation/evidence (2026-02-23):
+  - plugin lint pass across touched files (`php -l ...`),
+  - hot-sync pass: `pixel-sm-server/logs/dev/dev-plugin-hot-sync-shootmania-20260223-144233.log`, `pixel-sm-server/logs/dev/dev-plugin-hot-sync-maniacontrol-20260223-144233.log`,
+  - admin matrix pass with new actions: `pixel-sm-server/logs/qa/team-vote-whitelist-20260223-144310/admin-payload-sim-20260223-144311/summary.md`,
+  - targeted execute evidence for new getters/setters/restoration: `pixel-sm-server/logs/qa/team-vote-whitelist-20260223-144407/targeted/`.
+- Incident memory (2026-02-23, whitelist actions failed with `guest_list_sync_failed`):
+  - symptom: `whitelist.enable` / `whitelist.add` returned `guest_list_sync_failed` with details `reason=Invalid file name.` during payload matrix replay.
+  - root cause: guest-list sync called `saveGuestList('')`; this runtime rejects empty filename.
+  - fix: sync path now applies `cleanGuestList` + `addGuest` first, then attempts `saveGuestList('guestlist.txt')` best-effort; save failures are downgraded to warning marker (`guest_sync_save_warning`) with runtime sync kept successful (`guest_list_sync_degraded`) so connect-time enforcement fallback still protects access.
+  - validation: rerun matrix passed whitelist actions with `Action Success=true`, `Action Code=ok` at `team-vote-whitelist-20260223-144310/.../summary.md`.
+
+## Additional execution status (2026-02-23, milestone-1 phase-5 continuation)
+- Plan update: `PLAN-whitelist-vote-policy-team-control-milestone-1.md` now marks `P5.4.a` as done and keeps `P5.4.b` todo/manual.
+- Autonomous phase-5 evidence root: `pixel-sm-server/logs/qa/team-vote-whitelist-20260223-145834/p5.4-autonomous/`.
+  - required artifacts delivered: `summary.md`, `vote-policy-non-admin.json`, `fake-player-guard-observability.log`.
+  - supporting probes include `vote-policy-dedicated-actions.log` and `fake-player-guard-probe.log`.
+- Manual handoff scaffolding root: `pixel-sm-server/logs/manual/team-vote-whitelist-20260223-145834/`.
+  - delivered templates: `MANUAL-TEST-MATRIX.md`, `INDEX.md`, `SESSION-session-001-notes.md`, `SESSION-session-001-payload.ndjson`, `SESSION-session-001-evidence.md`.
+- Runtime state was restored after autonomous checks (whitelist disabled/cleaned, fake assignment removed, team policy disabled, vote policy set back to strict fallback, fake players disconnected).
+- Incident memory (2026-02-23, fake-player XML-RPC helper misuse):
+  - symptom: fake-player connection probe returned `null` and player count stayed `0`.
+  - root cause: `connectFakePlayer` was called with a nickname argument; in this runtime API signature the first argument is `multicall` bool, so the call was treated as multicall queueing and did not return an immediate fake login.
+  - fix: call `connectFakePlayer()` with no login argument and resolve the returned fake login.
+  - validation: probe artifact `fake-player-connect.log` reported `fake_login=*fakeplayer1*` and `fake_present=yes`.
+- Incident memory (2026-02-23, autonomous non-admin vote-cancel proof limitation):
+  - symptom: fake-player vote probe could start a callvote but callback initiator was empty (`current_vote.callerLogin=""`).
+  - root cause: dedicated API vote initiation path in this runtime does not expose a non-admin initiator login for the callback cancellation path.
+  - fix: keep autonomous evidence as equivalent-scope only (no over-claim), and require real-client non-admin vote initiation for direct callback cancellation validation.
+  - validation: `vote-policy-non-admin.json` records the limitation and keeps `P5.4.b` manual verification open.
 
 ## User preference (durable)
 - For QA automation scripts, prefer modular Bash structure with one script per tested action/feature rather than large hardcoded lists inside monolithic scripts.

@@ -10,6 +10,7 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - lifecycle callbacks
   - lifecycle script callbacks
   - player callbacks
+  - vote callbacks
   - combat callbacks
   - mode-specific callbacks
 - Timer loop:
@@ -70,7 +71,7 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - pause-state freshness setting/env: `Pixel Control Pause State Max Age Seconds` / `PIXEL_CONTROL_ADMIN_PAUSE_STATE_MAX_AGE_SECONDS`
 - Control entry points:
   - admin chat command: `//pcadmin` (or configured alias)
-  - veto chat command: `//pcveto` runtime status/config helpers (`status`, `maps`, admin-only `config`)
+  - veto chat command: `//pcveto` runtime status/config helpers (`status`, `maps`, admin-only `config`, `ready`)
   - communication methods: `PixelControl.Admin.ExecuteAction`, `PixelControl.Admin.ListActions`
 - Permission model:
   - chat command path is actor-bound and gated by native `AuthenticationManager` plugin rights (`definePluginPermissionLevel` + `checkPluginPermission`)
@@ -79,6 +80,8 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - map: `map.skip`, `map.restart`, `map.jump`, `map.queue`, `map.add`, `map.remove`
   - warmup/pause: `warmup.extend`, `warmup.end`, `pause.start`, `pause.end`
   - votes: `vote.cancel`, `vote.set_ratio`, optional `vote.custom_start`
+  - access/vote-policy state: `whitelist.enable`, `whitelist.disable`, `whitelist.add`, `whitelist.remove`, `whitelist.list`, `whitelist.clean`, `whitelist.sync`, `vote.policy.get`, `vote.policy.set`
+  - team-control state: `team.policy.get`, `team.policy.set`, `team.roster.assign`, `team.roster.unassign`, `team.roster.list`
   - player/auth: `player.force_team`, `player.force_play`, `player.force_spec`, `auth.grant`, `auth.revoke`
   - BO policy: `match.bo.set`, `match.bo.get`
   - score recovery: `match.maps.set`, `match.maps.get`, `match.score.set`, `match.score.get`
@@ -104,6 +107,38 @@ This file tracks implemented features in `pixel-control-plugin` from `src/` and 
   - round start/end
 - Pause request context enrichment (`requested_by_login`, `requested_by_team_id`, `requested_by_team_side`, `active`)
 - Bounded recent admin-action history for player correlation
+
+## Access control and vote policy
+
+- Persisted whitelist runtime state (`WhitelistState`) with canonical login normalization and deterministic add/remove/clean/list semantics.
+- Whitelist control settings:
+  - `Pixel Control Whitelist Enabled` / `PIXEL_CONTROL_WHITELIST_ENABLED`
+  - `Pixel Control Whitelist Logins` / `PIXEL_CONTROL_WHITELIST_LOGINS`
+- Whitelist enforcement:
+  - native guest-list sync (`cleanGuestList`, `addGuest`, `saveGuestList`) on bootstrap and state mutations,
+  - deterministic connect/info callback fallback (`kick`) for non-whitelisted logins when whitelist is enabled,
+  - deny-path marker: `[PixelControl][access][whitelist_denied]`.
+- Vote-policy runtime state (`VotePolicyState`) with additive policy modes:
+  - `cancel_non_admin_vote_on_callback` (native-first): cancels non-admin vote initiators on `ManiaPlanet.VoteUpdated`.
+  - `disable_callvotes_and_use_admin_actions` (strict fallback): forces `setCallVoteTimeOut(0)` and keeps vote control via privileged admin actions.
+- Vote policy setting:
+  - `Pixel Control Vote Policy Mode` / `PIXEL_CONTROL_VOTE_POLICY_MODE`.
+
+## Team roster control (milestone 1)
+
+- Persisted login->team assignment state (`TeamRosterState`) with canonical aliases:
+  - team A: `0|blue|team_a|a`
+  - team B: `1|red|team_b|b`
+- Team policy settings:
+  - `Pixel Control Team Policy Enabled` / `PIXEL_CONTROL_TEAM_POLICY_ENABLED`
+  - `Pixel Control Team Switch Lock Enabled` / `PIXEL_CONTROL_TEAM_SWITCH_LOCK_ENABLED`
+  - `Pixel Control Team Roster Assignments` / `PIXEL_CONTROL_TEAM_ROSTER_ASSIGNMENTS` (JSON object map)
+- Enforcement behavior:
+  - team-mode guard via native script manager (`modeIsTeamMode()`),
+  - forced-team runtime policy via dedicated `setForcedTeams(...)`,
+  - assigned-player reconciliation on player callbacks, lifecycle starts, and periodic policy tick,
+  - deterministic enforcement marker: `[PixelControl][team][enforce_applied]`.
+- Runtime observability includes additive `team_control.runtime` snapshot with `team_mode_active`, `forced_teams_enabled`, `forced_club_links`, and `team_info` (`getTeamInfo` best-effort projection).
 
 ## Series policy controls
 
@@ -219,12 +254,21 @@ Additional combat observability:
   - `mode <matchmaking|tournament>` updates default session mode
   - `duration <seconds>` updates default matchmaking vote window
   - `min_players <int>` updates matchmaking threshold auto-start minimum connected human players
+  - `ready` arms one explicit matchmaking cycle token (`//pcveto ready`)
   - default settings are persisted through ManiaControl plugin settings
+- Matchmaking ready-gate behavior:
+  - matchmaking session start is blocked until explicit arming (`matchmaking_ready_required`)
+  - readiness token is consumed on successful matchmaking start (chat start, payload start, threshold auto-start, player vote bootstrap)
+  - readiness token is not auto-rearmed on lifecycle completion; operator must run `//pcveto ready` again for the next cycle
+  - additive status field `matchmaking_ready_armed` is exposed through `PixelControl.VetoDraft.Status` and lifecycle `map_rotation`
 - Matchmaking player-first launch behavior:
-  - when no veto session is active and default mode is `matchmaking_vote`, first player `vote` request auto-starts a matchmaking session with configured duration
+  - when no veto session is active and default mode is `matchmaking_vote`, first player `vote` request auto-starts a matchmaking session with configured duration only when ready gate is armed
   - auto-start is intentionally limited to matchmaking mode for current rollout phase
 - Matchmaking threshold auto-start behavior:
-  - when default mode is `matchmaking_vote`, timer path auto-starts a session once connected human players reach configured `min_players`
+  - when default mode is `matchmaking_vote` and ready gate is armed, timer path arms a pre-start window once connected human players reach configured `min_players`
+  - armed threshold window broadcasts one notice (`[PixelControl] Matchmaking veto starts in 15s.`) and launches the session only after the 15-second deadline if guards are still valid
+  - pending threshold launch is canceled if ready/threshold guards drop before deadline; no stale delayed start is allowed after cancellation
+  - explicit start paths (`start matchmaking`, communication `start`, and vote bootstrap) keep immediate behavior once ready gate is armed
   - anti-loop gating is transition-based (`armed`, `triggered`, `suppressed`, `below_threshold`) to avoid repeated start churn while count stays above threshold
 - Matchmaking countdown UX:
   - running matchmaking sessions broadcast countdown from configured duration with deterministic cadence `N, N-10, ..., 10, 5, 4, 3, 2, 1`
@@ -233,7 +277,9 @@ Additional combat observability:
   - lifecycle context is armed only after successful queue apply for a completed `matchmaking_vote` session
   - deterministic stage sequence: `veto_completed -> selected_map_loaded -> match_started -> selected_map_finished -> players_removed -> map_changed -> match_ended -> ready_for_next_players`
   - selected-map load triggers match-start signaling (mode-script event first, warmup/pause compatibility fallback)
-  - selected-map end triggers kick-all policy, map skip, and explicit match-end mark before lifecycle closure
+  - selected-map end triggers safe cleanup policy, map skip, and explicit match-end mark before lifecycle closure
+  - cleanup policy is conservative: only fake/test actors are eligible for disconnect; human or unclassified identities are skipped
+  - lifecycle action telemetry includes additive cleanup fields (`skipped_count`, `skipped_logins`, `cleanup_policy=fake_players_only`)
   - stage progression prefers lifecycle map callbacks and keeps a timer-based fallback inference path when callback coverage is missing in local runtime/QA
   - lifecycle state is additive in `PixelControl.VetoDraft.Status.matchmaking_lifecycle` and `payload.map_rotation.matchmaking_lifecycle`
   - tournament sessions are explicitly excluded from this lifecycle automation path
@@ -301,6 +347,10 @@ Additional combat observability:
   - modes (`none`, `bearer`, `api_key`)
   - auth value
   - auth header name (API key mode)
+- Access/team policy settings:
+  - whitelist enabled + login registry
+  - vote policy mode
+  - team policy enabled + switch-lock flag + roster assignments
 - Veto/draft settings:
   - feature toggle (`enabled`)
   - command name (`pcveto` by default)

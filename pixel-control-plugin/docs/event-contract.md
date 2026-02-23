@@ -38,7 +38,7 @@ This document defines the active plugin-to-server envelope baseline for wave 5.
 ## Delegated admin-control execution surface (additive)
 
 - Admin delegation refactor keeps schema version `2026-02-20.1` and does not add/rename event categories or callbacks.
-- Execution-path change only: privileged map/warmup/pause/vote/player/auth control requests are delegated to native ManiaControl services.
+- Execution-path change only: privileged map/warmup/pause/vote/player/auth plus persisted whitelist/vote-policy/team-roster controls are routed through plugin control surface with native/service-backed execution.
 - Additive connectivity capability field in plugin registration payload:
   - `payload.capabilities.admin_control.available`
   - `payload.capabilities.admin_control.enabled`
@@ -59,6 +59,20 @@ This document defines the active plugin-to-server envelope baseline for wave 5.
 - Communication payload requests currently run in temporary trusted mode (`authentication_mode=none_temporary`): `actor_login` is optional and plugin permission checks are intentionally skipped.
 - Existing lifecycle `admin_action` telemetry semantics remain unchanged and continue to be emitted by native callback observations.
 - Additive delegated action catalog extension:
+  - `whitelist.enable` parameters: none
+  - `whitelist.disable` parameters: none
+  - `whitelist.add` parameters: `target_login`
+  - `whitelist.remove` parameters: `target_login`
+  - `whitelist.list` parameters: none
+  - `whitelist.clean` parameters: none
+  - `whitelist.sync` parameters: none
+  - `vote.policy.get` parameters: none
+  - `vote.policy.set` parameters: `mode`
+  - `team.policy.get` parameters: none
+  - `team.policy.set` parameters: `enabled` and/or `switch_lock`
+  - `team.roster.assign` parameters: `target_login`, `team`
+  - `team.roster.unassign` parameters: `target_login`
+  - `team.roster.list` parameters: none
   - `match.bo.set` parameters: `best_of`
   - `match.bo.get` parameters: none
   - `match.maps.set` parameters: `target_team`, `maps_score`
@@ -66,10 +80,15 @@ This document defines the active plugin-to-server envelope baseline for wave 5.
   - `match.score.set` parameters: `target_team`, `score`
   - `match.score.get` parameters: none
 - Additive communication status/list snapshots:
+  - `PixelControl.Admin.ListActions` includes top-level `whitelist`
+  - `PixelControl.Admin.ListActions` includes top-level `vote_policy`
+  - `PixelControl.Admin.ListActions` includes top-level `team_control`
   - `PixelControl.Admin.ListActions` now includes top-level `series_targets`
   - `PixelControl.VetoDraft.Status` now includes top-level `matchmaking_autostart_min_players`
+  - `PixelControl.VetoDraft.Status` now includes top-level `matchmaking_ready_armed`
   - `PixelControl.VetoDraft.Status` now includes top-level `series_targets`
   - `PixelControl.VetoDraft.Status` now includes top-level `matchmaking_lifecycle` snapshot (`status`, `stage`, `ready_for_next_players`, action summaries, bounded history)
+  - `PixelControl.VetoDraft.Status.communication` now includes additive `ready` method (`PixelControl.VetoDraft.Ready`)
 - Series runtime persistence semantics for delegated setters (`match.bo.set`, `match.maps.set`, `match.score.set`):
   - successful updates persist plugin settings for `best_of`, `maps_score.team_a|team_b`, `current_map_score.team_a|team_b`
   - persistence failures return deterministic `setting_write_failed` and rollback runtime snapshot to pre-action state
@@ -202,6 +221,7 @@ Wave-4 lifecycle payloads include additive map/stats context on existing lifecyc
   - `series_targets` runtime policy snapshot (`best_of`, `maps_score`, `current_map_score`, metadata),
   - normalized identifiers (`uid`, `name`, optional `external_ids.mx_id`),
   - additive veto metadata (`veto_draft_mode`, `veto_draft_session_status`),
+  - additive matchmaking ready-gate state (`matchmaking_ready_armed`),
   - `veto_draft_actions` authoritative action stream (`ban|pick|pass|lock`) emitted from in-plugin draft/veto sessions,
   - `veto_result` final-selection projection with explicit `running|completed|cancelled|unavailable` semantics,
   - additive `matchmaking_lifecycle` projection (same lifecycle snapshot family as `PixelControl.VetoDraft.Status.matchmaking_lifecycle`).
@@ -213,8 +233,13 @@ Draft mode notes:
 - Matchmaking post-veto lifecycle automation is additive and mode-guarded (`matchmaking_vote` only):
   - stage sequence: `veto_completed -> selected_map_loaded -> match_started -> selected_map_finished -> players_removed -> map_changed -> match_ended -> ready_for_next_players`,
   - selected-map lifecycle boundaries are callback-driven when available, with timer-based fallback inference to keep local QA deterministic,
-  - tournament sessions do not execute kick-all/map-change/end-mark automation.
+  - selected-map cleanup is conservative (`fake_players_only`): human and unclassified identities are skipped,
+  - tournament sessions do not execute matchmaking cleanup/map-change/end-mark automation.
 - Matchmaking countdown control-surface behavior is deterministic and additive (`N, N-10, ..., 10, 5..1` from configured session duration, one announcement per `<session_id, remaining_second>`).
+- Matchmaking ready-gate control-surface behavior is additive and matchmaking-only:
+  - start paths (`start`, vote bootstrap, timer threshold) require explicit one-cycle arming (`//pcveto ready` or `PixelControl.VetoDraft.Ready`),
+  - successful matchmaking start consumes the ready token,
+  - lifecycle completion does not auto-rearm the token.
 - Role-based chat visibility is control-surface scoped and additive:
   - non-admin players receive map-name/index views only in chat listings,
   - admin viewers keep UID-capable listings and completion diagnostics (`Series order`, `Completion branch`, `Opener jump`),

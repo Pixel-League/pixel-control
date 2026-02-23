@@ -3,19 +3,6 @@
 namespace PixelControl\VetoDraft;
 
 class VetoDraftQueueApplier {
-	public function applyMatchmakingWinner(MapRuntimeAdapterInterface $runtimeAdapter, $winnerMapUid, $launchImmediately) {
-		$winnerMapUid = trim((string) $winnerMapUid);
-		if ($winnerMapUid === '') {
-			return array(
-				'success' => false,
-				'code' => 'winner_map_missing',
-				'message' => 'Winner map is missing.',
-			);
-		}
-
-		return $this->applySeriesMapOrder($runtimeAdapter, array($winnerMapUid), $launchImmediately);
-	}
-
 	public function applySeriesMapOrder(MapRuntimeAdapterInterface $runtimeAdapter, array $orderedMapUids, $launchImmediately) {
 		$normalizedMapUids = $this->normalizeUniqueMapUids($orderedMapUids);
 		if (empty($normalizedMapUids)) {

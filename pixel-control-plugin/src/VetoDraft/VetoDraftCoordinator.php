@@ -398,15 +398,6 @@ class VetoDraftCoordinator {
 		);
 	}
 
-	public function buildMapOrderFromStatus() {
-		$statusSnapshot = $this->getStatusSnapshot();
-		$session = isset($statusSnapshot['session']) && is_array($statusSnapshot['session'])
-			? $statusSnapshot['session']
-			: array();
-
-		return $this->buildMapOrderFromSnapshot($session);
-	}
-
 	private function promoteLatestSnapshotIfFinalized() {
 		if ($this->matchmakingSession) {
 			$sessionSnapshot = $this->matchmakingSession->toArray();

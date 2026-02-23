@@ -61,6 +61,8 @@ trait CoreDomainTrait {
 		$this->initializeSourceSequence();
 		$this->initializeEventPipeline();
 		$this->initializeSeriesControlState();
+		$this->initializeAccessControlState();
+		$this->initializeTeamControlState();
 		$this->initializeAdminDelegationLayer();
 		$this->initializeVetoDraftFeature();
 		$this->callbackRegistry = new CallbackRegistry();
@@ -74,6 +76,7 @@ trait CoreDomainTrait {
 			'[PixelControl] Callback groups registered: lifecycle=' . count($this->callbackRegistry->getLifecycleCallbacks())
 			. ', lifecycle_script=' . count($this->callbackRegistry->getLifecycleScriptCallbacks())
 			. ', player=' . count($this->callbackRegistry->getPlayerCallbacks())
+			. ', vote=' . count($this->callbackRegistry->getVoteCallbacks())
 			. ', combat=' . count($this->callbackRegistry->getCombatCallbacks())
 			. ', mode=' . $this->countModeCallbackCount($this->callbackRegistry->getModeCallbacks())
 		);
@@ -88,6 +91,19 @@ trait CoreDomainTrait {
 		$this->unregisterVetoDraftEntryPoints();
 
 		$this->nativeAdminGateway = null;
+		$this->whitelistState = null;
+		$this->votePolicyState = null;
+		$this->teamRosterState = null;
+		$this->whitelistRecentDeniedAt = array();
+		$this->whitelistGuestListLastSyncHash = '';
+		$this->whitelistGuestListLastSyncAt = 0;
+		$this->votePolicyLastCallVoteTimeoutMs = 0;
+		$this->votePolicyStrictRuntimeApplied = false;
+		$this->teamControlForcedTeamsState = null;
+		$this->teamControlLastRuntimeApplyAt = 0;
+		$this->teamControlLastRuntimeApplySource = 'bootstrap';
+		$this->teamControlRecentForcedAt = array();
+		$this->teamControlLastReconcileAt = 0;
 		$this->adminControlEnabled = false;
 		$this->adminControlCommandName = 'pcadmin';
 		$this->adminControlPauseActive = null;
@@ -122,6 +138,9 @@ trait CoreDomainTrait {
 		$this->vetoDraftMatchmakingAutostartMinPlayers = 2;
 		$this->vetoDraftMatchmakingAutostartArmed = true;
 		$this->vetoDraftMatchmakingAutostartSuppressed = false;
+		$this->vetoDraftMatchmakingAutostartPending = null;
+		$this->vetoDraftMatchmakingAutostartLastCancellation = '';
+		$this->vetoDraftMatchmakingReadyArmed = false;
 		$this->vetoDraftTournamentActionTimeoutSeconds = 45;
 		$this->vetoDraftDefaultBestOf = 3;
 		$this->vetoDraftLaunchImmediately = true;
@@ -141,12 +160,19 @@ trait CoreDomainTrait {
 	}
 
 	public function handleLifecycleCallback(...$callbackArguments) {
+		$this->handleTeamControlLifecycleCallback($callbackArguments);
 		$this->handleMatchmakingLifecycleFromCallback($callbackArguments);
 		$this->queueCallbackEvent('lifecycle', $callbackArguments);
 	}
 
 	public function handlePlayerCallback(...$callbackArguments) {
+		$this->handleAccessControlPlayerCallback($callbackArguments);
+		$this->handleTeamControlPlayerCallback($callbackArguments);
 		$this->queueCallbackEvent('player', $callbackArguments);
+	}
+
+	public function handleVoteCallback(...$callbackArguments) {
+		$this->handleVotePolicyCallback($callbackArguments);
 	}
 
 	public function handleCombatCallback(...$callbackArguments) {
@@ -173,10 +199,13 @@ trait CoreDomainTrait {
 	}
 
 	public function handleDispatchTimerTick() {
+		$this->handleTeamControlPolicyTick();
 		$this->dispatchQueuedEvents();
 	}
 
 	public function handleHeartbeatTimerTick() {
+		$this->handleAccessControlPolicyTick();
+		$this->handleTeamControlPolicyTick();
 		$this->resolvePlayerConstraintPolicyContext(true);
 		$this->queueConnectivityEvent('heartbeat', $this->buildHeartbeatPayload());
 		$this->dispatchQueuedEvents();
@@ -195,6 +224,8 @@ trait CoreDomainTrait {
 		$settingManager->initSetting($this, self::SETTING_QUEUE_MAX_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_QUEUE_MAX_SIZE, 'PIXEL_CONTROL_QUEUE_MAX_SIZE', 2000, 1));
 		$settingManager->initSetting($this, self::SETTING_DISPATCH_BATCH_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1));
 		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1));
+		$this->initializeAccessControlSettings();
+		$this->initializeTeamControlSettings();
 		$this->initializeAdminControlSettings();
 		$this->initializeVetoDraftSettings();
 		$this->initializeSeriesControlSettings();

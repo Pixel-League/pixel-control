@@ -97,6 +97,9 @@ trait VetoDraftDomainTrait {
 		);
 		$this->vetoDraftMatchmakingAutostartArmed = true;
 		$this->vetoDraftMatchmakingAutostartSuppressed = false;
+		$this->vetoDraftMatchmakingAutostartPending = null;
+		$this->vetoDraftMatchmakingAutostartLastCancellation = '';
+		$this->vetoDraftMatchmakingReadyArmed = false;
 		$this->vetoDraftTournamentActionTimeoutSeconds = $this->resolveRuntimeIntSetting(
 			self::SETTING_VETO_DRAFT_TOURNAMENT_ACTION_TIMEOUT_SECONDS,
 			'PIXEL_CONTROL_VETO_DRAFT_TOURNAMENT_ACTION_TIMEOUT_SECONDS',
@@ -192,6 +195,11 @@ trait VetoDraftDomainTrait {
 			$this,
 			'handleVetoDraftCommunicationCancel'
 		);
+		$this->maniaControl->getCommunicationManager()->registerCommunicationListener(
+			VetoDraftCatalog::COMMUNICATION_READY,
+			$this,
+			'handleVetoDraftCommunicationReady'
+		);
 	}
 
 	private function unregisterVetoDraftEntryPoints() {
@@ -203,9 +211,59 @@ trait VetoDraftDomainTrait {
 		$this->maniaControl->getCommunicationManager()->unregisterCommunicationListener($this);
 	}
 
+	private function sendVetoDraftFeatureDisabledToPlayer(Player $player) {
+		if (!$this->maniaControl) {
+			return;
+		}
+
+		$this->maniaControl->getChat()->sendError('Map draft/veto feature is disabled.', $player);
+	}
+
+	private function buildVetoDraftFeatureDisabledCommunicationAnswer() {
+		return new CommunicationAnswer(
+			array(
+				'success' => false,
+				'code' => 'feature_disabled',
+				'message' => 'Map draft/veto feature is disabled.',
+			),
+			true
+		);
+	}
+
+	private function buildVetoDraftDisabledStatusCommunicationAnswer() {
+		return new CommunicationAnswer(
+			array(
+				'enabled' => false,
+				'status' => array(
+					'active' => false,
+					'mode' => '',
+					'session' => array('status' => 'disabled'),
+				),
+			),
+			false
+		);
+	}
+
+	private function buildVetoDraftDefaultsSummaryLine() {
+		return 'Draft defaults: mode=' . $this->vetoDraftDefaultMode
+			. ', matchmaking_duration=' . $this->vetoDraftMatchmakingDurationSeconds . 's'
+			. ', min_players=' . $this->vetoDraftMatchmakingAutostartMinPlayers
+			. ', ready_armed=' . ($this->vetoDraftMatchmakingReadyArmed ? 'yes' : 'no')
+			. ', launch_immediately=' . ($this->vetoDraftLaunchImmediately ? 'yes' : 'no')
+			. '.';
+	}
+
+	private function sendVetoDraftDefaultsSummaryToPlayer(Player $player) {
+		if (!$this->maniaControl) {
+			return;
+		}
+
+		$this->maniaControl->getChat()->sendInformation($this->buildVetoDraftDefaultsSummaryLine(), $player);
+	}
+
 	public function handleVetoDraftCommand(array $chatCallback, Player $player) {
 		if (!$this->vetoDraftEnabled || !$this->vetoDraftCoordinator) {
-			$this->maniaControl->getChat()->sendError('Map draft/veto feature is disabled.', $player);
+			$this->sendVetoDraftFeatureDisabledToPlayer($player);
 			return;
 		}
 
@@ -258,14 +316,7 @@ trait VetoDraftDomainTrait {
 				}
 
 				$this->maniaControl->getChat()->sendSuccess(isset($modeUpdateResult['message']) ? (string) $modeUpdateResult['message'] : 'Default mode updated.', $player);
-				$this->maniaControl->getChat()->sendInformation(
-					'Draft defaults: mode=' . $this->vetoDraftDefaultMode
-					. ', matchmaking_duration=' . $this->vetoDraftMatchmakingDurationSeconds . 's'
-					. ', min_players=' . $this->vetoDraftMatchmakingAutostartMinPlayers
-					. ', launch_immediately=' . ($this->vetoDraftLaunchImmediately ? 'yes' : 'no')
-					. '.',
-					$player
-				);
+				$this->sendVetoDraftDefaultsSummaryToPlayer($player);
 			return;
 
 			case 'duration':
@@ -295,14 +346,7 @@ trait VetoDraftDomainTrait {
 				}
 
 				$this->maniaControl->getChat()->sendSuccess(isset($durationUpdateResult['message']) ? (string) $durationUpdateResult['message'] : 'Matchmaking duration updated.', $player);
-				$this->maniaControl->getChat()->sendInformation(
-					'Draft defaults: mode=' . $this->vetoDraftDefaultMode
-					. ', matchmaking_duration=' . $this->vetoDraftMatchmakingDurationSeconds . 's'
-					. ', min_players=' . $this->vetoDraftMatchmakingAutostartMinPlayers
-					. ', launch_immediately=' . ($this->vetoDraftLaunchImmediately ? 'yes' : 'no')
-					. '.',
-					$player
-				);
+				$this->sendVetoDraftDefaultsSummaryToPlayer($player);
 			return;
 
 			case 'min_players':
@@ -332,14 +376,23 @@ trait VetoDraftDomainTrait {
 				}
 
 				$this->maniaControl->getChat()->sendSuccess(isset($minPlayersUpdateResult['message']) ? (string) $minPlayersUpdateResult['message'] : 'Matchmaking auto-start threshold updated.', $player);
-				$this->maniaControl->getChat()->sendInformation(
-					'Draft defaults: mode=' . $this->vetoDraftDefaultMode
-					. ', matchmaking_duration=' . $this->vetoDraftMatchmakingDurationSeconds . 's'
-					. ', min_players=' . $this->vetoDraftMatchmakingAutostartMinPlayers
-					. ', launch_immediately=' . ($this->vetoDraftLaunchImmediately ? 'yes' : 'no')
-					. '.',
-					$player
-				);
+				$this->sendVetoDraftDefaultsSummaryToPlayer($player);
+			return;
+
+			case 'ready':
+				if (!$this->hasVetoControlPermission($player)) {
+					$this->maniaControl->getAuthenticationManager()->sendNotAllowed($player);
+					return;
+				}
+
+				$readyResult = $this->armMatchmakingReadyGate('chat_ready');
+				if (empty($readyResult['success'])) {
+					$this->maniaControl->getChat()->sendError(isset($readyResult['message']) ? (string) $readyResult['message'] : 'Unable to arm matchmaking ready gate.', $player);
+					return;
+				}
+
+				$this->maniaControl->getChat()->sendSuccess(isset($readyResult['message']) ? (string) $readyResult['message'] : 'Matchmaking ready gate armed.', $player);
+				$this->sendVetoDraftDefaultsSummaryToPlayer($player);
 			return;
 
 			case 'maps':
@@ -359,9 +412,16 @@ trait VetoDraftDomainTrait {
 				}
 
 				$this->maniaControl->getChat()->sendSuccess(isset($startResult['message']) ? (string) $startResult['message'] : 'Draft/veto session started.', $player);
-				$this->vetoDraftLastAppliedSessionId = '';
-				$this->resetMatchmakingLifecycleContext('session_started', 'chat_start', false);
-				$this->broadcastVetoDraftSessionOverview();
+				$startedMode = '';
+				if (isset($startResult['details']) && is_array($startResult['details']) && isset($startResult['details']['session']) && is_array($startResult['details']['session']) && isset($startResult['details']['session']['mode'])) {
+					$startedMode = (string) $startResult['details']['session']['mode'];
+				}
+
+				if ($startedMode !== VetoDraftCatalog::MODE_MATCHMAKING_VOTE) {
+					$this->vetoDraftLastAppliedSessionId = '';
+					$this->resetMatchmakingLifecycleContext('session_started', 'chat_start', false);
+					$this->broadcastVetoDraftSessionOverview();
+				}
 				$this->syncVetoDraftTelemetryState();
 			return;
 
@@ -441,7 +501,7 @@ trait VetoDraftDomainTrait {
 
 	public function handleVetoDraftCommunicationStart($data) {
 		if (!$this->vetoDraftEnabled || !$this->vetoDraftCoordinator) {
-			return new CommunicationAnswer(array('success' => false, 'code' => 'feature_disabled', 'message' => 'Map draft/veto feature is disabled.'), true);
+			return $this->buildVetoDraftFeatureDisabledCommunicationAnswer();
 		}
 
 		$payload = $this->normalizeCommunicationPayload($data);
@@ -460,15 +520,22 @@ trait VetoDraftDomainTrait {
 			$result = $this->vetoDraftCoordinator->startTournament($mapPool, $captainA, $captainB, $bestOf, $starter, $timeout, time());
 		} else {
 			$durationSeconds = isset($payload['duration_seconds']) ? $payload['duration_seconds'] : $this->vetoDraftMatchmakingDurationSeconds;
-			$result = $this->vetoDraftCoordinator->startMatchmaking($mapPool, $durationSeconds, time());
+			$result = $this->startMatchmakingSessionWithReadyGate('communication_start', time(), $durationSeconds, $mapPool);
 		}
 
 		$this->syncVetoDraftTelemetryState();
 
 		if (isset($result['success']) && $result['success']) {
-			$this->vetoDraftLastAppliedSessionId = '';
-			$this->resetMatchmakingLifecycleContext('session_started', 'communication_start', false);
-			$this->broadcastVetoDraftSessionOverview();
+			$startedMode = '';
+			if (isset($result['details']) && is_array($result['details']) && isset($result['details']['session']) && is_array($result['details']['session']) && isset($result['details']['session']['mode'])) {
+				$startedMode = (string) $result['details']['session']['mode'];
+			}
+
+			if ($startedMode !== VetoDraftCatalog::MODE_MATCHMAKING_VOTE) {
+				$this->vetoDraftLastAppliedSessionId = '';
+				$this->resetMatchmakingLifecycleContext('session_started', 'communication_start', false);
+				$this->broadcastVetoDraftSessionOverview();
+			}
 		}
 
 		return new CommunicationAnswer($result, empty($result['success']));
@@ -476,7 +543,7 @@ trait VetoDraftDomainTrait {
 
 	public function handleVetoDraftCommunicationAction($data) {
 		if (!$this->vetoDraftEnabled || !$this->vetoDraftCoordinator) {
-			return new CommunicationAnswer(array('success' => false, 'code' => 'feature_disabled', 'message' => 'Map draft/veto feature is disabled.'), true);
+			return $this->buildVetoDraftFeatureDisabledCommunicationAnswer();
 		}
 
 		$payload = $this->normalizeCommunicationPayload($data);
@@ -512,7 +579,7 @@ trait VetoDraftDomainTrait {
 
 	public function handleVetoDraftCommunicationStatus($data) {
 		if (!$this->vetoDraftEnabled || !$this->vetoDraftCoordinator) {
-			return new CommunicationAnswer(array('enabled' => false, 'status' => array('active' => false, 'mode' => '', 'session' => array('status' => 'disabled'))), false);
+			return $this->buildVetoDraftDisabledStatusCommunicationAnswer();
 		}
 
 		return new CommunicationAnswer(array(
@@ -521,6 +588,7 @@ trait VetoDraftDomainTrait {
 			'default_mode' => $this->vetoDraftDefaultMode,
 			'matchmaking_duration_seconds' => $this->vetoDraftMatchmakingDurationSeconds,
 			'matchmaking_autostart_min_players' => $this->vetoDraftMatchmakingAutostartMinPlayers,
+			'matchmaking_ready_armed' => $this->vetoDraftMatchmakingReadyArmed,
 			'launch_immediately' => $this->vetoDraftLaunchImmediately,
 			'series_targets' => $this->getSeriesControlSnapshot(),
 			'matchmaking_lifecycle' => $this->buildMatchmakingLifecycleStatusSnapshot(),
@@ -529,6 +597,7 @@ trait VetoDraftDomainTrait {
 				'action' => VetoDraftCatalog::COMMUNICATION_ACTION,
 				'status' => VetoDraftCatalog::COMMUNICATION_STATUS,
 				'cancel' => VetoDraftCatalog::COMMUNICATION_CANCEL,
+				'ready' => VetoDraftCatalog::COMMUNICATION_READY,
 			),
 			'status' => $this->vetoDraftCoordinator->getStatusSnapshot(),
 		), false);
@@ -536,7 +605,7 @@ trait VetoDraftDomainTrait {
 
 	public function handleVetoDraftCommunicationCancel($data) {
 		if (!$this->vetoDraftEnabled || !$this->vetoDraftCoordinator) {
-			return new CommunicationAnswer(array('success' => false, 'code' => 'feature_disabled', 'message' => 'Map draft/veto feature is disabled.'), true);
+			return $this->buildVetoDraftFeatureDisabledCommunicationAnswer();
 		}
 
 		$payload = $this->normalizeCommunicationPayload($data);
@@ -545,6 +614,17 @@ trait VetoDraftDomainTrait {
 		if (!empty($result['success'])) {
 			$this->resetMatchmakingLifecycleContext('session_cancelled', 'communication_cancel', true);
 		}
+		$this->syncVetoDraftTelemetryState();
+
+		return new CommunicationAnswer($result, empty($result['success']));
+	}
+
+	public function handleVetoDraftCommunicationReady($data) {
+		if (!$this->vetoDraftEnabled || !$this->vetoDraftCoordinator) {
+			return $this->buildVetoDraftFeatureDisabledCommunicationAnswer();
+		}
+
+		$result = $this->armMatchmakingReadyGate('communication_ready');
 		$this->syncVetoDraftTelemetryState();
 
 		return new CommunicationAnswer($result, empty($result['success']));
@@ -600,7 +680,7 @@ trait VetoDraftDomainTrait {
 		}
 
 		$durationSeconds = isset($parameters['duration']) ? $parameters['duration'] : (isset($parameters['duration_seconds']) ? $parameters['duration_seconds'] : (isset($positionals[1]) ? $positionals[1] : $this->vetoDraftMatchmakingDurationSeconds));
-		return $this->vetoDraftCoordinator->startMatchmaking($mapPool, $durationSeconds, time());
+		return $this->startMatchmakingSessionWithReadyGate('chat_start', time(), $durationSeconds, $mapPool);
 	}
 
 	private function parseVetoDraftCommandRequest(array $chatCallback) {
@@ -769,10 +849,10 @@ trait VetoDraftDomainTrait {
 
 		if ($effectiveMode === VetoDraftCatalog::MODE_TOURNAMENT_DRAFT) {
 			$adminHelpLines[] = 'Admin tournament: //' . $this->vetoDraftCommandName . ' start tournament captain_a=<login> captain_b=<login> [bo=3] [starter=random] [timeout=45] [launch=1].';
-			$adminHelpLines[] = 'Admin defaults: //' . $this->vetoDraftCommandName . ' mode <matchmaking|tournament> | min_players <int>.';
+			$adminHelpLines[] = 'Admin defaults: //' . $this->vetoDraftCommandName . ' mode <matchmaking|tournament> | min_players <int> | ready.';
 		} else {
-			$adminHelpLines[] = 'Admin matchmaking: //' . $this->vetoDraftCommandName . ' start matchmaking [duration=60] [launch=1].';
-			$adminHelpLines[] = 'Admin defaults: //' . $this->vetoDraftCommandName . ' mode <matchmaking|tournament> | duration <seconds> | min_players <int>.';
+			$adminHelpLines[] = 'Admin matchmaking: //' . $this->vetoDraftCommandName . ' ready, then //' . $this->vetoDraftCommandName . ' start matchmaking [duration=60] [launch=1].';
+			$adminHelpLines[] = 'Admin defaults: //' . $this->vetoDraftCommandName . ' mode <matchmaking|tournament> | duration <seconds> | min_players <int> | ready.';
 		}
 
 		$adminHelpLines[] = 'Admin series policy: //pcadmin match.bo.get | //pcadmin match.bo.set best_of=<odd>.';
@@ -821,6 +901,7 @@ trait VetoDraftDomainTrait {
 			. ', mode=' . ($mode !== '' ? $mode : 'none')
 			. ', state=' . $sessionStatus
 			. ', min_players=' . $this->vetoDraftMatchmakingAutostartMinPlayers
+			. ', ready_armed=' . ($this->vetoDraftMatchmakingReadyArmed ? 'yes' : 'no')
 			. '.',
 			$player
 		);
@@ -836,16 +917,25 @@ trait VetoDraftDomainTrait {
 
 		if (!$active && $this->vetoDraftDefaultMode === VetoDraftCatalog::MODE_MATCHMAKING_VOTE) {
 			$connectedHumanPlayers = $this->countConnectedHumanPlayersForVetoAutoStart();
-			$this->maniaControl->getChat()->sendInformation(
-				'No active session: threshold auto-start waits for '
-				. $this->vetoDraftMatchmakingAutostartMinPlayers
-				. ' connected player(s) (currently '
-				. $connectedHumanPlayers
-				. '). You can also use /'
-				. $this->vetoDraftCommandName
-				. ' vote <index|uid> to start immediately.',
-				$player
-			);
+			if ($this->vetoDraftMatchmakingReadyArmed) {
+				$this->maniaControl->getChat()->sendInformation(
+					'No active session: ready gate armed; threshold auto-start waits for '
+					. $this->vetoDraftMatchmakingAutostartMinPlayers
+					. ' connected player(s) (currently '
+					. $connectedHumanPlayers
+					. '). You can also use /'
+					. $this->vetoDraftCommandName
+					. ' vote <index|uid> to start immediately.',
+					$player
+				);
+			} else {
+				$this->maniaControl->getChat()->sendInformation(
+					'No active session: matchmaking ready gate is idle. Run //'
+					. $this->vetoDraftCommandName
+					. ' ready, then threshold/vote flow can auto-start.',
+					$player
+				);
+			}
 		}
 
 		if ($mode === VetoDraftCatalog::MODE_MATCHMAKING_VOTE && isset($session['vote_totals']) && is_array($session['vote_totals'])) {
@@ -871,14 +961,7 @@ trait VetoDraftDomainTrait {
 	}
 
 	private function sendVetoDraftConfigToPlayer(Player $player) {
-		$this->maniaControl->getChat()->sendInformation(
-			'Draft defaults: mode=' . $this->vetoDraftDefaultMode
-			. ', matchmaking_duration=' . $this->vetoDraftMatchmakingDurationSeconds . 's'
-			. ', min_players=' . $this->vetoDraftMatchmakingAutostartMinPlayers
-			. ', launch_immediately=' . ($this->vetoDraftLaunchImmediately ? 'yes' : 'no')
-			. '.',
-			$player
-		);
+		$this->sendVetoDraftDefaultsSummaryToPlayer($player);
 		$this->maniaControl->getChat()->sendInformation($this->buildSeriesControlSnapshotSummaryLine(), $player);
 
 		$activeVetoSession = ($this->vetoDraftCoordinator ? $this->vetoDraftCoordinator->hasActiveSession() : false);
@@ -1293,12 +1376,14 @@ trait VetoDraftDomainTrait {
 		$this->vetoDraftMatchmakingLifecycleLastSnapshot = $snapshot;
 
 		if ($status === 'completed') {
-			$this->vetoDraftMatchmakingAutostartArmed = true;
+			$this->vetoDraftMatchmakingAutostartArmed = false;
 			$this->vetoDraftMatchmakingAutostartSuppressed = false;
+			$this->vetoDraftMatchmakingReadyArmed = false;
 			Logger::log(
 				'[PixelControl][veto][matchmaking_lifecycle][ready] session=' . (isset($snapshot['session_id']) ? (string) $snapshot['session_id'] : 'unknown')
 				. ', source=' . ($source !== '' ? $source : 'unknown')
 				. ', reason=' . ($snapshot['resolution_reason'] !== '' ? (string) $snapshot['resolution_reason'] : 'completed')
+				. ', matchmaking_ready_armed=no'
 				. '.'
 			);
 		}
@@ -1567,6 +1652,7 @@ trait VetoDraftDomainTrait {
 				'attempted' => isset($kickResult['attempted_count']) ? (int) $kickResult['attempted_count'] : 0,
 				'succeeded' => isset($kickResult['succeeded_count']) ? (int) $kickResult['succeeded_count'] : 0,
 				'failed' => isset($kickResult['failed_count']) ? (int) $kickResult['failed_count'] : 0,
+				'skipped' => isset($kickResult['skipped_count']) ? (int) $kickResult['skipped_count'] : 0,
 				'current_map_uid' => $observedCurrentMapUid,
 			)
 		);
@@ -1679,7 +1765,9 @@ trait VetoDraftDomainTrait {
 				'attempted_count' => 0,
 				'succeeded_count' => 0,
 				'failed_count' => 0,
+				'skipped_count' => 0,
 				'failed_logins' => array(),
+				'skipped_logins' => array(),
 				'observed_at' => time(),
 			);
 		}
@@ -1693,16 +1781,31 @@ trait VetoDraftDomainTrait {
 		$attemptedCount = 0;
 		$succeededCount = 0;
 		$failedCount = 0;
+		$skippedCount = 0;
 		$failedLogins = array();
+		$skippedLogins = array();
 		$attemptedLogins = array();
 
 		foreach ($players as $player) {
-			if (!$player instanceof Player || !isset($player->login)) {
-				continue;
-			}
+			$cleanupEligibility = $this->resolveMatchmakingLifecyclePlayerCleanupEligibility($player);
+			$playerLogin = isset($cleanupEligibility['login']) ? trim((string) $cleanupEligibility['login']) : '';
+			$eligibilityReason = isset($cleanupEligibility['reason']) ? (string) $cleanupEligibility['reason'] : 'unknown';
+			$classification = isset($cleanupEligibility['classification']) ? (string) $cleanupEligibility['classification'] : 'unknown';
 
-			$playerLogin = trim((string) $player->login);
-			if ($playerLogin === '') {
+			if (empty($cleanupEligibility['eligible'])) {
+				$skippedCount++;
+				$skippedLogins[] = array(
+					'login' => ($playerLogin !== '' ? $playerLogin : 'unknown'),
+					'reason' => $eligibilityReason,
+					'classification' => $classification,
+				);
+
+				Logger::log(
+					'[PixelControl][veto][matchmaking_lifecycle][kick_skipped] login=' . ($playerLogin !== '' ? $playerLogin : 'unknown')
+					. ', reason=' . $eligibilityReason
+					. ', classification=' . $classification
+					. '.'
+				);
 				continue;
 			}
 
@@ -1710,17 +1813,31 @@ trait VetoDraftDomainTrait {
 			$attemptedLogins[] = $playerLogin;
 
 			try {
-				if (method_exists($player, 'isFakePlayer') && $player->isFakePlayer()) {
-					$this->maniaControl->getClient()->disconnectFakePlayer($playerLogin);
-				} else {
-					$this->maniaControl->getClient()->kick($playerLogin, 'Match finished: preparing next veto session.');
-				}
+				$this->maniaControl->getClient()->disconnectFakePlayer($playerLogin);
 				$succeededCount++;
+
+				Logger::log(
+					'[PixelControl][veto][matchmaking_lifecycle][kick_applied] login=' . $playerLogin
+					. ', method=disconnectFakePlayer'
+					. ', reason=' . $eligibilityReason
+					. ', classification=' . $classification
+					. ', success=yes.'
+				);
 			} catch (\Throwable $throwable) {
 				$failedCount++;
 				$failedLogins[] = array(
 					'login' => $playerLogin,
 					'error' => $throwable->getMessage(),
+				);
+
+				Logger::logWarning(
+					'[PixelControl][veto][matchmaking_lifecycle][kick_applied] login=' . $playerLogin
+					. ', method=disconnectFakePlayer'
+					. ', reason=' . $eligibilityReason
+					. ', classification=' . $classification
+					. ', success=no'
+					. ', error=' . $throwable->getMessage()
+					. '.'
 				);
 			}
 		}
@@ -1732,14 +1849,80 @@ trait VetoDraftDomainTrait {
 			'success' => $success,
 			'code' => $success ? 'kick_all_completed' : 'kick_all_partial_failure',
 			'message' => $success
-				? 'Kick-all routine completed.'
-				: 'Kick-all routine completed with one or more failures.',
+				? 'Lifecycle cleanup routine completed.'
+				: 'Lifecycle cleanup routine completed with one or more failures.',
 			'attempted_count' => $attemptedCount,
 			'succeeded_count' => $succeededCount,
 			'failed_count' => $failedCount,
+			'skipped_count' => $skippedCount,
 			'attempted_logins' => $attemptedLogins,
 			'failed_logins' => $failedLogins,
+			'skipped_logins' => $skippedLogins,
+			'cleanup_policy' => 'fake_players_only',
 			'observed_at' => time(),
+		);
+	}
+
+	private function resolveMatchmakingLifecyclePlayerCleanupEligibility($player) {
+		if (!$player instanceof Player) {
+			return array(
+				'eligible' => false,
+				'login' => '',
+				'reason' => 'invalid_player_instance',
+				'classification' => 'unknown',
+			);
+		}
+
+		$playerLogin = isset($player->login) ? trim((string) $player->login) : '';
+		if ($playerLogin === '') {
+			return array(
+				'eligible' => false,
+				'login' => '',
+				'reason' => 'missing_login',
+				'classification' => 'unknown',
+			);
+		}
+
+		$isFakePlayer = null;
+		if (method_exists($player, 'isFakePlayer')) {
+			try {
+				$isFakePlayer = (bool) $player->isFakePlayer();
+			} catch (\Throwable $throwable) {
+				$isFakePlayer = null;
+			}
+		}
+
+		if ($isFakePlayer === null && isset($player->pid) && is_numeric($player->pid)) {
+			$isFakePlayer = ((int) $player->pid <= 0);
+		}
+
+		if ($isFakePlayer === null && strpos($playerLogin, '*') === 0) {
+			$isFakePlayer = true;
+		}
+
+		if ($isFakePlayer === true) {
+			return array(
+				'eligible' => true,
+				'login' => $playerLogin,
+				'reason' => 'safe_fake_player',
+				'classification' => 'fake_player',
+			);
+		}
+
+		if ($isFakePlayer === false) {
+			return array(
+				'eligible' => false,
+				'login' => $playerLogin,
+				'reason' => 'human_player_protected',
+				'classification' => 'human_player',
+			);
+		}
+
+		return array(
+			'eligible' => false,
+			'login' => $playerLogin,
+			'reason' => 'player_identity_unclassified',
+			'classification' => 'unknown',
 		);
 	}
 
@@ -2090,24 +2273,15 @@ trait VetoDraftDomainTrait {
 			);
 		}
 
-		$timestamp = max(0, (int) $timestamp);
-		$mapPool = $this->vetoDraftMapPoolService->buildMapPool($this->maniaControl->getMapManager());
-		$startResult = $this->vetoDraftCoordinator->startMatchmaking(
-			$mapPool,
-			$this->vetoDraftMatchmakingDurationSeconds,
-			$timestamp
+		$startResult = $this->startMatchmakingSessionWithReadyGate(
+			$source,
+			$timestamp,
+			$this->vetoDraftMatchmakingDurationSeconds
 		);
-		$this->syncVetoDraftTelemetryState();
 
 		if (empty($startResult['success'])) {
 			return $startResult;
 		}
-
-		$this->vetoDraftLastAppliedSessionId = '';
-		$this->vetoDraftMatchmakingAutostartArmed = false;
-		$this->vetoDraftMatchmakingAutostartSuppressed = false;
-		$this->resetMatchmakingLifecycleContext('session_started', 'auto_start_matchmaking', false);
-		$this->broadcastVetoDraftSessionOverview();
 
 		return array(
 			'success' => true,
@@ -2119,25 +2293,146 @@ trait VetoDraftDomainTrait {
 		);
 	}
 
+	private function armMatchmakingReadyGate($source) {
+		if (!$this->vetoDraftCoordinator || !$this->maniaControl) {
+			return array(
+				'success' => false,
+				'code' => 'capability_unavailable',
+				'message' => 'Map draft/veto capability is unavailable.',
+			);
+		}
+
+		$statusSnapshot = $this->vetoDraftCoordinator->getStatusSnapshot();
+		if (!empty($statusSnapshot['active'])) {
+			return array(
+				'success' => false,
+				'code' => 'session_active',
+				'message' => 'A draft/veto session is currently active. Arm matchmaking ready after the active session closes.',
+			);
+		}
+
+		if ($this->vetoDraftMatchmakingReadyArmed) {
+			return array(
+				'success' => true,
+				'code' => 'matchmaking_ready_already_armed',
+				'message' => 'Matchmaking ready gate is already armed.',
+				'armed' => true,
+			);
+		}
+
+		$this->vetoDraftMatchmakingReadyArmed = true;
+		$this->vetoDraftMatchmakingAutostartArmed = true;
+		$this->vetoDraftMatchmakingAutostartSuppressed = false;
+
+		Logger::log(
+			'[PixelControl][veto][ready_gate][armed] source=' . trim((string) $source)
+			. ', threshold=' . $this->vetoDraftMatchmakingAutostartMinPlayers
+			. ', mode=' . $this->vetoDraftDefaultMode
+			. '.'
+		);
+
+		return array(
+			'success' => true,
+			'code' => 'matchmaking_ready_armed',
+			'message' => 'Matchmaking ready gate armed. Next matchmaking cycle can start automatically once normal conditions are met.',
+			'armed' => true,
+		);
+	}
+
+	private function startMatchmakingSessionWithReadyGate($source, $timestamp, $durationSeconds, array $mapPool = array()) {
+		if (!$this->vetoDraftCoordinator || !$this->vetoDraftMapPoolService || !$this->maniaControl) {
+			return array(
+				'success' => false,
+				'code' => 'capability_unavailable',
+				'message' => 'Map draft/veto capability is unavailable.',
+			);
+		}
+
+		$statusSnapshot = $this->vetoDraftCoordinator->getStatusSnapshot();
+		if (!empty($statusSnapshot['active'])) {
+			return array(
+				'success' => false,
+				'code' => 'session_active',
+				'message' => 'A draft/veto session is already running.',
+			);
+		}
+
+		if (!$this->vetoDraftMatchmakingReadyArmed) {
+			return array(
+				'success' => false,
+				'code' => 'matchmaking_ready_required',
+				'message' => 'Matchmaking start requires explicit arming. Run //' . $this->vetoDraftCommandName . ' ready first.',
+				'ready_armed' => false,
+			);
+		}
+
+		$timestamp = max(0, (int) $timestamp);
+		if (empty($mapPool)) {
+			$mapPool = $this->vetoDraftMapPoolService->buildMapPool($this->maniaControl->getMapManager());
+		}
+
+		$startResult = $this->vetoDraftCoordinator->startMatchmaking(
+			$mapPool,
+			$durationSeconds,
+			$timestamp
+		);
+		$this->syncVetoDraftTelemetryState();
+
+		if (empty($startResult['success'])) {
+			return $startResult;
+		}
+
+		$this->vetoDraftLastAppliedSessionId = '';
+		$this->vetoDraftMatchmakingReadyArmed = false;
+		$this->vetoDraftMatchmakingAutostartArmed = false;
+		$this->vetoDraftMatchmakingAutostartSuppressed = false;
+		$this->resetMatchmakingAutostartPendingWindow('session_started');
+		$this->resetMatchmakingLifecycleContext('session_started', trim((string) $source), false);
+		$this->broadcastVetoDraftSessionOverview();
+
+		Logger::log(
+			'[PixelControl][veto][ready_gate][consumed] source=' . trim((string) $source)
+			. ', session=' . (isset($startResult['details']['session']['session_id']) ? (string) $startResult['details']['session']['session_id'] : 'unknown')
+			. '.'
+		);
+
+		return $startResult;
+	}
+
 	private function evaluateMatchmakingAutostartThreshold($timestamp) {
 		if (!$this->vetoDraftCoordinator || !$this->vetoDraftEnabled || !$this->maniaControl) {
 			return;
 		}
 
-		if ($this->vetoDraftDefaultMode !== VetoDraftCatalog::MODE_MATCHMAKING_VOTE) {
+		$timestamp = max(0, (int) $timestamp);
+		$guardState = $this->buildMatchmakingAutostartGuardState();
+		$guardReason = isset($guardState['reason']) ? (string) $guardState['reason'] : '';
+
+		if ($guardReason === 'mode_not_matchmaking') {
+			$this->cancelMatchmakingAutostartPendingWindow('mode_not_matchmaking', $guardState, false);
 			$this->vetoDraftMatchmakingAutostartArmed = true;
 			$this->vetoDraftMatchmakingAutostartSuppressed = false;
 			return;
 		}
 
-		if ($this->vetoDraftCoordinator->hasActiveSession()) {
+		if ($this->evaluatePendingMatchmakingAutostartWindow($timestamp, $guardState)) {
 			return;
 		}
 
-		$connectedHumanPlayers = $this->countConnectedHumanPlayersForVetoAutoStart();
-		$threshold = max(1, (int) $this->vetoDraftMatchmakingAutostartMinPlayers);
+		$connectedHumanPlayers = isset($guardState['connected_human_players'])
+			? max(0, (int) $guardState['connected_human_players'])
+			: 0;
+		$threshold = isset($guardState['threshold'])
+			? max(1, (int) $guardState['threshold'])
+			: max(1, (int) $this->vetoDraftMatchmakingAutostartMinPlayers);
 
-		if ($connectedHumanPlayers < $threshold) {
+		if ($guardReason === 'session_active') {
+			$this->vetoDraftMatchmakingAutostartArmed = false;
+			$this->vetoDraftMatchmakingAutostartSuppressed = true;
+			return;
+		}
+
+		if ($guardReason === 'below_threshold') {
 			$shouldLogBelowThreshold = (!$this->vetoDraftMatchmakingAutostartArmed) || $this->vetoDraftMatchmakingAutostartSuppressed;
 			$wasArmed = $this->vetoDraftMatchmakingAutostartArmed;
 
@@ -2163,25 +2458,41 @@ trait VetoDraftDomainTrait {
 			return;
 		}
 
-		if ($this->vetoDraftMatchmakingAutostartArmed) {
-			$startResult = $this->startConfiguredMatchmakingSession('timer_threshold', $timestamp);
-			if (!empty($startResult['success'])) {
-				Logger::log(
-					'[PixelControl][veto][autostart][triggered] connected=' . $connectedHumanPlayers
-					. ', threshold=' . $threshold
-					. ', duration=' . $this->vetoDraftMatchmakingDurationSeconds
-					. '.'
-				);
+		if ($guardReason === 'ready_gate_unarmed') {
+			if ($this->vetoDraftMatchmakingAutostartArmed) {
+				if (!$this->vetoDraftMatchmakingAutostartSuppressed) {
+					$this->vetoDraftMatchmakingAutostartSuppressed = true;
+					Logger::log(
+						'[PixelControl][veto][autostart][ready_gate_waiting] connected=' . $connectedHumanPlayers
+						. ', threshold=' . $threshold
+						. ', command=//' . $this->vetoDraftCommandName . ' ready'
+						. '.'
+					);
+				}
+
+				$this->vetoDraftMatchmakingAutostartArmed = false;
 				return;
 			}
 
-			Logger::logWarning(
-				'[PixelControl][veto][autostart][trigger_failed] connected=' . $connectedHumanPlayers
-				. ', threshold=' . $threshold
-				. ', code=' . (isset($startResult['code']) ? (string) $startResult['code'] : 'unknown')
-				. ', message=' . (isset($startResult['message']) ? (string) $startResult['message'] : 'failed to start configured matchmaking veto')
-				. '.'
-			);
+			if (!$this->vetoDraftMatchmakingAutostartSuppressed) {
+				$this->vetoDraftMatchmakingAutostartSuppressed = true;
+				Logger::log(
+					'[PixelControl][veto][autostart][suppressed] connected=' . $connectedHumanPlayers
+					. ', threshold=' . $threshold
+					. ', reason=ready_gate_waiting.'
+				);
+			}
+			return;
+		}
+
+		if (empty($guardState['eligible'])) {
+			return;
+		}
+
+		if ($this->vetoDraftMatchmakingAutostartArmed) {
+			$this->armMatchmakingAutostartPendingWindow($timestamp, 'timer_threshold', $connectedHumanPlayers, $threshold);
+			$this->vetoDraftMatchmakingAutostartArmed = false;
+			$this->vetoDraftMatchmakingAutostartSuppressed = true;
 			return;
 		}
 
@@ -2192,6 +2503,178 @@ trait VetoDraftDomainTrait {
 				. ', threshold=' . $threshold
 				. ', reason=already_triggered_until_below_threshold.'
 			);
+		}
+	}
+
+	private function buildMatchmakingAutostartGuardState() {
+		$threshold = max(1, (int) $this->vetoDraftMatchmakingAutostartMinPlayers);
+		$state = array(
+			'eligible' => false,
+			'reason' => 'conditions_unknown',
+			'connected_human_players' => 0,
+			'threshold' => $threshold,
+			'ready_armed' => (bool) $this->vetoDraftMatchmakingReadyArmed,
+		);
+
+		if ($this->vetoDraftDefaultMode !== VetoDraftCatalog::MODE_MATCHMAKING_VOTE) {
+			$state['reason'] = 'mode_not_matchmaking';
+			return $state;
+		}
+
+		if ($this->vetoDraftCoordinator->hasActiveSession()) {
+			$state['reason'] = 'session_active';
+			return $state;
+		}
+
+		$connectedHumanPlayers = $this->countConnectedHumanPlayersForVetoAutoStart();
+		$state['connected_human_players'] = $connectedHumanPlayers;
+
+		if ($connectedHumanPlayers < $threshold) {
+			$state['reason'] = 'below_threshold';
+			return $state;
+		}
+
+		if (!$this->vetoDraftMatchmakingReadyArmed) {
+			$state['reason'] = 'ready_gate_unarmed';
+			return $state;
+		}
+
+		$state['eligible'] = true;
+		$state['reason'] = 'eligible';
+
+		return $state;
+	}
+
+	private function evaluatePendingMatchmakingAutostartWindow($timestamp, array $guardState) {
+		if (!is_array($this->vetoDraftMatchmakingAutostartPending)) {
+			return false;
+		}
+
+		$guardReason = isset($guardState['reason']) ? trim((string) $guardState['reason']) : '';
+		if (empty($guardState['eligible'])) {
+			$reason = ($guardReason !== '') ? $guardReason : 'conditions_invalid';
+			$announceCancellation = ($reason === 'below_threshold' || $reason === 'ready_gate_unarmed');
+			$this->cancelMatchmakingAutostartPendingWindow($reason, $guardState, $announceCancellation);
+			return false;
+		}
+
+		$deadlineAt = isset($this->vetoDraftMatchmakingAutostartPending['deadline_at'])
+			? max(0, (int) $this->vetoDraftMatchmakingAutostartPending['deadline_at'])
+			: 0;
+		if ($deadlineAt > 0 && $timestamp < $deadlineAt) {
+			return true;
+		}
+
+		$connectedHumanPlayers = isset($guardState['connected_human_players']) ? max(0, (int) $guardState['connected_human_players']) : 0;
+		$threshold = isset($guardState['threshold']) ? max(1, (int) $guardState['threshold']) : max(1, (int) $this->vetoDraftMatchmakingAutostartMinPlayers);
+		$armedAt = isset($this->vetoDraftMatchmakingAutostartPending['armed_at'])
+			? max(0, (int) $this->vetoDraftMatchmakingAutostartPending['armed_at'])
+			: $timestamp;
+
+		$startResult = $this->startConfiguredMatchmakingSession('timer_threshold', $timestamp);
+		if (!empty($startResult['success'])) {
+			$waitedSeconds = max(0, $timestamp - $armedAt);
+			Logger::log(
+				'[PixelControl][veto][autostart][triggered] connected=' . $connectedHumanPlayers
+				. ', threshold=' . $threshold
+				. ', prestart_delay=' . VetoDraftCatalog::MATCHMAKING_AUTOSTART_PRESTART_SECONDS
+				. ', waited=' . $waitedSeconds
+				. ', duration=' . $this->vetoDraftMatchmakingDurationSeconds
+				. '.'
+			);
+			return true;
+		}
+
+		$this->cancelMatchmakingAutostartPendingWindow('launch_failed', $guardState, false);
+		$this->vetoDraftMatchmakingAutostartArmed = false;
+		$this->vetoDraftMatchmakingAutostartSuppressed = true;
+
+		Logger::logWarning(
+			'[PixelControl][veto][autostart][trigger_failed] connected=' . $connectedHumanPlayers
+			. ', threshold=' . $threshold
+			. ', code=' . (isset($startResult['code']) ? (string) $startResult['code'] : 'unknown')
+			. ', message=' . (isset($startResult['message']) ? (string) $startResult['message'] : 'failed to start configured matchmaking veto')
+			. ', phase=prestart_launch.'
+		);
+
+		return true;
+	}
+
+	private function armMatchmakingAutostartPendingWindow($timestamp, $source, $connectedHumanPlayers, $threshold) {
+		$timestamp = max(0, (int) $timestamp);
+		$source = trim((string) $source);
+		$connectedHumanPlayers = max(0, (int) $connectedHumanPlayers);
+		$threshold = max(1, (int) $threshold);
+		$prestartSeconds = max(1, (int) VetoDraftCatalog::MATCHMAKING_AUTOSTART_PRESTART_SECONDS);
+		$deadlineAt = $timestamp + $prestartSeconds;
+
+		$this->vetoDraftMatchmakingAutostartPending = array(
+			'source' => ($source !== '' ? $source : 'timer_threshold'),
+			'armed_at' => $timestamp,
+			'deadline_at' => $deadlineAt,
+			'notice_announced' => false,
+			'cancelled' => false,
+			'cancel_reason' => '',
+		);
+
+		$this->maniaControl->getChat()->sendInformation('[PixelControl] Matchmaking veto starts in ' . $prestartSeconds . 's.', null);
+		$this->vetoDraftMatchmakingAutostartPending['notice_announced'] = true;
+
+		Logger::log(
+			'[PixelControl][veto][autostart][prestart_armed] connected=' . $connectedHumanPlayers
+			. ', threshold=' . $threshold
+			. ', armed_at=' . $timestamp
+			. ', deadline=' . $deadlineAt
+			. ', delay=' . $prestartSeconds
+			. '.'
+		);
+	}
+
+	private function cancelMatchmakingAutostartPendingWindow($reason, array $guardState = array(), $announceInChat = true) {
+		if (!is_array($this->vetoDraftMatchmakingAutostartPending)) {
+			return;
+		}
+
+		$reason = trim((string) $reason);
+		if ($reason === '') {
+			$reason = 'conditions_invalid';
+		}
+
+		$pendingSnapshot = $this->vetoDraftMatchmakingAutostartPending;
+		$connectedHumanPlayers = isset($guardState['connected_human_players'])
+			? max(0, (int) $guardState['connected_human_players'])
+			: $this->countConnectedHumanPlayersForVetoAutoStart();
+		$threshold = isset($guardState['threshold'])
+			? max(1, (int) $guardState['threshold'])
+			: max(1, (int) $this->vetoDraftMatchmakingAutostartMinPlayers);
+
+		$pendingSnapshot['cancelled'] = true;
+		$pendingSnapshot['cancel_reason'] = $reason;
+		$this->vetoDraftMatchmakingAutostartPending = null;
+		$this->vetoDraftMatchmakingAutostartLastCancellation = $reason;
+
+		Logger::log(
+			'[PixelControl][veto][autostart][prestart_cancelled] reason=' . $reason
+			. ', connected=' . $connectedHumanPlayers
+			. ', threshold=' . $threshold
+			. ', armed_at=' . (isset($pendingSnapshot['armed_at']) ? (int) $pendingSnapshot['armed_at'] : 0)
+			. ', deadline=' . (isset($pendingSnapshot['deadline_at']) ? (int) $pendingSnapshot['deadline_at'] : 0)
+			. '.'
+		);
+
+		if ($announceInChat) {
+			$this->maniaControl->getChat()->sendInformation('[PixelControl] Matchmaking veto auto-start cancelled (conditions changed).', null);
+		}
+	}
+
+	private function resetMatchmakingAutostartPendingWindow($reason = '') {
+		if (!is_array($this->vetoDraftMatchmakingAutostartPending)) {
+			return;
+		}
+
+		$this->vetoDraftMatchmakingAutostartPending = null;
+		if (trim((string) $reason) === 'session_started') {
+			$this->vetoDraftMatchmakingAutostartLastCancellation = '';
 		}
 	}
 
@@ -2253,6 +2736,12 @@ trait VetoDraftDomainTrait {
 				'message' => 'Unable to persist default mode setting.',
 			);
 		}
+
+		if ($normalizedMode !== VetoDraftCatalog::MODE_MATCHMAKING_VOTE) {
+			$this->cancelMatchmakingAutostartPendingWindow('mode_changed', array(), false);
+		}
+		$this->vetoDraftMatchmakingAutostartArmed = true;
+		$this->vetoDraftMatchmakingAutostartSuppressed = false;
 
 		return array(
 			'success' => true,

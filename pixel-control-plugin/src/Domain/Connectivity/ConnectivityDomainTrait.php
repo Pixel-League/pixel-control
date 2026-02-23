@@ -85,6 +85,7 @@ trait ConnectivityDomainTrait {
 				'lifecycle' => $this->callbackRegistry ? count($this->callbackRegistry->getLifecycleCallbacks()) : 0,
 				'lifecycle_script' => $this->callbackRegistry ? count($this->callbackRegistry->getLifecycleScriptCallbacks()) : 0,
 				'player' => $this->callbackRegistry ? count($this->callbackRegistry->getPlayerCallbacks()) : 0,
+				'vote' => $this->callbackRegistry ? count($this->callbackRegistry->getVoteCallbacks()) : 0,
 				'combat' => $this->callbackRegistry ? count($this->callbackRegistry->getCombatCallbacks()) : 0,
 				'mode' => $this->callbackRegistry ? $this->countModeCallbackCount($this->callbackRegistry->getModeCallbacks()) : 0,
 			),

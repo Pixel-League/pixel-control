@@ -58,6 +58,20 @@ Compatibility note for native-admin delegation refactor:
 - Any new admin-control visibility is additive under connectivity capability payload (`payload.capabilities.admin_control.*`) and does not change route contracts.
 - Current communication control path is intentionally temporary/trusted (`authentication_mode=none_temporary`): payload-sourced admin actions can execute without `actor_login` while server-side payload authentication is pending.
 - Additive communication action extensions (local control-surface contract, no new plugin->API route):
+  - `whitelist.enable` (no parameters)
+  - `whitelist.disable` (no parameters)
+  - `whitelist.add` (`target_login`)
+  - `whitelist.remove` (`target_login`)
+  - `whitelist.list` (no parameters)
+  - `whitelist.clean` (no parameters)
+  - `whitelist.sync` (no parameters)
+  - `vote.policy.get` (no parameters)
+  - `vote.policy.set` (`mode`)
+  - `team.policy.get` (no parameters)
+  - `team.policy.set` (`enabled` and/or `switch_lock`)
+  - `team.roster.assign` (`target_login`, `team`)
+  - `team.roster.unassign` (`target_login`)
+  - `team.roster.list` (no parameters)
   - `match.bo.set` (`best_of`)
   - `match.bo.get` (no parameters)
   - `match.maps.set` (`target_team`, `maps_score`)
@@ -65,13 +79,20 @@ Compatibility note for native-admin delegation refactor:
   - `match.score.set` (`target_team`, `score`)
   - `match.score.get` (no parameters)
 - Additive communication status/list snapshots:
+  - `PixelControl.Admin.ListActions` includes top-level `whitelist`
+  - `PixelControl.Admin.ListActions` includes top-level `vote_policy`
+  - `PixelControl.Admin.ListActions` includes top-level `team_control`
   - `PixelControl.Admin.ListActions` includes top-level `series_targets`
   - `PixelControl.VetoDraft.Status` includes top-level `matchmaking_autostart_min_players`
+  - `PixelControl.VetoDraft.Status` includes top-level `matchmaking_ready_armed`
   - `PixelControl.VetoDraft.Status` includes top-level `series_targets`
   - `PixelControl.VetoDraft.Status` includes top-level `matchmaking_lifecycle` snapshot (`status`, `stage`, `ready_for_next_players`, action summaries, bounded history)
+  - `PixelControl.VetoDraft.Status.communication` includes additive `ready` method (`PixelControl.VetoDraft.Ready`)
 - Team selector normalization for recovery actions:
   - `target_team` accepts `0|1|red|blue` (plus aliases `team_a|team_b|a|b`) and normalizes to `team_a|team_b`.
 - Additive veto control-surface behavior notes:
+  - matchmaking start paths now require explicit one-cycle ready arming (`//pcveto ready` or `PixelControl.VetoDraft.Ready`) and return `matchmaking_ready_required` until armed,
+  - successful matchmaking start consumes readiness token; completion/lifecycle closure does not auto-rearm,
   - matchmaking countdown announcements run from configured duration with deterministic cadence `N, N-10, ..., 10, 5..1` and per-session dedupe,
   - role-based chat/status visibility is control-surface only (non-admin map/status output narrowed, admin output retains UID/operational diagnostics),
   - `PixelControl.VetoDraft.Status` payload schema is unchanged by visibility scoping,
@@ -142,6 +163,7 @@ Wave-4 additive lifecycle payload fields:
   - `played_map_order` / `played_map_count`,
   - `series_targets` runtime policy snapshot (`best_of`, `maps_score`, `current_map_score`, metadata),
   - additive veto mode metadata (`veto_draft_mode`, `veto_draft_session_status`),
+  - additive matchmaking ready-gate state (`matchmaking_ready_armed`),
   - `veto_draft_actions` authoritative draft/veto action stream (`ban|pick|pass|lock`) emitted by plugin-side draft sessions,
   - `veto_result` projection with explicit `running|completed|cancelled|unavailable` semantics,
   - additive `matchmaking_lifecycle` projection (`status`, `stage`, `ready_for_next_players`, action summaries, bounded history).

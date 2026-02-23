@@ -47,6 +47,11 @@ class CallbackRegistry {
 		PlayerManager::CB_PLAYERINFOSCHANGED,
 	);
 
+	/** @var string[] $voteCallbacks */
+	private static $voteCallbacks = array(
+		CallbackManager::CB_MP_VOTEUPDATED,
+	);
+
 	/** @var string[] $combatCallbacks */
 	private static $combatCallbacks = array(
 		Callbacks::SM_ONSHOOT,
@@ -90,6 +95,10 @@ class CallbackRegistry {
 			$callbackManager->registerCallbackListener($callbackName, $listener, 'handlePlayerCallback');
 		}
 
+		foreach (self::$voteCallbacks as $callbackName) {
+			$callbackManager->registerCallbackListener($callbackName, $listener, 'handleVoteCallback');
+		}
+
 		foreach (self::$combatCallbacks as $callbackName) {
 			$callbackManager->registerCallbackListener($callbackName, $listener, 'handleCombatCallback');
 		}
@@ -120,6 +129,13 @@ class CallbackRegistry {
 	 */
 	public function getPlayerCallbacks() {
 		return self::$playerCallbacks;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getVoteCallbacks() {
+		return self::$voteCallbacks;
 	}
 
 	/**

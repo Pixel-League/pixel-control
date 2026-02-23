@@ -33,7 +33,13 @@ trait AdminControlDomainTrait {
 			return;
 		}
 
-		$this->nativeAdminGateway = new NativeAdminGateway($this->maniaControl, $this->seriesControlState);
+		$this->nativeAdminGateway = new NativeAdminGateway(
+			$this->maniaControl,
+			$this->seriesControlState,
+			$this->whitelistState,
+			$this->votePolicyState,
+			$this->teamRosterState
+		);
 		$this->defineAdminControlPermissions();
 
 		$this->adminControlEnabled = $this->resolveRuntimeBoolSetting(
@@ -216,6 +222,9 @@ trait AdminControlDomainTrait {
 					'permission_model' => 'trusted_payload_no_actor',
 				),
 			),
+			'whitelist' => $this->buildWhitelistCapabilitySnapshot(),
+			'vote_policy' => $this->getVotePolicySnapshot(),
+			'team_control' => $this->buildTeamControlCapabilitySnapshot(),
 			'series_targets' => $this->getSeriesControlSnapshot(),
 			'actions' => AdminActionCatalog::getActionDefinitions(),
 		);
@@ -233,6 +242,21 @@ trait AdminControlDomainTrait {
 		$seriesSnapshotBeforeAction = array();
 		if ($this->shouldPersistSeriesControlAfterAdminAction($normalizedActionName)) {
 			$seriesSnapshotBeforeAction = $this->getSeriesControlSnapshot();
+		}
+
+		$whitelistSnapshotBeforeAction = array();
+		if ($this->shouldPersistWhitelistAfterAdminAction($normalizedActionName)) {
+			$whitelistSnapshotBeforeAction = $this->getWhitelistSnapshot();
+		}
+
+		$votePolicySnapshotBeforeAction = array();
+		if ($this->shouldPersistVotePolicyAfterAdminAction($normalizedActionName)) {
+			$votePolicySnapshotBeforeAction = $this->getVotePolicySnapshot();
+		}
+
+		$teamRosterSnapshotBeforeAction = array();
+		if ($this->shouldPersistTeamRosterAfterAdminAction($normalizedActionName)) {
+			$teamRosterSnapshotBeforeAction = $this->getTeamRosterSnapshot();
 		}
 
 		$allowActorless = !empty($requestOptions['allow_actorless']);
@@ -293,6 +317,90 @@ trait AdminControlDomainTrait {
 			: AdminActionResult::failure($normalizedActionName, 'gateway_unavailable', 'Native admin gateway is unavailable.');
 
 		if ($result->isSuccess()) {
+			$whitelistPersistenceResult = $this->persistWhitelistAfterAdminAction(
+				$normalizedActionName,
+				$result,
+				$whitelistSnapshotBeforeAction
+			);
+			if (empty($whitelistPersistenceResult['success'])) {
+				Logger::logWarning(
+					'[PixelControl][admin][action_persistence_failed] action=' . $normalizedActionName
+					. ', source=' . $requestSource
+					. ', actor=' . $logActor
+					. ', code=' . (isset($whitelistPersistenceResult['code']) ? (string) $whitelistPersistenceResult['code'] : 'setting_write_failed')
+					. ', scope=whitelist.'
+				);
+
+				$failureDetails = $result->getDetails();
+				$failureDetails['whitelist'] = $this->buildWhitelistCapabilitySnapshot();
+				$failureDetails['persistence'] = isset($whitelistPersistenceResult['details']) && is_array($whitelistPersistenceResult['details'])
+					? $whitelistPersistenceResult['details']
+					: array();
+
+				return AdminActionResult::failure(
+					$normalizedActionName,
+					isset($whitelistPersistenceResult['code']) ? (string) $whitelistPersistenceResult['code'] : 'setting_write_failed',
+					isset($whitelistPersistenceResult['message']) ? (string) $whitelistPersistenceResult['message'] : 'Unable to persist whitelist settings after admin action.',
+					$failureDetails
+				);
+			}
+
+			$votePolicyPersistenceResult = $this->persistVotePolicyAfterAdminAction(
+				$normalizedActionName,
+				$result,
+				$votePolicySnapshotBeforeAction
+			);
+			if (empty($votePolicyPersistenceResult['success'])) {
+				Logger::logWarning(
+					'[PixelControl][admin][action_persistence_failed] action=' . $normalizedActionName
+					. ', source=' . $requestSource
+					. ', actor=' . $logActor
+					. ', code=' . (isset($votePolicyPersistenceResult['code']) ? (string) $votePolicyPersistenceResult['code'] : 'setting_write_failed')
+					. ', scope=vote_policy.'
+				);
+
+				$failureDetails = $result->getDetails();
+				$failureDetails['vote_policy'] = $this->getVotePolicySnapshot();
+				$failureDetails['persistence'] = isset($votePolicyPersistenceResult['details']) && is_array($votePolicyPersistenceResult['details'])
+					? $votePolicyPersistenceResult['details']
+					: array();
+
+				return AdminActionResult::failure(
+					$normalizedActionName,
+					isset($votePolicyPersistenceResult['code']) ? (string) $votePolicyPersistenceResult['code'] : 'setting_write_failed',
+					isset($votePolicyPersistenceResult['message']) ? (string) $votePolicyPersistenceResult['message'] : 'Unable to persist vote policy settings after admin action.',
+					$failureDetails
+				);
+			}
+
+			$teamRosterPersistenceResult = $this->persistTeamRosterAfterAdminAction(
+				$normalizedActionName,
+				$result,
+				$teamRosterSnapshotBeforeAction
+			);
+			if (empty($teamRosterPersistenceResult['success'])) {
+				Logger::logWarning(
+					'[PixelControl][admin][action_persistence_failed] action=' . $normalizedActionName
+					. ', source=' . $requestSource
+					. ', actor=' . $logActor
+					. ', code=' . (isset($teamRosterPersistenceResult['code']) ? (string) $teamRosterPersistenceResult['code'] : 'setting_write_failed')
+					. ', scope=team_roster.'
+				);
+
+				$failureDetails = $result->getDetails();
+				$failureDetails['team_roster'] = $this->buildTeamControlCapabilitySnapshot();
+				$failureDetails['persistence'] = isset($teamRosterPersistenceResult['details']) && is_array($teamRosterPersistenceResult['details'])
+					? $teamRosterPersistenceResult['details']
+					: array();
+
+				return AdminActionResult::failure(
+					$normalizedActionName,
+					isset($teamRosterPersistenceResult['code']) ? (string) $teamRosterPersistenceResult['code'] : 'setting_write_failed',
+					isset($teamRosterPersistenceResult['message']) ? (string) $teamRosterPersistenceResult['message'] : 'Unable to persist team-roster settings after admin action.',
+					$failureDetails
+				);
+			}
+
 			$seriesPersistenceResult = $this->persistSeriesControlAfterAdminAction(
 				$normalizedActionName,
 				$result,
@@ -434,6 +542,10 @@ trait AdminControlDomainTrait {
 			case AdminActionCatalog::ACTION_PLAYER_FORCE_SPEC:
 			case AdminActionCatalog::ACTION_AUTH_GRANT:
 			case AdminActionCatalog::ACTION_AUTH_REVOKE:
+			case AdminActionCatalog::ACTION_WHITELIST_ADD:
+			case AdminActionCatalog::ACTION_WHITELIST_REMOVE:
+			case AdminActionCatalog::ACTION_TEAM_ROSTER_ASSIGN:
+			case AdminActionCatalog::ACTION_TEAM_ROSTER_UNASSIGN:
 				return 'player';
 			case AdminActionCatalog::ACTION_MAP_SKIP:
 			case AdminActionCatalog::ACTION_MAP_RESTART:
@@ -449,6 +561,16 @@ trait AdminControlDomainTrait {
 			case AdminActionCatalog::ACTION_VOTE_CANCEL:
 			case AdminActionCatalog::ACTION_VOTE_SET_RATIO:
 			case AdminActionCatalog::ACTION_VOTE_CUSTOM_START:
+			case AdminActionCatalog::ACTION_WHITELIST_ENABLE:
+			case AdminActionCatalog::ACTION_WHITELIST_DISABLE:
+			case AdminActionCatalog::ACTION_WHITELIST_LIST:
+			case AdminActionCatalog::ACTION_WHITELIST_CLEAN:
+			case AdminActionCatalog::ACTION_WHITELIST_SYNC:
+			case AdminActionCatalog::ACTION_VOTE_POLICY_GET:
+			case AdminActionCatalog::ACTION_VOTE_POLICY_SET:
+			case AdminActionCatalog::ACTION_TEAM_POLICY_GET:
+			case AdminActionCatalog::ACTION_TEAM_POLICY_SET:
+			case AdminActionCatalog::ACTION_TEAM_ROSTER_LIST:
 			case AdminActionCatalog::ACTION_MATCH_BO_SET:
 			case AdminActionCatalog::ACTION_MATCH_BO_GET:
 			case AdminActionCatalog::ACTION_MATCH_MAPS_SET:
@@ -468,6 +590,10 @@ trait AdminControlDomainTrait {
 			case AdminActionCatalog::ACTION_PLAYER_FORCE_SPEC:
 			case AdminActionCatalog::ACTION_AUTH_GRANT:
 			case AdminActionCatalog::ACTION_AUTH_REVOKE:
+			case AdminActionCatalog::ACTION_WHITELIST_ADD:
+			case AdminActionCatalog::ACTION_WHITELIST_REMOVE:
+			case AdminActionCatalog::ACTION_TEAM_ROSTER_ASSIGN:
+			case AdminActionCatalog::ACTION_TEAM_ROSTER_UNASSIGN:
 				if (isset($parameters['target_login']) && trim((string) $parameters['target_login']) !== '') {
 					return trim((string) $parameters['target_login']);
 				}
@@ -497,6 +623,20 @@ trait AdminControlDomainTrait {
 				return 'maps_scoreboard';
 			case AdminActionCatalog::ACTION_MATCH_SCORE_GET:
 				return 'current_map_scoreboard';
+			case AdminActionCatalog::ACTION_WHITELIST_ENABLE:
+			case AdminActionCatalog::ACTION_WHITELIST_DISABLE:
+			case AdminActionCatalog::ACTION_WHITELIST_LIST:
+			case AdminActionCatalog::ACTION_WHITELIST_CLEAN:
+			case AdminActionCatalog::ACTION_WHITELIST_SYNC:
+				return 'whitelist_registry';
+			case AdminActionCatalog::ACTION_VOTE_POLICY_GET:
+			case AdminActionCatalog::ACTION_VOTE_POLICY_SET:
+				return 'vote_policy';
+			case AdminActionCatalog::ACTION_TEAM_POLICY_GET:
+			case AdminActionCatalog::ACTION_TEAM_POLICY_SET:
+				return 'team_policy';
+			case AdminActionCatalog::ACTION_TEAM_ROSTER_LIST:
+				return 'team_roster';
 			case AdminActionCatalog::ACTION_MATCH_MAPS_SET:
 			case AdminActionCatalog::ACTION_MATCH_SCORE_SET:
 				if (isset($parameters['target_team']) && trim((string) $parameters['target_team']) !== '') {
@@ -662,6 +802,42 @@ trait AdminControlDomainTrait {
 			case AdminActionCatalog::ACTION_VOTE_CUSTOM_START:
 				if (!isset($normalizedParameters['vote_index']) && !empty($positionals)) {
 					$normalizedParameters['vote_index'] = $positionals[0];
+				}
+			break;
+			case AdminActionCatalog::ACTION_WHITELIST_ADD:
+			case AdminActionCatalog::ACTION_WHITELIST_REMOVE:
+				if (!isset($normalizedParameters['target_login']) && !empty($positionals)) {
+					$normalizedParameters['target_login'] = $positionals[0];
+				}
+			break;
+			case AdminActionCatalog::ACTION_VOTE_POLICY_SET:
+				if (!isset($normalizedParameters['mode']) && !empty($positionals)) {
+					$normalizedParameters['mode'] = $positionals[0];
+				}
+			break;
+			case AdminActionCatalog::ACTION_TEAM_POLICY_SET:
+				if (!isset($normalizedParameters['enabled']) && !empty($positionals)) {
+					$normalizedParameters['enabled'] = $positionals[0];
+				}
+				if (!isset($normalizedParameters['switch_lock']) && count($positionals) > 1) {
+					$normalizedParameters['switch_lock'] = $positionals[1];
+				}
+			break;
+			case AdminActionCatalog::ACTION_TEAM_ROSTER_ASSIGN:
+				if (!isset($normalizedParameters['target_login']) && !empty($positionals)) {
+					$normalizedParameters['target_login'] = $positionals[0];
+				}
+				if (!isset($normalizedParameters['team']) && count($positionals) > 1) {
+					$normalizedParameters['team'] = $positionals[1];
+				}
+
+				if (isset($normalizedParameters['target_team']) && !isset($normalizedParameters['team'])) {
+					$normalizedParameters['team'] = $normalizedParameters['target_team'];
+				}
+			break;
+			case AdminActionCatalog::ACTION_TEAM_ROSTER_UNASSIGN:
+				if (!isset($normalizedParameters['target_login']) && !empty($positionals)) {
+					$normalizedParameters['target_login'] = $positionals[0];
 				}
 			break;
 			case AdminActionCatalog::ACTION_MATCH_BO_SET:
@@ -917,6 +1093,9 @@ trait AdminControlDomainTrait {
 				),
 			),
 			'actions' => $actionNames,
+			'whitelist' => $this->buildWhitelistCapabilitySnapshot(),
+			'vote_policy' => $this->getVotePolicySnapshot(),
+			'team_control' => $this->buildTeamControlCapabilitySnapshot(),
 			'series_targets' => $this->getSeriesControlSnapshot(),
 			'ownership_boundary' => array(
 				'telemetry_transport' => 'pixel_plugin',

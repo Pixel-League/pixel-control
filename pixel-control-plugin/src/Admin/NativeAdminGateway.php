@@ -6,18 +6,39 @@ use ManiaControl\Admin\AuthenticationManager;
 use ManiaControl\ManiaControl;
 use ManiaControl\Players\PlayerActions;
 use Maniaplanet\DedicatedServer\Structures\VoteRatio;
+use PixelControl\AccessControl\WhitelistCatalog;
+use PixelControl\AccessControl\WhitelistStateInterface;
 use PixelControl\SeriesControl\SeriesControlCatalog;
 use PixelControl\SeriesControl\SeriesControlStateInterface;
+use PixelControl\TeamControl\TeamRosterCatalog;
+use PixelControl\TeamControl\TeamRosterStateInterface;
+use PixelControl\VoteControl\VotePolicyCatalog;
+use PixelControl\VoteControl\VotePolicyStateInterface;
 
 class NativeAdminGateway {
 	/** @var ManiaControl $maniaControl */
 	private $maniaControl;
 	/** @var SeriesControlStateInterface|null $seriesControlState */
 	private $seriesControlState;
+	/** @var WhitelistStateInterface|null $whitelistState */
+	private $whitelistState;
+	/** @var VotePolicyStateInterface|null $votePolicyState */
+	private $votePolicyState;
+	/** @var TeamRosterStateInterface|null $teamRosterState */
+	private $teamRosterState;
 
-	public function __construct(ManiaControl $maniaControl, ?SeriesControlStateInterface $seriesControlState = null) {
+	public function __construct(
+		ManiaControl $maniaControl,
+		?SeriesControlStateInterface $seriesControlState = null,
+		?WhitelistStateInterface $whitelistState = null,
+		?VotePolicyStateInterface $votePolicyState = null,
+		?TeamRosterStateInterface $teamRosterState = null
+	) {
 		$this->maniaControl = $maniaControl;
 		$this->seriesControlState = $seriesControlState;
+		$this->whitelistState = $whitelistState;
+		$this->votePolicyState = $votePolicyState;
+		$this->teamRosterState = $teamRosterState;
 	}
 
 	public function execute($actionName, array $parameters = array(), $actorLogin = '', array $executionContext = array()) {
@@ -27,7 +48,7 @@ class NativeAdminGateway {
 		}
 
 		try {
-			switch ($normalizedActionName) {
+				switch ($normalizedActionName) {
 				case AdminActionCatalog::ACTION_MAP_SKIP:
 					return $this->executeMapSkip($normalizedActionName);
 				case AdminActionCatalog::ACTION_MAP_RESTART:
@@ -64,6 +85,34 @@ class NativeAdminGateway {
 					return $this->executeAuthRevoke($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_VOTE_CUSTOM_START:
 					return $this->executeCustomVoteStart($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_WHITELIST_ENABLE:
+					return $this->executeWhitelistEnable($normalizedActionName, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_WHITELIST_DISABLE:
+					return $this->executeWhitelistDisable($normalizedActionName, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_WHITELIST_ADD:
+					return $this->executeWhitelistAdd($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_WHITELIST_REMOVE:
+					return $this->executeWhitelistRemove($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_WHITELIST_LIST:
+					return $this->executeWhitelistList($normalizedActionName);
+				case AdminActionCatalog::ACTION_WHITELIST_CLEAN:
+					return $this->executeWhitelistClean($normalizedActionName, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_WHITELIST_SYNC:
+					return $this->executeWhitelistSync($normalizedActionName);
+				case AdminActionCatalog::ACTION_VOTE_POLICY_GET:
+					return $this->executeVotePolicyGet($normalizedActionName);
+				case AdminActionCatalog::ACTION_VOTE_POLICY_SET:
+					return $this->executeVotePolicySet($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_TEAM_POLICY_GET:
+					return $this->executeTeamPolicyGet($normalizedActionName);
+				case AdminActionCatalog::ACTION_TEAM_POLICY_SET:
+					return $this->executeTeamPolicySet($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_TEAM_ROSTER_ASSIGN:
+					return $this->executeTeamRosterAssign($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_TEAM_ROSTER_UNASSIGN:
+					return $this->executeTeamRosterUnassign($normalizedActionName, $parameters, $actorLogin, $executionContext);
+				case AdminActionCatalog::ACTION_TEAM_ROSTER_LIST:
+					return $this->executeTeamRosterList($normalizedActionName);
 				case AdminActionCatalog::ACTION_MATCH_BO_SET:
 					return $this->executeMatchBoSet($normalizedActionName, $parameters, $actorLogin, $executionContext);
 				case AdminActionCatalog::ACTION_MATCH_BO_GET:
@@ -687,6 +736,366 @@ class NativeAdminGateway {
 		));
 	}
 
+	private function executeWhitelistEnable($actionName, $actorLogin, array $executionContext = array()) {
+		if (!$this->whitelistState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Whitelist state is unavailable in current runtime.');
+		}
+
+		$result = $this->whitelistState->setEnabled(
+			true,
+			$this->resolveStateUpdateSource($executionContext, WhitelistCatalog::UPDATE_SOURCE_CHAT, WhitelistCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'whitelist_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Whitelist update failed.',
+				array(
+					'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Whitelist enabled.', array(
+			'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'WhitelistState::setEnabled',
+		));
+	}
+
+	private function executeWhitelistDisable($actionName, $actorLogin, array $executionContext = array()) {
+		if (!$this->whitelistState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Whitelist state is unavailable in current runtime.');
+		}
+
+		$result = $this->whitelistState->setEnabled(
+			false,
+			$this->resolveStateUpdateSource($executionContext, WhitelistCatalog::UPDATE_SOURCE_CHAT, WhitelistCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'whitelist_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Whitelist update failed.',
+				array(
+					'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Whitelist disabled.', array(
+			'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'WhitelistState::setEnabled',
+		));
+	}
+
+	private function executeWhitelistAdd($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->whitelistState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Whitelist state is unavailable in current runtime.');
+		}
+
+		$targetLogin = $this->readStringParameter($parameters, array('target_login', 'login'));
+		if ($targetLogin === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires target_login.');
+		}
+
+		$result = $this->whitelistState->addLogin(
+			$targetLogin,
+			$this->resolveStateUpdateSource($executionContext, WhitelistCatalog::UPDATE_SOURCE_CHAT, WhitelistCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'whitelist_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Whitelist update failed.',
+				array(
+					'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Login added to whitelist.', array(
+			'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'WhitelistState::addLogin',
+		));
+	}
+
+	private function executeWhitelistRemove($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->whitelistState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Whitelist state is unavailable in current runtime.');
+		}
+
+		$targetLogin = $this->readStringParameter($parameters, array('target_login', 'login'));
+		if ($targetLogin === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires target_login.');
+		}
+
+		$result = $this->whitelistState->removeLogin(
+			$targetLogin,
+			$this->resolveStateUpdateSource($executionContext, WhitelistCatalog::UPDATE_SOURCE_CHAT, WhitelistCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'whitelist_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Whitelist update failed.',
+				array(
+					'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Login removed from whitelist.', array(
+			'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'WhitelistState::removeLogin',
+		));
+	}
+
+	private function executeWhitelistList($actionName) {
+		if (!$this->whitelistState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Whitelist state is unavailable in current runtime.');
+		}
+
+		return AdminActionResult::success($actionName, 'Whitelist snapshot resolved.', array(
+			'whitelist' => $this->whitelistState->getSnapshot(),
+			'native_entrypoint' => 'WhitelistState::getSnapshot',
+		));
+	}
+
+	private function executeWhitelistClean($actionName, $actorLogin, array $executionContext = array()) {
+		if (!$this->whitelistState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Whitelist state is unavailable in current runtime.');
+		}
+
+		$result = $this->whitelistState->clean(
+			$this->resolveStateUpdateSource($executionContext, WhitelistCatalog::UPDATE_SOURCE_CHAT, WhitelistCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'whitelist_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Whitelist update failed.',
+				array(
+					'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Whitelist cleaned.', array(
+			'whitelist' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->whitelistState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'WhitelistState::clean',
+		));
+	}
+
+	private function executeWhitelistSync($actionName) {
+		if (!$this->whitelistState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Whitelist state is unavailable in current runtime.');
+		}
+
+		return AdminActionResult::success($actionName, 'Whitelist sync requested.', array(
+			'whitelist' => $this->whitelistState->getSnapshot(),
+			'deferred_sync' => true,
+			'native_entrypoint' => 'AccessControlDomain::syncWhitelistGuestList',
+		));
+	}
+
+	private function executeVotePolicyGet($actionName) {
+		if (!$this->votePolicyState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Vote policy state is unavailable in current runtime.');
+		}
+
+		return AdminActionResult::success($actionName, 'Vote policy snapshot resolved.', array(
+			'vote_policy' => $this->votePolicyState->getSnapshot(),
+			'native_entrypoint' => 'VotePolicyState::getSnapshot',
+		));
+	}
+
+	private function executeVotePolicySet($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->votePolicyState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Vote policy state is unavailable in current runtime.');
+		}
+
+		$mode = $this->readStringParameter($parameters, array('mode'));
+		if ($mode === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires mode.');
+		}
+
+		$result = $this->votePolicyState->setMode(
+			$mode,
+			$this->resolveStateUpdateSource($executionContext, VotePolicyCatalog::UPDATE_SOURCE_CHAT, VotePolicyCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'vote_policy_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Vote policy update failed.',
+				array(
+					'vote_policy' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->votePolicyState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Vote policy updated.', array(
+			'vote_policy' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->votePolicyState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'VotePolicyState::setMode',
+		));
+	}
+
+	private function executeTeamPolicyGet($actionName) {
+		if (!$this->teamRosterState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Team roster state is unavailable in current runtime.');
+		}
+
+		return AdminActionResult::success($actionName, 'Team policy snapshot resolved.', array(
+			'team_roster' => $this->teamRosterState->getSnapshot(),
+			'native_entrypoint' => 'TeamRosterState::getSnapshot',
+		));
+	}
+
+	private function executeTeamPolicySet($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->teamRosterState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Team roster state is unavailable in current runtime.');
+		}
+
+		$enabled = $this->readBooleanParameter($parameters, array('enabled', 'policy_enabled'));
+		$switchLock = $this->readBooleanParameter($parameters, array('switch_lock', 'switch_lock_enabled', 'lock'));
+
+		$result = $this->teamRosterState->setPolicy(
+			$enabled,
+			$switchLock,
+			$this->resolveStateUpdateSource($executionContext, TeamRosterCatalog::UPDATE_SOURCE_CHAT, TeamRosterCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'team_policy_update_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Team policy update failed.',
+				array(
+					'team_roster' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->teamRosterState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Team policy updated.', array(
+			'team_roster' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->teamRosterState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'TeamRosterState::setPolicy',
+		));
+	}
+
+	private function executeTeamRosterAssign($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->teamRosterState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Team roster state is unavailable in current runtime.');
+		}
+
+		$targetLogin = $this->readStringParameter($parameters, array('target_login', 'login'));
+		if ($targetLogin === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires target_login.');
+		}
+
+		$teamValue = $this->readStringParameter($parameters, array('team', 'target_team', 'team_key', 'team_id'));
+		if ($teamValue === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires team.');
+		}
+
+		$result = $this->teamRosterState->assign(
+			$targetLogin,
+			$teamValue,
+			$this->resolveStateUpdateSource($executionContext, TeamRosterCatalog::UPDATE_SOURCE_CHAT, TeamRosterCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'team_assignment_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Team assignment failed.',
+				array(
+					'team_roster' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->teamRosterState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Team assignment stored.', array(
+			'team_roster' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->teamRosterState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'TeamRosterState::assign',
+		));
+	}
+
+	private function executeTeamRosterUnassign($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
+		if (!$this->teamRosterState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Team roster state is unavailable in current runtime.');
+		}
+
+		$targetLogin = $this->readStringParameter($parameters, array('target_login', 'login'));
+		if ($targetLogin === '') {
+			return AdminActionResult::failure($actionName, 'missing_parameters', 'Action requires target_login.');
+		}
+
+		$result = $this->teamRosterState->unassign(
+			$targetLogin,
+			$this->resolveStateUpdateSource($executionContext, TeamRosterCatalog::UPDATE_SOURCE_CHAT, TeamRosterCatalog::UPDATE_SOURCE_COMMUNICATION),
+			$this->resolveStateUpdatedBy($actorLogin, $executionContext)
+		);
+
+		if (empty($result['success'])) {
+			return AdminActionResult::failure(
+				$actionName,
+				isset($result['code']) ? (string) $result['code'] : 'team_assignment_failed',
+				isset($result['message']) ? (string) $result['message'] : 'Team unassign failed.',
+				array(
+					'team_roster' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->teamRosterState->getSnapshot(),
+					'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+				)
+			);
+		}
+
+		return AdminActionResult::success($actionName, isset($result['message']) ? (string) $result['message'] : 'Team assignment removed.', array(
+			'team_roster' => isset($result['snapshot']) && is_array($result['snapshot']) ? $result['snapshot'] : $this->teamRosterState->getSnapshot(),
+			'details' => isset($result['details']) && is_array($result['details']) ? $result['details'] : array(),
+			'native_entrypoint' => 'TeamRosterState::unassign',
+		));
+	}
+
+	private function executeTeamRosterList($actionName) {
+		if (!$this->teamRosterState) {
+			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Team roster state is unavailable in current runtime.');
+		}
+
+		return AdminActionResult::success($actionName, 'Team roster snapshot resolved.', array(
+			'team_roster' => $this->teamRosterState->getSnapshot(),
+			'native_entrypoint' => 'TeamRosterState::getSnapshot',
+		));
+	}
+
 	private function executeMatchBoSet($actionName, array $parameters, $actorLogin, array $executionContext = array()) {
 		if (!$this->seriesControlState) {
 			return AdminActionResult::failure($actionName, 'capability_unavailable', 'Series control state is unavailable in current runtime.');
@@ -927,6 +1336,31 @@ class NativeAdminGateway {
 		}
 
 		return null;
+	}
+
+	private function resolveStateUpdateSource(array $executionContext, $chatSource, $communicationSource) {
+		$requestSource = isset($executionContext['request_source'])
+			? trim((string) $executionContext['request_source'])
+			: '';
+
+		if ($requestSource === 'communication') {
+			return trim((string) $communicationSource);
+		}
+
+		return trim((string) $chatSource);
+	}
+
+	private function resolveStateUpdatedBy($actorLogin, array $executionContext) {
+		$normalizedActorLogin = trim((string) $actorLogin);
+		if ($normalizedActorLogin !== '') {
+			return $normalizedActorLogin;
+		}
+
+		if ($this->allowActorlessExecution($executionContext)) {
+			return 'server_payload';
+		}
+
+		return 'system';
 	}
 
 	private function allowActorlessExecution(array $executionContext) {

@@ -18,7 +18,9 @@ Objectif: tester la feature veto/draft en separant clairement le plan de tests e
 | Configurer le mode par defaut (`mode`) | Oui | Non |
 | Configurer la duree matchmaking (`duration`) | Oui | Non |
 | Configurer le seuil auto-start matchmaking (`min_players`) | Oui | Non |
+| Armer le cycle matchmaking (`ready`) | Oui | Non |
 | Lancer manuellement une session (`start`) | Oui | Non |
+| Lancer matchmaking sans `ready` (gate attendu) | Oui | Oui |
 | Demarrer un matchmaking sans admin (auto-start via `vote`) | Oui | Oui |
 | Auto-start matchmaking sur seuil joueurs connectes | Oui | Oui |
 | Annuler une session veto active | Oui | Non |
@@ -46,8 +48,10 @@ Objectif: tester la feature veto/draft en separant clairement le plan de tests e
   - Attendu: succes, duree runtime = `45s`.
 - [ ] A-02b - Configurer le seuil auto-start matchmaking (`//pcveto min_players 2`).
   - Attendu: succes, `matchmaking_autostart_min_players=2` dans `status` et `config`.
+- [ ] A-02c - Armer le prochain cycle matchmaking (`//pcveto ready`).
+  - Attendu: succes, `matchmaking_ready_armed=true` dans `status`.
 - [ ] A-03 - Lancer un matchmaking manuellement (`//pcveto start matchmaking duration=30`) (optionnel).
-  - Attendu: succes, session `running`, mode `matchmaking_vote`.
+  - Attendu: sans `ready` prealable -> echec `matchmaking_ready_required`; apres `ready` -> succes, session `running`, mode `matchmaking_vote`.
 - [ ] A-04 - Lancer un tournament via admin (`//pcveto start tournament captain_a=<CAPTAIN_A> captain_b=<CAPTAIN_B> bo=3 starter=team_a timeout=45`).
   - Attendu: succes, session `running`, mode `tournament_draft`.
 - [ ] A-05 - Annuler une session active (`//pcveto cancel`).
@@ -74,7 +78,9 @@ Objectif: tester la feature veto/draft en separant clairement le plan de tests e
 - [ ] A-08 - Status API (`bash pixel-sm-server/scripts/qa-veto-payload-sim.sh status`).
   - Attendu: payload avec `enabled`, `command`, `default_mode`, `matchmaking_autostart_min_players`, `communication`, `status`, `series_targets`.
 - [ ] A-09 - Start matchmaking API (`bash pixel-sm-server/scripts/qa-veto-payload-sim.sh start mode=matchmaking_vote duration_seconds=20`).
-  - Attendu: `success=true`, `code=matchmaking_started`.
+  - Attendu: sans armement -> `success=false`, `code=matchmaking_ready_required`; apres `bash pixel-sm-server/scripts/qa-veto-payload-sim.sh ready` -> `success=true`, `code=matchmaking_started`.
+- [ ] A-09b - Ready API (`bash pixel-sm-server/scripts/qa-veto-payload-sim.sh ready`).
+  - Attendu: `success=true`, `code=matchmaking_ready_armed|matchmaking_ready_already_armed`.
 - [ ] A-10 - Start tournament API (`bash pixel-sm-server/scripts/qa-veto-payload-sim.sh start mode=tournament_draft captain_a=<CAPTAIN_A> captain_b=<CAPTAIN_B> best_of=3 starter=random action_timeout_seconds=45`).
   - Attendu: `success=true`, `code=tournament_started`.
 - [ ] A-11 - Cancel API (`bash pixel-sm-server/scripts/qa-veto-payload-sim.sh cancel reason=qa_admin_cancel`).
@@ -177,8 +183,12 @@ Objectif: tester la feature veto/draft en separant clairement le plan de tests e
 ### 4.5 Countdown + auto-start threshold
 
 - [ ] X-20 - Countdown matchmaking verifie: annonces strictes `N, N-10, ..., 10, 5/4/3/2/1` (N = duree configuree), sans doublons par seconde/session.
-- [ ] X-21 - Auto-start threshold verifie: passage sous seuil -> `armed`, passage au seuil -> `triggered`, apres lancement -> `suppressed` tant que le count reste >= seuil.
+- [ ] X-21 - Auto-start threshold pre-start verifie: passage au seuil avec `ready` arme -> annonce unique `[PixelControl] Matchmaking veto starts in 15s.` puis lancement automatique apres ~15s si conditions stables.
+- [ ] X-21b - Annulation pre-start verifiee: pendant la fenetre 15s, si `ready` retombe ou si joueurs < `min_players`, lancement differe annule et aucune session ne demarre apres deadline obsolete.
+- [ ] X-21c - Anti-loop auto-start verifie: passage sous seuil -> `armed`, passage au seuil -> `triggered` (apres pre-start), apres lancement -> `suppressed` tant que le count reste >= seuil.
 - [ ] X-22 - Persistance seuil auto-start: valeur `min_players` survive hot-restart plugin et restart conteneur (hors override env).
+- [ ] X-22b - Ready gate matchmaking verifie: sans `ready`, aucun nouveau cycle matchmaking ne peut demarrer (`matchmaking_ready_required`) meme apres completion + transitions map.
+- [ ] X-22c - Rearm explicite verifie: apres completion d un cycle, `ready` doit etre rejoue pour autoriser un nouveau cycle.
 
 ### 4.6 Matchmaking lifecycle post-veto (mode matchmaking uniquement)
 
