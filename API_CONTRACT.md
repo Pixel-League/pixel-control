@@ -1,11 +1,20 @@
-# Pixel Control API Contract (Plugin -> Future API)
+# Pixel Control API Contract (Plugin -> Server API)
 
-This file defines the future API routes that the `pixel-control-plugin` will use.
+This file defines plugin-facing API routes used by `pixel-control-plugin` and implemented by `pixel-control-server`.
 
 Current status:
 
-- `pixel-control-server/` backend implementation is intentionally deferred.
-- This document is the contract source to implement the backend later without changing plugin semantics.
+- NestJS MVP backend is active in `pixel-control-server/`.
+- Canonical ingestion routes under `/v1/plugin/events/*` are implemented.
+- Compatibility single-path routes (`/plugin/events` and `/v1/plugin/events`) are implemented for current plugin transport defaults.
+- NestJS wave-2 no-DB expansion is active with additive read/diagnostics endpoints under `/v1/servers/*` and `/v1/ingestion/diagnostics`.
+- NestJS wave-3 no-DB expansion is active with additive control/workflow endpoints under `/v1/servers/:serverLogin/control/*` and `/v1/control/audit`.
+- Wave-2 note: plugin-facing write routes and ACK/error semantics are unchanged (additive read-only backend surface only).
+- Wave-3 note: plugin-facing write routes and ACK/error semantics remain unchanged (control/workflow additions are backend-orchestration surfaces only).
+- Cross-project link/auth note: canonical server-link routes are active under `/v1/servers/:serverLogin/link/*`, and control write routes now require `link_bearer` auth evidence.
+- Wave-4 note: Prisma raw-traceability persistence foundation (SQLite bootstrap) is additive behind ingestion projection hooks; plugin-facing write routes and ACK/error semantics remain unchanged.
+- Control read provenance note: whitelist control reads are observed-runtime-first from connectivity capabilities when available; map-pool reads expose explicit fallback metadata when strict observed telemetry is unavailable.
+- This document remains the route/contract source-of-truth; implementation changes must stay additive unless versioned.
 
 ## Versioning
 
@@ -13,6 +22,17 @@ Current status:
 - Plugin envelope version (current): `2026-02-20.1`
 - Transport style: JSON over HTTPS
 - Wave-5 strategy: keep `2026-02-20.1` and evolve via additive optional payload fields (no route/path changes).
+
+## Server-link routes (control auth)
+
+Canonical server-link routes:
+
+- `PUT /v1/servers/:serverLogin/link/registration`
+- `GET /v1/servers/:serverLogin/link/access`
+- `POST /v1/servers/:serverLogin/link/token`
+- `GET /v1/servers/:serverLogin/link/auth-state`
+
+These routes provide per-server registration/access/token/auth-state used by `link_bearer` authorization on server-scoped control writes.
 
 ## Common request/response rules
 
@@ -56,7 +76,15 @@ Compatibility note for native-admin delegation refactor:
 - This refactor is execution-path delegation only: control actions are now executed through native ManiaControl services behind the plugin control surface.
 - Plugin-to-API transport routes and required envelope fields are unchanged.
 - Any new admin-control visibility is additive under connectivity capability payload (`payload.capabilities.admin_control.*`) and does not change route contracts.
-- Current communication control path is intentionally temporary/trusted (`authentication_mode=none_temporary`): payload-sourced admin actions can execute without `actor_login` while server-side payload authentication is pending.
+- Communication control path now requires linked auth evidence (`authentication_mode=link_bearer`) for server-scoped admin methods:
+  - `server_login`
+  - `auth.mode=link_bearer`
+  - `auth.token`
+- Deterministic rejection codes for missing/invalid/mismatched auth evidence:
+  - `link_auth_missing`
+  - `link_auth_invalid`
+  - `link_server_mismatch`
+  - `admin_command_unauthorized`
 - Additive communication action extensions (local control-surface contract, no new plugin->API route):
   - `whitelist.enable` (no parameters)
   - `whitelist.disable` (no parameters)
@@ -100,6 +128,16 @@ Compatibility note for native-admin delegation refactor:
   - matchmaking post-veto lifecycle automation is additive and mode-guarded (`matchmaking_vote` only) with deterministic stage progression (`veto_completed -> selected_map_loaded -> match_started -> selected_map_finished -> players_removed -> map_changed -> match_ended -> ready_for_next_players`),
   - lifecycle boundary detection prefers callbacks and uses timer fallback inference when map callback coverage is missing in local runtime.
 
+Control read provenance metadata (additive):
+
+- Control read responses include `source_metadata` with:
+  - `source_of_truth` (`observed_runtime` or `desired_state_fallback`),
+  - `strict_observation`,
+  - `observed_at`, `observed_event_at`, `observed_revision`,
+  - `fallback_reason`.
+- `GET /v1/servers/:serverLogin/control/player-eligibility-policy` and desired-state `player_eligibility_policy` are observed-first from `registration.capabilities.admin_control.whitelist` when available.
+- `GET /v1/servers/:serverLogin/control/map-pool-policy` and desired-state `map_pool_policy` expose explicit fallback provenance when strict observed map-pool telemetry is unavailable.
+
 Identity guardrails (wave-5 runtime hardening):
 
 - Plugin event identity remains deterministic:
@@ -118,6 +156,12 @@ Linked plugin operations:
 
 - `Connectivity::Register` (plugin startup handshake)
 - `Connectivity::Heartbeat` (periodic health + queue status)
+
+Additive runtime-capability behavior:
+
+- `Connectivity::Register` and `Connectivity::Heartbeat` both carry `payload.capabilities.admin_control.*` snapshots.
+- After successful delegated control-policy mutations (`whitelist.*`, `vote.policy.*`, `team.policy.*`, `team.roster.*`, `match.bo.*`, `match.maps.*`, `match.score.*`), plugin runtime queues an immediate connectivity capability refresh envelope.
+- These capability snapshots are consumed by server control read routes as observed source-of-truth when available.
 
 Linked plugin source callbacks/signals:
 
@@ -296,8 +340,8 @@ Request body:
 ## Routing ownership
 
 - Producer: `pixel-control-plugin`
-- Consumer (future): `pixel-control-server`
+- Consumer: `pixel-control-server` (NestJS MVP)
 
 ## Implementation note
 
-When backend implementation starts, keep route paths stable and evolve only through versioned fields/schemas, not by changing plugin callback semantics.
+Keep route paths stable and evolve only through versioned fields/schemas, not by changing plugin callback semantics.

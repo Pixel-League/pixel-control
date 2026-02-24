@@ -25,12 +25,18 @@ Resultat attendu:
 bash scripts/validate-dev-stack-launch.sh
 bash scripts/validate-mode-launch-matrix.sh
 bash scripts/simulate-admin-control-payloads.sh matrix
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=missing
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=invalid link_server_login=<SERVER_LOGIN> link_token=invalid-token
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=mismatch link_server_login=<SERVER_LOGIN> link_token=<VALID_LINK_TOKEN>
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=valid link_server_login=<SERVER_LOGIN> link_token=<VALID_LINK_TOKEN>
 bash scripts/test-automated-suite.sh --modes elite,joust
 ```
 
 Resultat attendu:
 - Chaque script sort avec code `0`.
 - Pas d'erreur bloquante dans le resume final (`suite-summary.json` pour la suite automatee).
+- Les matrices link-auth retournent les codes attendus: `link_auth_missing`, `link_auth_invalid`, `link_server_mismatch`.
+- Le cas `link_auth_case=valid` ne retourne pas de code de rejet link-auth (`link_auth_*`, `link_server_mismatch`, `admin_command_unauthorized`).
 
 ## 3) Preparation des policies a tester en manuel
 

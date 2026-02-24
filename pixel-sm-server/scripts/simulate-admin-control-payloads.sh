@@ -34,6 +34,22 @@ MATRIX_BO="${PIXEL_SM_ADMIN_SIM_BO:-7}"
 MATRIX_MAPS_SCORE="${PIXEL_SM_ADMIN_SIM_MAPS_SCORE:-1}"
 MATRIX_ROUND_SCORE="${PIXEL_SM_ADMIN_SIM_ROUND_SCORE:-2}"
 MATRIX_ACTION_SPECS_DIR="${PIXEL_SM_ADMIN_SIM_ACTION_SPECS_DIR:-${SCRIPT_DIR}/admin-action-matrix-steps}"
+MATRIX_LINK_AUTH_CASE="${PIXEL_SM_ADMIN_SIM_LINK_AUTH_CASE:-valid}"
+MATRIX_LINK_SERVER_LOGIN="${PIXEL_SM_ADMIN_SIM_LINK_SERVER_LOGIN:-}"
+MATRIX_LINK_TOKEN="${PIXEL_SM_ADMIN_SIM_LINK_TOKEN:-}"
+MATRIX_LINK_AUTH_MODE="${PIXEL_SM_ADMIN_SIM_LINK_AUTH_MODE:-link_bearer}"
+
+RESOLVED_LINK_AUTH_CASE=""
+RESOLVED_LINK_SERVER_LOGIN=""
+RESOLVED_LINK_TOKEN=""
+RESOLVED_LINK_AUTH_MODE=""
+RESOLVED_LINK_BASE_URL=""
+
+MATRIX_LAST_ACTION_NAME=""
+MATRIX_LAST_ACTION_CODE=""
+MATRIX_LAST_ACTION_SUCCESS=""
+MATRIX_LAST_COMMUNICATION_ERROR=""
+MATRIX_LAST_ARTIFACT=""
 
 COMPOSE_FILE_ARGS=()
 
@@ -82,6 +98,9 @@ Commands:
         bo=<odd>
         maps_score=<int>
         round_score=<int>
+        link_auth_case=<valid|missing|invalid|mismatch>
+        link_server_login=<server_login>
+        link_token=<token>
 
 Env overrides:
   PIXEL_SM_ADMIN_SIM_ENV_FILE
@@ -93,10 +112,14 @@ Env overrides:
   PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT (default: pixel-sm-server/logs/qa)
   PIXEL_SM_ADMIN_SIM_MX_ID (default placeholder for matrix map.add simulation)
   PIXEL_SM_ADMIN_SIM_ACTION_SPECS_DIR (default: scripts/admin-action-matrix-steps)
+  PIXEL_SM_ADMIN_SIM_LINK_AUTH_CASE (default: valid)
+  PIXEL_SM_ADMIN_SIM_LINK_SERVER_LOGIN (default: auto from container runtime)
+  PIXEL_SM_ADMIN_SIM_LINK_TOKEN (default: auto from plugin env/settings)
+  PIXEL_SM_ADMIN_SIM_LINK_AUTH_MODE (default: link_bearer)
 
 Notes:
   - This tool simulates server-originated payloads to Pixel Control admin communication methods.
-  - Current plugin security mode for payload path is temporary/untrusted by design.
+  - Link-auth payload fields (`server_login`, `auth.mode`, `auth.token`) are injected based on link_auth_case.
 USAGE
 }
 
@@ -266,6 +289,197 @@ resolve_socket_settings() {
   fi
 }
 
+resolve_link_runtime_from_env() {
+  compose exec -T "$SERVICE_NAME" php <<'PHP'
+<?php
+$serverLogin = getenv('PIXEL_SM_DEDICATED_LOGIN') ?: '';
+$linkBaseUrl = getenv('PIXEL_CONTROL_LINK_SERVER_URL') ?: '';
+$linkToken = getenv('PIXEL_CONTROL_LINK_TOKEN') ?: '';
+
+echo $serverLogin . "\t" . $linkBaseUrl . "\t" . $linkToken;
+PHP
+}
+
+resolve_link_settings_from_db() {
+  compose exec -T "$SERVICE_NAME" php <<'PHP'
+<?php
+mysqli_report(MYSQLI_REPORT_OFF);
+
+$host = getenv('PIXEL_SM_DB_HOST') ?: 'mysql';
+$port = (int) (getenv('PIXEL_SM_DB_PORT') ?: '3306');
+$user = getenv('PIXEL_SM_DB_USER') ?: '';
+$pass = getenv('PIXEL_SM_DB_PASSWORD') ?: '';
+$name = getenv('PIXEL_SM_DB_NAME') ?: '';
+
+if ($user === '' || $name === '') {
+    exit(0);
+}
+
+$mysqli = @new mysqli($host, $user, $pass, $name, $port);
+if ($mysqli->connect_errno) {
+    exit(0);
+}
+
+$className = 'PixelControl\\PixelControlPlugin';
+$query = "SELECT `setting`, `value` FROM `mc_settings` WHERE `class` = '" . $mysqli->real_escape_string($className) . "';";
+$result = $mysqli->query($query);
+if (!$result) {
+    $mysqli->close();
+    exit(0);
+}
+
+$baseUrl = '';
+$linkToken = '';
+
+while ($row = $result->fetch_assoc()) {
+    $settingName = isset($row['setting']) ? (string) $row['setting'] : '';
+    $settingValue = isset($row['value']) ? (string) $row['value'] : '';
+
+    if ($settingName === 'Pixel Control Link Server URL') {
+        $baseUrl = $settingValue;
+        continue;
+    }
+
+    if ($settingName === 'Pixel Control Link Token') {
+        $linkToken = $settingValue;
+    }
+}
+
+$result->free();
+$mysqli->close();
+
+echo $baseUrl . "\t" . $linkToken;
+PHP
+}
+
+mask_token_for_display() {
+  local token_value="$1"
+  local token_length=0
+
+  token_length=${#token_value}
+  if [[ "$token_length" -eq 0 ]]; then
+    printf '%s' 'not_set'
+    return
+  fi
+
+  printf 'set(length=%s)' "$token_length"
+}
+
+normalize_link_auth_case() {
+  local value="$1"
+  local normalized
+
+  normalized="$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')"
+  case "$normalized" in
+    valid|missing|invalid|mismatch)
+      printf '%s' "$normalized"
+      ;;
+    *)
+      fail "Invalid link_auth_case: ${value}. Supported: valid, missing, invalid, mismatch."
+      ;;
+  esac
+}
+
+resolve_link_auth_context() {
+  local runtime_line=""
+  local db_line=""
+  local runtime_server_login=""
+  local runtime_base_url=""
+  local runtime_link_token=""
+  local db_base_url=""
+  local db_link_token=""
+  local normalized_case=""
+
+  runtime_line="$(resolve_link_runtime_from_env 2>/dev/null || true)"
+  if [[ -n "$runtime_line" ]]; then
+    IFS=$'\t' read -r runtime_server_login runtime_base_url runtime_link_token <<< "$runtime_line"
+  fi
+
+  db_line="$(resolve_link_settings_from_db 2>/dev/null || true)"
+  if [[ -n "$db_line" ]]; then
+    IFS=$'\t' read -r db_base_url db_link_token <<< "$db_line"
+  fi
+
+  runtime_server_login="$(trim_whitespace "$runtime_server_login")"
+  runtime_base_url="$(trim_whitespace "$runtime_base_url")"
+  runtime_link_token="$(trim_whitespace "$runtime_link_token")"
+  db_base_url="$(trim_whitespace "$db_base_url")"
+  db_link_token="$(trim_whitespace "$db_link_token")"
+
+  if [[ -z "$MATRIX_LINK_SERVER_LOGIN" ]]; then
+    MATRIX_LINK_SERVER_LOGIN="$runtime_server_login"
+  fi
+
+  if [[ -z "$MATRIX_LINK_TOKEN" ]]; then
+    if [[ -n "$runtime_link_token" ]]; then
+      MATRIX_LINK_TOKEN="$runtime_link_token"
+    else
+      MATRIX_LINK_TOKEN="$db_link_token"
+    fi
+  fi
+
+  RESOLVED_LINK_BASE_URL="$runtime_base_url"
+  if [[ -z "$RESOLVED_LINK_BASE_URL" ]]; then
+    RESOLVED_LINK_BASE_URL="$db_base_url"
+  fi
+
+  normalized_case="$(normalize_link_auth_case "$MATRIX_LINK_AUTH_CASE")"
+  RESOLVED_LINK_AUTH_CASE="$normalized_case"
+
+  case "$normalized_case" in
+    missing)
+      RESOLVED_LINK_SERVER_LOGIN=""
+      RESOLVED_LINK_AUTH_MODE=""
+      RESOLVED_LINK_TOKEN=""
+      ;;
+    invalid)
+      RESOLVED_LINK_SERVER_LOGIN="$(trim_whitespace "$MATRIX_LINK_SERVER_LOGIN")"
+      RESOLVED_LINK_AUTH_MODE="$(trim_whitespace "$MATRIX_LINK_AUTH_MODE")"
+      RESOLVED_LINK_TOKEN="$(trim_whitespace "$MATRIX_LINK_TOKEN")"
+      if [[ -z "$RESOLVED_LINK_AUTH_MODE" ]]; then
+        RESOLVED_LINK_AUTH_MODE="link_bearer"
+      fi
+      if [[ -z "$RESOLVED_LINK_SERVER_LOGIN" ]]; then
+        fail "link_auth_case=invalid requires link_server_login (or resolvable PIXEL_SM_DEDICATED_LOGIN runtime value)."
+      fi
+      if [[ -z "$RESOLVED_LINK_TOKEN" ]]; then
+        RESOLVED_LINK_TOKEN="invalid-token"
+      else
+        RESOLVED_LINK_TOKEN="${RESOLVED_LINK_TOKEN}-invalid"
+      fi
+      ;;
+    mismatch)
+      RESOLVED_LINK_SERVER_LOGIN="$(trim_whitespace "$MATRIX_LINK_SERVER_LOGIN")"
+      RESOLVED_LINK_AUTH_MODE="$(trim_whitespace "$MATRIX_LINK_AUTH_MODE")"
+      RESOLVED_LINK_TOKEN="$(trim_whitespace "$MATRIX_LINK_TOKEN")"
+      if [[ -z "$RESOLVED_LINK_AUTH_MODE" ]]; then
+        RESOLVED_LINK_AUTH_MODE="link_bearer"
+      fi
+      if [[ -z "$RESOLVED_LINK_SERVER_LOGIN" ]]; then
+        fail "link_auth_case=mismatch requires link_server_login (or resolvable PIXEL_SM_DEDICATED_LOGIN runtime value)."
+      fi
+      RESOLVED_LINK_SERVER_LOGIN="${RESOLVED_LINK_SERVER_LOGIN}-mismatch"
+      if [[ -z "$RESOLVED_LINK_TOKEN" ]]; then
+        fail "link_auth_case=mismatch requires link_token (or resolvable PIXEL_CONTROL_LINK_TOKEN runtime/setting value)."
+      fi
+      ;;
+    valid)
+      RESOLVED_LINK_SERVER_LOGIN="$(trim_whitespace "$MATRIX_LINK_SERVER_LOGIN")"
+      RESOLVED_LINK_AUTH_MODE="$(trim_whitespace "$MATRIX_LINK_AUTH_MODE")"
+      RESOLVED_LINK_TOKEN="$(trim_whitespace "$MATRIX_LINK_TOKEN")"
+      if [[ -z "$RESOLVED_LINK_AUTH_MODE" ]]; then
+        RESOLVED_LINK_AUTH_MODE="link_bearer"
+      fi
+      if [[ -z "$RESOLVED_LINK_SERVER_LOGIN" ]]; then
+        fail "link_auth_case=valid requires link_server_login (or resolvable PIXEL_SM_DEDICATED_LOGIN runtime value)."
+      fi
+      if [[ -z "$RESOLVED_LINK_TOKEN" ]]; then
+        fail "link_auth_case=valid requires link_token (or resolvable PIXEL_CONTROL_LINK_TOKEN runtime/setting value)."
+      fi
+      ;;
+  esac
+}
+
 json_escape() {
   local value="$1"
   value="${value//\\/\\\\}"
@@ -331,6 +545,55 @@ build_execute_payload_json() {
   payload_json="{\"action\":\"$(json_escape "$action_name")\",\"parameters\":${parameters_json}"
   if [[ -n "$actor_login" ]]; then
     payload_json+=",\"actor_login\":\"$(json_escape "$actor_login")\""
+  fi
+  if [[ -n "$RESOLVED_LINK_SERVER_LOGIN" ]]; then
+    payload_json+=",\"server_login\":\"$(json_escape "$RESOLVED_LINK_SERVER_LOGIN")\""
+  fi
+  if [[ -n "$RESOLVED_LINK_AUTH_MODE" || -n "$RESOLVED_LINK_TOKEN" ]]; then
+    payload_json+=",\"auth\":{"
+    if [[ -n "$RESOLVED_LINK_AUTH_MODE" ]]; then
+      payload_json+="\"mode\":\"$(json_escape "$RESOLVED_LINK_AUTH_MODE")\""
+    fi
+    if [[ -n "$RESOLVED_LINK_TOKEN" ]]; then
+      if [[ -n "$RESOLVED_LINK_AUTH_MODE" ]]; then
+        payload_json+=","
+      fi
+      payload_json+="\"token\":\"$(json_escape "$RESOLVED_LINK_TOKEN")\""
+    fi
+    payload_json+="}"
+  fi
+  payload_json+="}"
+
+  printf '%s' "$payload_json"
+}
+
+build_list_payload_json() {
+  local payload_json="{}"
+
+  if [[ -z "$RESOLVED_LINK_SERVER_LOGIN" && -z "$RESOLVED_LINK_AUTH_MODE" && -z "$RESOLVED_LINK_TOKEN" ]]; then
+    printf '%s' "$payload_json"
+    return
+  fi
+
+  payload_json="{"
+  if [[ -n "$RESOLVED_LINK_SERVER_LOGIN" ]]; then
+    payload_json+="\"server_login\":\"$(json_escape "$RESOLVED_LINK_SERVER_LOGIN")\""
+  fi
+  if [[ -n "$RESOLVED_LINK_AUTH_MODE" || -n "$RESOLVED_LINK_TOKEN" ]]; then
+    if [[ -n "$RESOLVED_LINK_SERVER_LOGIN" ]]; then
+      payload_json+=","
+    fi
+    payload_json+="\"auth\":{"
+    if [[ -n "$RESOLVED_LINK_AUTH_MODE" ]]; then
+      payload_json+="\"mode\":\"$(json_escape "$RESOLVED_LINK_AUTH_MODE")\""
+    fi
+    if [[ -n "$RESOLVED_LINK_TOKEN" ]]; then
+      if [[ -n "$RESOLVED_LINK_AUTH_MODE" ]]; then
+        payload_json+=","
+      fi
+      payload_json+="\"token\":\"$(json_escape "$RESOLVED_LINK_TOKEN")\""
+    fi
+    payload_json+="}"
   fi
   payload_json+="}"
 
@@ -546,7 +809,10 @@ sanitize_action_name() {
 
 run_list_actions() {
   local output_file="$1"
-  invoke_communication_method "$METHOD_LIST" '{}' "$output_file"
+  local payload_json
+
+  payload_json="$(build_list_payload_json)"
+  invoke_communication_method "$METHOD_LIST" "$payload_json" "$output_file"
 }
 
 run_execute_action() {
@@ -562,7 +828,12 @@ run_execute_action() {
 run_matrix() {
   local summary_file="${RUN_DIR}/summary.md"
   local list_file="${RUN_DIR}/list-actions.json"
+  local validation_file="${RUN_DIR}/matrix-validation.json"
+  local checks_file="${RUN_DIR}/matrix-checks.ndjson"
   local index=0
+  local check_count=0
+
+  : > "$checks_file"
 
   run_list_actions "$list_file"
 
@@ -574,6 +845,11 @@ run_matrix() {
     printf -- '- Comm host/port: `%s:%s`\n' "$COMM_HOST" "$COMM_PORT"
     printf -- '- Comm password source: `%s`\n' "$( [[ -n "${PIXEL_SM_ADMIN_SIM_COMM_PASSWORD:-}" ]] && printf '%s' 'env_override' || printf '%s' 'mc_settings_or_empty' )"
     printf -- '- Socket enabled setting: `%s`\n' "${COMM_SOCKET_ENABLED:-unknown}"
+    printf -- '- Link auth case: `%s`\n' "${RESOLVED_LINK_AUTH_CASE}"
+    printf -- '- Link auth mode: `%s`\n' "${RESOLVED_LINK_AUTH_MODE:-<unset>}"
+    printf -- '- Link server login: `%s`\n' "${RESOLVED_LINK_SERVER_LOGIN:-<unset>}"
+    printf -- '- Link token fingerprint: `%s`\n' "$(mask_token_for_display "$RESOLVED_LINK_TOKEN")"
+    printf -- '- Link base url (runtime): `%s`\n' "${RESOLVED_LINK_BASE_URL:-<unset>}"
 
     printf -- '- Matrix actor login: `%s`\n' "${MATRIX_ACTOR_LOGIN:-<actorless>}"
     printf -- '- Matrix target login: `%s`\n' "$MATRIX_TARGET_LOGIN"
@@ -613,6 +889,123 @@ run_matrix() {
       "$action_code" \
       "$(basename "$response_file")" \
       >> "$summary_file"
+
+    MATRIX_LAST_ACTION_NAME="$action_name"
+    MATRIX_LAST_ACTION_CODE="$action_code"
+    MATRIX_LAST_ACTION_SUCCESS="$action_success"
+    MATRIX_LAST_COMMUNICATION_ERROR="$communication_error"
+    MATRIX_LAST_ARTIFACT="$(basename "$response_file")"
+  }
+
+  matrix_record_check() {
+    local check_name="$1"
+    local passed="$2"
+    local expectation="$3"
+    local actual="$4"
+
+    check_count=$((check_count + 1))
+    printf '{"check_name":"%s","passed":%s,"expectation":"%s","actual":"%s","action_name":"%s","artifact":"%s"}\n' \
+      "$(json_escape "$check_name")" \
+      "$passed" \
+      "$(json_escape "$expectation")" \
+      "$(json_escape "$actual")" \
+      "$(json_escape "$MATRIX_LAST_ACTION_NAME")" \
+      "$(json_escape "$MATRIX_LAST_ARTIFACT")" \
+      >> "$checks_file"
+  }
+
+  matrix_step_expect_code() {
+    local action_name="$1"
+    local expected_code="$2"
+    shift 2
+    local check_name="auth.${RESOLVED_LINK_AUTH_CASE}.${action_name}.code_equals.${expected_code}"
+    local passed="false"
+
+    matrix_step "$action_name" "$@"
+    if [[ "$MATRIX_LAST_ACTION_CODE" == "$expected_code" ]]; then
+      passed="true"
+    fi
+
+    matrix_record_check \
+      "$check_name" \
+      "$passed" \
+      "action_code=${expected_code}" \
+      "action_code=${MATRIX_LAST_ACTION_CODE}; communication_error=${MATRIX_LAST_COMMUNICATION_ERROR}; action_success=${MATRIX_LAST_ACTION_SUCCESS}"
+  }
+
+  matrix_step_expect_not_codes() {
+    local action_name="$1"
+    local disallowed_codes_csv="$2"
+    shift 2
+    local check_name="auth.${RESOLVED_LINK_AUTH_CASE}.${action_name}.code_not_in_disallowed"
+    local disallowed_codes=()
+    local disallowed
+    local trimmed_disallowed
+    local is_disallowed=0
+    local passed="false"
+
+    IFS=',' read -r -a disallowed_codes <<< "$disallowed_codes_csv"
+    matrix_step "$action_name" "$@"
+
+    for disallowed in "${disallowed_codes[@]}"; do
+      trimmed_disallowed="$(trim_whitespace "$disallowed")"
+      if [[ -z "$trimmed_disallowed" ]]; then
+        continue
+      fi
+      if [[ "$MATRIX_LAST_ACTION_CODE" == "$trimmed_disallowed" ]]; then
+        is_disallowed=1
+        break
+      fi
+    done
+
+    if [[ "$is_disallowed" -eq 0 ]]; then
+      passed="true"
+    fi
+
+    matrix_record_check \
+      "$check_name" \
+      "$passed" \
+      "action_code not in [${disallowed_codes_csv}]" \
+      "action_code=${MATRIX_LAST_ACTION_CODE}; communication_error=${MATRIX_LAST_COMMUNICATION_ERROR}; action_success=${MATRIX_LAST_ACTION_SUCCESS}"
+  }
+
+  write_matrix_validation() {
+    local checks_input_file="$1"
+    local output_file="$2"
+
+    python3 - "$checks_input_file" "$output_file" "$RESOLVED_LINK_AUTH_CASE" <<'PY'
+import json
+import sys
+
+checks_file = sys.argv[1]
+output_file = sys.argv[2]
+link_auth_case = sys.argv[3]
+
+checks = []
+with open(checks_file, 'r', encoding='utf-8') as handle:
+    for raw_line in handle:
+        line = raw_line.strip()
+        if not line:
+            continue
+        checks.append(json.loads(line))
+
+failed = [check.get('check_name', 'unknown') for check in checks if not bool(check.get('passed'))]
+result = {
+    'schema': 'pixel-sm-admin-sim-link-auth-matrix.v1',
+    'link_auth_case': link_auth_case,
+    'checks_total': len(checks),
+    'checks': checks,
+    'required_failed_checks': failed,
+    'overall_passed': len(failed) == 0,
+}
+
+with open(output_file, 'w', encoding='utf-8') as handle:
+    json.dump(result, handle, indent=2, ensure_ascii=True)
+    handle.write('\n')
+
+if failed:
+    raise SystemExit(1)
+PY
   }
 
   run_matrix_action_specs() {
@@ -648,9 +1041,38 @@ run_matrix() {
   fi
 
   run_matrix_action_specs
+  write_matrix_validation "$checks_file" "$validation_file"
+
+  if [[ "$check_count" -gt 0 ]]; then
+    {
+      printf '\n## Link Auth Assertions\n\n'
+      printf '| # | Check | Status |\n'
+      printf '| - | ----- | ------ |\n'
+      python3 - "$checks_file" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], 'r', encoding='utf-8') as handle:
+    index = 0
+    for raw_line in handle:
+        line = raw_line.strip()
+        if not line:
+            continue
+        index += 1
+        payload = json.loads(line)
+        check_name = payload.get('check_name', 'unknown')
+        status = 'pass' if payload.get('passed') else 'fail'
+        print(f"| {index} | `{check_name}` | `{status}` |")
+PY
+      printf '\nValidation artifact: `%s`\n' "$(basename "$validation_file")"
+    } >> "$summary_file"
+  fi
 
   log "Matrix simulation complete."
   log "Summary: ${summary_file}"
+  if [[ "$check_count" -gt 0 ]]; then
+    log "Validation: ${validation_file}"
+  fi
 }
 
 parse_kv_assignments() {
@@ -706,6 +1128,18 @@ parse_kv_assignments() {
       round_score)
         MATRIX_ROUND_SCORE="$value"
         ;;
+      link_auth_case)
+        MATRIX_LINK_AUTH_CASE="$value"
+        ;;
+      link_server_login)
+        MATRIX_LINK_SERVER_LOGIN="$value"
+        ;;
+      link_token)
+        MATRIX_LINK_TOKEN="$value"
+        ;;
+      link_auth_mode)
+        MATRIX_LINK_AUTH_MODE="$value"
+        ;;
       comm_host)
         COMM_HOST="$value"
         ;;
@@ -760,11 +1194,13 @@ main() {
 
   ensure_prerequisites
   resolve_socket_settings
+  resolve_link_auth_context
 
   mkdir -p "$RUN_DIR"
 
   log "Artifacts directory: $RUN_DIR"
   log "Communication target: ${COMM_HOST}:${COMM_PORT}"
+  log "Link auth context: case=${RESOLVED_LINK_AUTH_CASE}, server_login=${RESOLVED_LINK_SERVER_LOGIN:-<unset>}, auth_mode=${RESOLVED_LINK_AUTH_MODE:-<unset>}, token_fingerprint=$(mask_token_for_display "$RESOLVED_LINK_TOKEN")"
 
   case "$command" in
     list-actions)

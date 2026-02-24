@@ -54,6 +54,9 @@ This document defines the active plugin-to-server envelope baseline for wave 5.
   - `payload.capabilities.admin_control.actions[]`
   - `payload.capabilities.admin_control.ownership_boundary.telemetry_transport`
   - `payload.capabilities.admin_control.ownership_boundary.admin_execution`
+- Additive connectivity refresh behavior:
+  - both `Connectivity::Register` and `Connectivity::Heartbeat` include `payload.capabilities.admin_control.*`,
+  - successful delegated control mutations (`whitelist.*`, `vote.policy.*`, `team.policy.*`, `team.roster.*`, `match.bo.*`, `match.maps.*`, `match.score.*`) queue an immediate connectivity refresh so backend observed-control reads converge without plugin restart.
 - Delegated action request/response payloads are local plugin control-surface semantics (chat/communication) and are not new plugin-to-API event envelopes.
 - Chat command requests remain actor-bound and permission-gated with ManiaControl plugin rights.
 - Communication payload requests currently run in temporary trusted mode (`authentication_mode=none_temporary`): `actor_login` is optional and plugin permission checks are intentionally skipped.

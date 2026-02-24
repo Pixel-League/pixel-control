@@ -72,7 +72,7 @@ class AsyncPixelControlApiClient implements PixelControlApiClientInterface {
 
 		try {
 			$request = new AsyncHttpRequest($this->maniaControl, $this->buildEventsUrl());
-			$headers = $this->buildAuthHeaders();
+			$headers = $this->buildRequestHeaders($envelope);
 			if (!empty($headers)) {
 				$request->setHeaders($headers);
 			}
@@ -314,6 +314,25 @@ class AsyncPixelControlApiClient implements PixelControlApiClientInterface {
 	/**
 	 * @return string
 	 */
+	public function getBaseUrl() {
+		return $this->baseUrl;
+	}
+
+	/**
+	 * @param string $baseUrl
+	 */
+	public function setBaseUrl($baseUrl) {
+		$trimmedBaseUrl = trim((string) $baseUrl);
+		if ($trimmedBaseUrl === '') {
+			return;
+		}
+
+		$this->baseUrl = rtrim($trimmedBaseUrl, '/');
+	}
+
+	/**
+	 * @return string
+	 */
 	private function buildEventsUrl() {
 		return $this->baseUrl . $this->eventPath;
 	}
@@ -335,5 +354,65 @@ class AsyncPixelControlApiClient implements PixelControlApiClientInterface {
 		}
 
 		return array();
+	}
+
+	/**
+	 * @param EventEnvelope $envelope
+	 * @return array
+	 */
+	private function buildRequestHeaders(EventEnvelope $envelope) {
+		$headers = $this->buildAuthHeaders();
+
+		$serverLogin = $this->resolveServerLoginHeaderValue();
+		if ($serverLogin !== '') {
+			$headers[] = 'X-Pixel-Server-Login: ' . $serverLogin;
+		}
+
+		$pluginVersion = $this->resolvePluginVersionHeaderValue($envelope);
+		if ($pluginVersion !== '') {
+			$headers[] = 'X-Pixel-Plugin-Version: ' . $pluginVersion;
+		}
+
+		return $headers;
+	}
+
+	/**
+	 * @return string
+	 */
+	private function resolveServerLoginHeaderValue() {
+		try {
+			$server = $this->maniaControl ? $this->maniaControl->getServer() : null;
+			if ($server && isset($server->login)) {
+				$serverLogin = trim((string) $server->login);
+				if ($serverLogin !== '') {
+					return $serverLogin;
+				}
+			}
+		} catch (\Throwable $throwable) {
+		}
+
+		$envServerLogin = getenv('PIXEL_SM_DEDICATED_LOGIN');
+		if (!is_string($envServerLogin)) {
+			return '';
+		}
+
+		return trim($envServerLogin);
+	}
+
+	/**
+	 * @param EventEnvelope $envelope
+	 * @return string
+	 */
+	private function resolvePluginVersionHeaderValue(EventEnvelope $envelope) {
+		$envelopeData = $envelope->toArray();
+		$metadata = isset($envelopeData['metadata']) && is_array($envelopeData['metadata'])
+			? $envelopeData['metadata']
+			: array();
+
+		if (!isset($metadata['plugin_version'])) {
+			return '';
+		}
+
+		return trim((string) $metadata['plugin_version']);
 	}
 }

@@ -79,6 +79,7 @@ trait CoreDomainTrait {
 		$this->votePolicyState = null;
 		$this->teamRosterState = null;
 		$this->whitelistRecentDeniedAt = array();
+		$this->whitelistLastReconcileAt = 0;
 		$this->whitelistGuestListLastSyncHash = '';
 		$this->whitelistGuestListLastSyncAt = 0;
 		$this->votePolicyLastCallVoteTimeoutMs = 0;
@@ -183,6 +184,7 @@ trait CoreDomainTrait {
 	}
 
 	public function handleDispatchTimerTick() {
+		$this->handleAccessControlPolicyTick();
 		$this->handleTeamControlPolicyTick();
 		$this->dispatchQueuedEvents();
 	}
@@ -205,6 +207,8 @@ trait CoreDomainTrait {
 		$settingManager->initSetting($this, self::SETTING_API_AUTH_MODE, $this->readEnvString('PIXEL_CONTROL_AUTH_MODE', 'none'));
 		$settingManager->initSetting($this, self::SETTING_API_AUTH_VALUE, $this->readEnvString('PIXEL_CONTROL_AUTH_VALUE', ''));
 		$settingManager->initSetting($this, self::SETTING_API_AUTH_HEADER, $this->readEnvString('PIXEL_CONTROL_AUTH_HEADER', 'X-Pixel-Control-Api-Key'));
+		$settingManager->initSetting($this, self::SETTING_LINK_SERVER_URL, $this->readEnvString('PIXEL_CONTROL_LINK_SERVER_URL', ''));
+		$settingManager->initSetting($this, self::SETTING_LINK_TOKEN, $this->readEnvString('PIXEL_CONTROL_LINK_TOKEN', ''));
 		$settingManager->initSetting($this, self::SETTING_QUEUE_MAX_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_QUEUE_MAX_SIZE, 'PIXEL_CONTROL_QUEUE_MAX_SIZE', 2000, 1));
 		$settingManager->initSetting($this, self::SETTING_DISPATCH_BATCH_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1));
 		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1));
@@ -224,11 +228,22 @@ trait CoreDomainTrait {
 		$authMode = $this->resolveRuntimeStringSetting(self::SETTING_API_AUTH_MODE, 'PIXEL_CONTROL_AUTH_MODE', 'none');
 		$authValue = $this->resolveRuntimeStringSetting(self::SETTING_API_AUTH_VALUE, 'PIXEL_CONTROL_AUTH_VALUE', '');
 		$authHeader = $this->resolveRuntimeStringSetting(self::SETTING_API_AUTH_HEADER, 'PIXEL_CONTROL_AUTH_HEADER', 'X-Pixel-Control-Api-Key');
+		$linkServerUrl = $this->resolveRuntimeStringSetting(self::SETTING_LINK_SERVER_URL, 'PIXEL_CONTROL_LINK_SERVER_URL', '');
+		$linkToken = $this->resolveRuntimeStringSetting(self::SETTING_LINK_TOKEN, 'PIXEL_CONTROL_LINK_TOKEN', '');
 		$this->queueMaxSize = $this->resolveRuntimeIntSetting(self::SETTING_QUEUE_MAX_SIZE, 'PIXEL_CONTROL_QUEUE_MAX_SIZE', 2000, 1);
 		$this->dispatchBatchSize = $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1);
 		$this->heartbeatIntervalSeconds = $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1);
 		$this->queueGrowthLogStep = max(10, (int) floor($this->queueMaxSize / 10));
 		$retryBackoffSeconds = max(0, (int) ceil($retryBackoffMs / 1000));
+
+		if ($linkServerUrl !== '') {
+			$baseUrl = $linkServerUrl;
+		}
+
+		if ($linkToken !== '') {
+			$authMode = 'bearer';
+			$authValue = $linkToken;
+		}
 
 		$this->apiClient = new AsyncPixelControlApiClient($this->maniaControl, $baseUrl, $eventPath);
 		$this->apiClient->setTimeoutSeconds($timeoutSeconds);

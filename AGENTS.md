@@ -8,14 +8,12 @@
 
 ## Tech stack
 - Plugin side (planned): PHP plugin on top of ManiaControl.
-- Server side (planned): Laravel API (README-level intention, not yet implemented in this repo).
 - Dev server infra (scaffolded in first-party `pixel-sm-server/`): Docker + Docker Compose around ManiaPlanet dedicated server + ManiaControl + MySQL.
 - Platform dependencies: ManiaPlanet dedicated server XML-RPC + script callbacks, ManiaControl, MySQL.
 - Optional ecosystem integration: ManiaPlanet Web Services OAuth2 (`ressources/oauth2-maniaplanet`).
 
 ## Repo layout
 - `pixel-control-plugin/`: first-party ManiaControl plugin skeleton (`src/PixelControlPlugin.php`, callback registry, async API shell, queue/retry contracts).
-- `pixel-control-server/`: reserved workspace for future backend/API implementation (currently deferred by user; keep only lightweight contract references until backend phase starts).
 - `pixel-sm-server/`: first-party Dockerized ShootMania dev stack baseline (`docker-compose.yml`, `Dockerfile`, `scripts/bootstrap.sh`, templates, `.env.example`).
 - `.local-dev/`: gitignored local sandbox for mutable ManiaControl/ShootMania experiments outside first-party project trees.
 - `ressources/ManiaControl/`: upstream ManiaControl code, runtime scripts, core/plugins, configs.
@@ -28,7 +26,6 @@
 - Root checks:
   - `git rev-parse --show-toplevel`
   - `git status`
-- Pixel Control backend/API is currently deferred; no server runtime command is canonical for this phase.
 - First-party Pixel SM dev stack (from `pixel-sm-server`):
   - `cp .env.example .env`
   - `bash scripts/import-reference-runtime.sh` (optional, copies reference runtime into `pixel-sm-server/runtime/server`)
@@ -56,11 +53,11 @@
 ## Conventions
 - Treat `ressources/` as immutable read-only reference code unless explicitly requested to edit it.
 - Never run mutable workflows inside `ressources/` (no runtime launches, no log/pid generation, no config rewrites).
-- Treat `pixel-sm-server/`, `pixel-control-plugin/`, and `pixel-control-server/` as separate first-party projects inside a monorepo.
+- Treat `pixel-sm-server/` and `pixel-control-plugin/` as separate first-party projects inside a monorepo.
 - If reference assets are needed by a first-party project, copy/import them into that project directory first (do not bind mutable flows directly to `ressources/`).
 - For local experimentation outside first-party projects, use `.local-dev/` (gitignored) as scratch workspace.
 - If project-local imports need independent source tracking, initialize them as nested standalone repos inside the target project folder (empty git root + explicit import commit), never under `ressources/`.
-- Build new product code in `pixel-control-plugin/` and `pixel-sm-server/` for now; keep `pixel-control-server/` implementation-deferred until explicitly resumed.
+- Build product code in `pixel-control-plugin/` and `pixel-sm-server/`.
 - Build first-party dev server automation in `pixel-sm-server/` (do not evolve the imported Docker reference directly unless explicitly requested).
 - Keep `API_CONTRACT.md` (repo root) updated whenever plugin->API route expectations change.
 - Keep `pixel-control-plugin/README.md` updated whenever plugin capabilities or operator workflows change.
@@ -79,7 +76,6 @@
 - No release/versioning process defined yet for first-party Pixel Control code.
 
 ## Gotchas
-- `pixel-control-server/` implementation is intentionally deferred for this phase; avoid adding backend runtime code there until user re-opens backend work.
 - `pixel-sm-server/` now has a first-party baseline, but still requires local runtime assets in `pixel-sm-server/runtime/server/` (dedicated binary + ManiaControl runtime).
 - `PIXEL_SM_RUNTIME_SOURCE` and title pack mutable sources must stay outside `ressources/`; helper scripts now fail fast when pointed at reference paths.
 - ManiaControl requires valid server + MySQL credentials in `ressources/ManiaControl/configs/server.xml`; never commit credentials.
@@ -239,9 +235,6 @@
   - user said manual gameplay tests will be run later,
   - keep `PLAN-autonomous-execution-wave-1.md` manual `P7.2/P7.3` evidence closure pending until user provides gameplay captures.
 - Wave-4/wave-5 real-client gameplay validation remains pending for plugin-only evidence (non-fixture reconnect/side-change/veto actor behavior under real player flow).
-- Backend note:
-  - `pixel-control-server/` code changes were rolled back on user request,
-  - future API behavior must be tracked in `API_CONTRACT.md` until backend work is re-opened.
 - Where we stopped: wave-5 core work + native-admin delegation refactor are complete; remaining open validation is user-run real-client gameplay/evidence closure.
 - Map draft/veto implementation (2026-02-21) is now added to plugin-first codebase:
   - feature subtree: `pixel-control-plugin/src/VetoDraft/` (`VetoDraftCatalog`, `MapPoolService`, `MatchmakingVoteSession`, `TournamentSequenceBuilder`, `TournamentDraftSession`, `VetoDraftCoordinator`, `VetoDraftQueueApplier`),
@@ -738,6 +731,26 @@
   - root cause: replay scripts (and their wrappers) do not implement a `--help` command path; wrapper forwarding executes the target script directly.
   - fix: validate wrapper migration safety with `bash -n` and with help-capable wrappers (`qa-admin-payload-sim.sh`, `qa-veto-payload-sim.sh`) rather than assuming `--help` works for every wrapper.
   - validation: script syntax checks stayed green and canonical suite run still passed end-to-end (`automated-suite-20260223-203704`).
+
+## Additional execution status (2026-02-24, pcadmin help family compaction)
+- Plan `PLAN-pixel-control-plugin-pcadmin-help-family-compaction.md` is complete through phase 3.
+- `//pcadmin help` output is now compact and family-grouped in plugin chat surface:
+  - preserved unchanged first lines (`Pixel delegated admin actions (...)`, usage, server-link help),
+  - action help now emits one line per derived command family (family key = action name prefix before final `.` segment),
+  - per-family actions render as suffix labels with compact parameter hints (`req:` / `opt:`) and deterministic sort order.
+- Backward-compatibility guard held for this scope:
+  - no delegated action semantics/permission/execution changes,
+  - no communication contract changes (`PixelControl.Admin.ListActions` / `PixelControl.Admin.ExecuteAction`).
+- Deterministic plugin-local coverage was extended in `pixel-control-plugin/tests/cases/21AdminLinkAuthTest.php`:
+  - new test validates compact family output, preserved header/usage/server-link lines, unique family line count parity, and absence of old `- map.skip` per-action flood format.
+- Validation signals for this scope:
+  - `php -l pixel-control-plugin/src/Domain/Admin/AdminControlIngressTrait.php` passed,
+  - `php -l pixel-control-plugin/tests/cases/21AdminLinkAuthTest.php` passed,
+  - targeted run `php pixel-control-plugin/tests/run.php --filter=21AdminLinkAuthTest.php` passed (`9/9`),
+  - broader gate `bash pixel-control-plugin/scripts/check-quality.sh` passed (`Lint OK for 75 files`, `passed=29 failed=0 total=29`).
+- Runtime sync after plugin edit completed via hot-sync preference:
+  - `bash pixel-sm-server/scripts/dev-plugin-hot-sync.sh` passed,
+  - evidence logs: `pixel-sm-server/logs/dev/dev-plugin-hot-sync-shootmania-20260224-152410.log` and `pixel-sm-server/logs/dev/dev-plugin-hot-sync-maniacontrol-20260224-152410.log`.
 
 ## User preference (durable)
 - For QA automation scripts, prefer modular Bash structure with one script per tested action/feature rather than large hardcoded lists inside monolithic scripts.

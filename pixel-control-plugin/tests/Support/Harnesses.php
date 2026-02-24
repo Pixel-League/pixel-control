@@ -4,13 +4,21 @@ declare(strict_types=1);
 namespace PixelControl\Tests\Support;
 
 use ManiaControl\Players\Player;
+use PixelControl\AccessControl\WhitelistCatalog;
+use PixelControl\AccessControl\WhitelistState;
+use PixelControl\Admin\AdminActionResult;
+use PixelControl\Domain\AccessControl\AccessControlDomainTrait;
+use PixelControl\Domain\Admin\AdminControlExecutionTrait;
 use PixelControl\Domain\Admin\AdminControlIngressTrait;
+use PixelControl\Domain\Connectivity\ConnectivityDomainTrait;
 use PixelControl\Domain\SeriesControl\SeriesControlDomainTrait;
 use PixelControl\Domain\VetoDraft\VetoDraftAutostartTrait;
 use PixelControl\Domain\VetoDraft\VetoDraftBootstrapTrait;
 use PixelControl\Domain\VetoDraft\VetoDraftIngressTrait;
 use PixelControl\Domain\VetoDraft\VetoDraftLifecycleTrait;
 use PixelControl\VetoDraft\VetoDraftCatalog;
+use PixelControl\VoteControl\VotePolicyCatalog;
+use PixelControl\VoteControl\VotePolicyState;
 
 class AdminVetoNormalizationHarness {
 	use AdminControlIngressTrait;
@@ -39,6 +47,243 @@ class AdminVetoNormalizationHarness {
 		}
 
 		return $normalized;
+	}
+}
+
+class AdminLinkAuthHarness {
+	use AdminControlIngressTrait;
+
+	const SETTING_LINK_SERVER_URL = 'Pixel Control Link Server URL';
+	const SETTING_LINK_TOKEN = 'Pixel Control Link Token';
+
+	public $maniaControl;
+	public $adminControlEnabled = true;
+	public $adminControlCommandName = 'pcadmin';
+	public $apiClient = null;
+
+	public $executeCalls = array();
+	public $nextExecuteResult = null;
+
+	public function __construct($maniaControl) {
+		$this->maniaControl = $maniaControl;
+	}
+
+	public function runCommand(array $chatCallback, Player $player): void {
+		$this->handleAdminControlCommand($chatCallback, $player);
+	}
+
+	public function runCommunicationExecute($payload) {
+		return $this->handleAdminControlCommunicationExecute($payload);
+	}
+
+	public function runCommunicationList($payload) {
+		return $this->handleAdminControlCommunicationList($payload);
+	}
+
+	private function executeDelegatedAdminAction($actionName, array $parameters, $actorLogin, $requestSource, $requestActor = null, array $requestOptions = array()) {
+		$this->executeCalls[] = array(
+			'action_name' => (string) $actionName,
+			'parameters' => $parameters,
+			'actor_login' => (string) $actorLogin,
+			'request_source' => (string) $requestSource,
+			'request_options' => $requestOptions,
+		);
+
+		if ($this->nextExecuteResult instanceof AdminActionResult) {
+			return $this->nextExecuteResult;
+		}
+
+		return AdminActionResult::success((string) $actionName, 'Delegated action accepted by harness.');
+	}
+
+	private function buildWhitelistCapabilitySnapshot() {
+		return array('enabled' => false);
+	}
+
+	private function getVotePolicySnapshot() {
+		return array('mode' => 'strict');
+	}
+
+	private function buildTeamControlCapabilitySnapshot() {
+		return array('enabled' => false, 'switch_lock' => false);
+	}
+
+	private function getSeriesControlSnapshot() {
+		return array('best_of' => 3, 'maps_score' => array('team_a' => 0, 'team_b' => 0));
+	}
+
+	private function resolveRuntimeStringSetting($settingName, $environmentVariableName, $fallback) {
+		$settingValue = $this->maniaControl->getSettingManager()->getSettingValue($this, (string) $settingName);
+		$trimmedSettingValue = trim((string) $settingValue);
+		if ($trimmedSettingValue !== '') {
+			return $trimmedSettingValue;
+		}
+
+		return (string) $fallback;
+	}
+
+	private function hasRuntimeEnvValue($environmentVariableName) {
+		return false;
+	}
+
+	private function normalizeIdentifier($value, $fallback) {
+		$normalized = strtolower(trim((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $value), '_'));
+		if ($normalized === '') {
+			return $fallback;
+		}
+
+		return $normalized;
+	}
+}
+
+class AccessControlSourceOfTruthHarness {
+	use AccessControlDomainTrait;
+	use ConnectivityDomainTrait;
+	use AdminControlExecutionTrait;
+
+	const ID = 100001;
+	const VERSION = '0.1.0-dev';
+	const ENVELOPE_SCHEMA_VERSION = '2026-02-20.1';
+	const NAME = 'Pixel Control';
+	const SETTING_WHITELIST_ENABLED = 'Pixel Control Whitelist Enabled';
+	const SETTING_WHITELIST_LOGINS = 'Pixel Control Whitelist Logins';
+	const SETTING_VOTE_POLICY_MODE = 'Pixel Control Vote Policy Mode';
+
+	public $maniaControl;
+	public $whitelistState = null;
+	public $votePolicyState = null;
+	public $whitelistRecentDeniedAt = array();
+	public $whitelistDenyCooldownSeconds = 5;
+	public $whitelistReconcileIntervalSeconds = 3;
+	public $whitelistLastReconcileAt = 0;
+	public $whitelistGuestListLastSyncHash = '';
+	public $whitelistGuestListLastSyncAt = 0;
+	public $votePolicyLastCallVoteTimeoutMs = 0;
+	public $votePolicyStrictRuntimeApplied = false;
+	public $eventQueue = null;
+	public $callbackRegistry = null;
+	public $apiClient = null;
+	public $queueMaxSize = 2000;
+	public $dispatchBatchSize = 3;
+	public $queueGrowthLogStep = 100;
+	public $heartbeatIntervalSeconds = 120;
+	public $playerConstraintPolicyTtlSeconds = 20;
+	public $adminControlEnabled = true;
+	public $adminControlCommandName = 'pcadmin';
+	public $adminControlPauseStateMaxAgeSeconds = 120;
+	public $queuedConnectivityEnvelopes = array();
+
+	public function __construct($maniaControl) {
+		$this->maniaControl = $maniaControl;
+		$this->whitelistState = new WhitelistState();
+		$this->whitelistState->bootstrap(
+			array(
+				'enabled' => false,
+				'logins' => array(),
+			),
+			WhitelistCatalog::UPDATE_SOURCE_CHAT,
+			'harness_bootstrap'
+		);
+
+		$this->votePolicyState = new VotePolicyState();
+		$this->votePolicyState->bootstrap(
+			array('mode' => VotePolicyCatalog::DEFAULT_MODE),
+			VotePolicyCatalog::UPDATE_SOURCE_CHAT,
+			'harness_bootstrap'
+		);
+	}
+
+	public function bootstrapWhitelist($enabled, array $logins, $updatedBy = 'harness') {
+		$this->whitelistState->bootstrap(
+			array(
+				'enabled' => (bool) $enabled,
+				'logins' => $logins,
+			),
+			WhitelistCatalog::UPDATE_SOURCE_CHAT,
+			(string) $updatedBy
+		);
+	}
+
+	public function runWhitelistSweep($source, $force = false) {
+		return $this->reconcileWhitelistForConnectedPlayers($source, $force);
+	}
+
+	public function runAccessControlPolicyTick() {
+		$this->handleAccessControlPolicyTick();
+	}
+
+	public function buildHeartbeatForTest() {
+		return $this->buildHeartbeatPayload();
+	}
+
+	public function triggerCapabilityRefreshForAction($actionName) {
+		$this->queueConnectivityCapabilityRefreshAfterAdminAction((string) $actionName, 'harness', 'operator');
+	}
+
+	private function enqueueEnvelope($eventCategory, $eventName, array $payload, array $metadata) {
+		$this->queuedConnectivityEnvelopes[] = array(
+			'event_category' => (string) $eventCategory,
+			'event_name' => (string) $eventName,
+			'payload' => $payload,
+			'metadata' => $metadata,
+		);
+	}
+
+	private function buildQueueTelemetrySnapshot() {
+		return array();
+	}
+
+	private function buildRetryTelemetrySnapshot() {
+		return array();
+	}
+
+	private function buildOutageTelemetrySnapshot() {
+		return array();
+	}
+
+	private function countModeCallbackCount(array $modeCallbacks) {
+		return 0;
+	}
+
+	private function buildAdminControlCapabilitiesPayload() {
+		return array(
+			'available' => true,
+			'enabled' => true,
+			'command' => 'pcadmin',
+			'whitelist' => $this->buildWhitelistCapabilitySnapshot(),
+			'vote_policy' => $this->getVotePolicySnapshot(),
+			'team_control' => array(
+				'policy_enabled' => false,
+				'switch_lock_enabled' => false,
+				'assignments' => array(),
+				'assignment_count' => 0,
+			),
+			'series_targets' => array(
+				'best_of' => 3,
+				'maps_score' => array('team_a' => 0, 'team_b' => 0),
+				'current_map_score' => array('team_a' => 0, 'team_b' => 0),
+			),
+		);
+	}
+
+	private function readEnvString($environmentVariableName, $fallback) {
+		return (string) $fallback;
+	}
+
+	private function resolveRuntimeStringSetting($settingName, $environmentVariableName, $fallback) {
+		return (string) $fallback;
+	}
+
+	private function resolveRuntimeBoolSetting($settingName, $environmentVariableName, $fallback) {
+		return (bool) $fallback;
+	}
+
+	private function isRuntimeEnvDefined($environmentVariableName) {
+		return false;
+	}
+
+	private function hasRuntimeEnvValue($environmentVariableName) {
+		return false;
 	}
 }
 

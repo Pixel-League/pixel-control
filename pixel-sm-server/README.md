@@ -174,7 +174,7 @@ Default behavior:
 - Covers `elite,joust` mode profiles.
 - Runs launch validation + wave-4 plugin-only replay per mode.
 - Runs strict wave-3 and wave-4 replay gate in `elite`.
-- Runs admin response assertions, admin payload capture assertions, and response/payload correlation checks.
+- Runs admin response assertions, admin link-auth matrix checks (`missing|invalid|mismatch|valid`), admin payload capture assertions, and response/payload correlation checks.
 - Exits non-zero when a required check fails.
 - Keeps real-client combat callbacks out of automated pass/fail: `OnShoot`, `OnHit`, `OnNearMiss`, `OnArmorEmpty`, `OnCapture`.
 
@@ -205,6 +205,10 @@ bash scripts/simulate-admin-control-payloads.sh execute map.add mx_id=12345
 bash scripts/simulate-admin-control-payloads.sh execute map.remove map_uid=SomeMapUid
 bash scripts/simulate-admin-control-payloads.sh execute auth.grant target_login=SomePlayer auth_level=admin
 bash scripts/simulate-admin-control-payloads.sh matrix target_login=SomePlayer map_uid=SomeMapUid mx_id=12345
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=missing
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=invalid link_server_login=crunkserver1 link_token=invalid-token
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=mismatch link_server_login=crunkserver1 link_token=pixel-control-dev-link-token
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=valid link_server_login=crunkserver1 link_token=pixel-control-dev-link-token
 ```
 
 Behavior notes:
@@ -213,6 +217,8 @@ Behavior notes:
   - `PixelControl.Admin.ListActions`
   - `PixelControl.Admin.ExecuteAction`
 - Matrix mode replays the full delegated admin action catalog and writes artifacts under `logs/qa/admin-payload-sim-<timestamp>/`.
+- Link-auth matrix options map to communication payload fields (`server_login`, `auth.mode`, `auth.token`) and assert deterministic outcomes via `matrix-validation.json`.
+- Link-auth cases are: `missing`, `invalid`, `mismatch`, `valid`.
 - Override output root with `PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT` when you need run-local artifact directories.
 - If no communication password/port is provided, the helper tries to auto-read socket settings from `mc_settings` and falls back to `127.0.0.1:31501` with empty password.
 
@@ -295,6 +301,8 @@ Most users only need to adjust these variables in `.env`:
   - `PIXEL_CONTROL_API_BASE_URL`
   - `PIXEL_CONTROL_API_EVENT_PATH`
   - `PIXEL_CONTROL_AUTH_MODE` / `PIXEL_CONTROL_AUTH_VALUE`
+  - `PIXEL_CONTROL_LINK_SERVER_URL`
+  - `PIXEL_CONTROL_LINK_TOKEN`
 - Optional replay knobs (`replay-core-telemetry-wave3.sh` and `replay-extended-telemetry-wave4.sh`):
   - `PIXEL_SM_QA_COMPOSE_FILES`
   - `PIXEL_SM_QA_XMLRPC_PORT`, `PIXEL_SM_QA_GAME_PORT`, `PIXEL_SM_QA_P2P_PORT`

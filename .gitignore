@@ -2,3 +2,5 @@
 # Use this instead of running mutable workflows inside `ressources/`.
 .local-dev/
 pixel-control-plugin/logs
+pixel-control-server/logs
+.history/

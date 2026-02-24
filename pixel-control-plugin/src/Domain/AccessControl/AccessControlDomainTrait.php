@@ -49,6 +49,7 @@ trait AccessControlDomainTrait {
 		$this->whitelistState = new WhitelistState();
 		$this->votePolicyState = new VotePolicyState();
 		$this->whitelistRecentDeniedAt = array();
+		$this->whitelistLastReconcileAt = 0;
 		$this->whitelistGuestListLastSyncHash = '';
 		$this->whitelistGuestListLastSyncAt = 0;
 		$this->votePolicyLastCallVoteTimeoutMs = 0;
@@ -244,15 +245,15 @@ trait AccessControlDomainTrait {
 	private function enforceWhitelistForLogin($login, $source) {
 		$normalizedLogin = WhitelistCatalog::normalizeLogin($login);
 		if ($normalizedLogin === '') {
-			return;
+			return array('success' => false, 'code' => 'invalid_parameters', 'applied' => false);
 		}
 
 		if (!$this->whitelistState || !$this->whitelistState->isEnabled()) {
-			return;
+			return array('success' => false, 'code' => 'policy_disabled', 'applied' => false);
 		}
 
 		if ($this->whitelistState->hasLogin($normalizedLogin)) {
-			return;
+			return array('success' => true, 'code' => 'login_allowed', 'applied' => false);
 		}
 
 		$now = time();
@@ -260,7 +261,7 @@ trait AccessControlDomainTrait {
 			? (int) $this->whitelistRecentDeniedAt[$normalizedLogin]
 			: 0;
 		if (($now - $lastDeniedAt) < $this->whitelistDenyCooldownSeconds) {
-			return;
+			return array('success' => true, 'code' => 'deny_cooldown_active', 'applied' => false);
 		}
 
 		$this->whitelistRecentDeniedAt[$normalizedLogin] = $now;
@@ -273,6 +274,8 @@ trait AccessControlDomainTrait {
 			} catch (\Throwable $throwable) {
 				$kickReason = trim((string) $throwable->getMessage());
 			}
+		} else {
+			$kickReason = 'client_unavailable';
 		}
 
 		if ($kickApplied) {
@@ -281,7 +284,7 @@ trait AccessControlDomainTrait {
 				. ', source=' . (string) $source
 				. ', action=kick_applied.'
 			);
-			return;
+			return array('success' => true, 'code' => 'kick_applied', 'applied' => true);
 		}
 
 		Logger::logWarning(
@@ -291,6 +294,164 @@ trait AccessControlDomainTrait {
 			. ($kickReason !== '' ? ', reason=' . $kickReason : '')
 			. '.'
 		);
+
+		return array(
+			'success' => false,
+			'code' => 'kick_failed',
+			'applied' => false,
+			'details' => array('reason' => $kickReason),
+		);
+	}
+
+	private function reconcileWhitelistForConnectedPlayers($source, $force = false) {
+		if (!$this->whitelistState || !$this->whitelistState->isEnabled()) {
+			return array(
+				'success' => true,
+				'code' => 'sweep_skipped_policy_disabled',
+				'applied_count' => 0,
+				'failed_count' => 0,
+				'skipped_count' => 0,
+				'cooldown_count' => 0,
+			);
+		}
+
+		if (!$this->maniaControl || !$this->maniaControl->getPlayerManager()) {
+			return array(
+				'success' => false,
+				'code' => 'capability_unavailable',
+				'applied_count' => 0,
+				'failed_count' => 0,
+				'skipped_count' => 0,
+				'cooldown_count' => 0,
+			);
+		}
+
+		$now = time();
+		if (!$force && ($now - $this->whitelistLastReconcileAt) < $this->whitelistReconcileIntervalSeconds) {
+			return array(
+				'success' => true,
+				'code' => 'sweep_skipped_interval_guard',
+				'applied_count' => 0,
+				'failed_count' => 0,
+				'skipped_count' => 0,
+				'cooldown_count' => 0,
+			);
+		}
+
+		$this->whitelistLastReconcileAt = $now;
+
+		$players = $this->maniaControl->getPlayerManager()->getPlayers(false);
+		if (!is_array($players)) {
+			return array(
+				'success' => true,
+				'code' => 'sweep_no_players',
+				'applied_count' => 0,
+				'failed_count' => 0,
+				'skipped_count' => 0,
+				'cooldown_count' => 0,
+			);
+		}
+
+		Logger::log(
+			'[PixelControl][access][whitelist_sweep_start] source=' . (string) $source
+			. ', force=' . ($force ? 'yes' : 'no')
+			. ', player_count=' . count($players)
+			. '.'
+		);
+
+		$appliedCount = 0;
+		$failedCount = 0;
+		$skippedCount = 0;
+		$cooldownCount = 0;
+
+		foreach ($players as $player) {
+			if (!$player instanceof Player) {
+				$skippedCount++;
+				continue;
+			}
+
+			if ($this->shouldSkipWhitelistSweepPlayer($player)) {
+				$skippedCount++;
+				continue;
+			}
+
+			$login = isset($player->login) ? WhitelistCatalog::normalizeLogin($player->login) : '';
+			if ($login === '') {
+				$skippedCount++;
+				continue;
+			}
+
+			$enforcementResult = $this->enforceWhitelistForLogin($login, $source . '_sweep');
+			$enforcementCode = isset($enforcementResult['code']) ? (string) $enforcementResult['code'] : '';
+
+			if (!empty($enforcementResult['applied'])) {
+				$appliedCount++;
+				continue;
+			}
+
+			if ($enforcementCode === 'deny_cooldown_active') {
+				$cooldownCount++;
+				continue;
+			}
+
+			if (!empty($enforcementResult['success'])) {
+				$skippedCount++;
+				continue;
+			}
+
+			$failedCount++;
+		}
+
+		$this->pruneWhitelistRecentDeniedCache();
+
+		$logMessage = '[PixelControl][access][whitelist_sweep_result] source=' . (string) $source
+			. ', force=' . ($force ? 'yes' : 'no')
+			. ', applied=' . $appliedCount
+			. ', failed=' . $failedCount
+			. ', skipped=' . $skippedCount
+			. ', cooldown=' . $cooldownCount
+			. '.';
+
+		if ($failedCount > 0) {
+			Logger::logWarning($logMessage);
+		} else {
+			Logger::log($logMessage);
+		}
+
+		return array(
+			'success' => ($failedCount === 0),
+			'code' => ($failedCount === 0 ? 'sweep_completed' : 'sweep_partial_failure'),
+			'applied_count' => $appliedCount,
+			'failed_count' => $failedCount,
+			'skipped_count' => $skippedCount,
+			'cooldown_count' => $cooldownCount,
+		);
+	}
+
+	private function shouldSkipWhitelistSweepPlayer(Player $player) {
+		if (method_exists($player, 'isFakePlayer') && $player->isFakePlayer()) {
+			return true;
+		}
+
+		if (isset($player->isServer) && $player->isServer) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private function pruneWhitelistRecentDeniedCache() {
+		if (empty($this->whitelistRecentDeniedAt)) {
+			return;
+		}
+
+		$now = time();
+		$maxAge = max(30, $this->whitelistDenyCooldownSeconds * 10);
+		foreach ($this->whitelistRecentDeniedAt as $login => $deniedAt) {
+			if (!is_numeric($deniedAt) || ($now - (int) $deniedAt) > $maxAge) {
+				unset($this->whitelistRecentDeniedAt[$login]);
+			}
+		}
 	}
 
 	private function handleVotePolicyCallback(array $callbackArguments) {
@@ -437,7 +598,11 @@ trait AccessControlDomainTrait {
 		$whitelistSnapshot = $this->getWhitelistSnapshot();
 		if (!empty($whitelistSnapshot['enabled'])) {
 			$this->syncWhitelistGuestList('periodic_tick', false);
+			$this->reconcileWhitelistForConnectedPlayers('periodic_tick', false);
+			return;
 		}
+
+		$this->pruneWhitelistRecentDeniedCache();
 	}
 
 	private function applyVotePolicyRuntimeState($source, $force) {
@@ -620,7 +785,17 @@ trait AccessControlDomainTrait {
 
 	private function persistWhitelistAfterAdminAction($actionName, AdminActionResult $actionResult, array $snapshotBeforeAction) {
 		if ($actionName === AdminActionCatalog::ACTION_WHITELIST_SYNC) {
-			return $this->syncWhitelistGuestList('admin_action_sync', true);
+			$syncResult = $this->syncWhitelistGuestList('admin_action_sync', true);
+			if (empty($syncResult['success'])) {
+				return $syncResult;
+			}
+
+			return $this->buildWhitelistPersistenceResultWithReconcile(
+				$syncResult,
+				'admin_action_sync',
+				(isset($syncResult['code']) ? (string) $syncResult['code'] : 'guest_list_synced'),
+				(isset($syncResult['message']) ? (string) $syncResult['message'] : 'Whitelist guest list synchronized.')
+			);
 		}
 
 		if (!$this->shouldPersistWhitelistAfterAdminAction($actionName)) {
@@ -664,7 +839,31 @@ trait AccessControlDomainTrait {
 			);
 		}
 
-		return array('success' => true, 'code' => 'persisted_and_synced', 'message' => 'Whitelist settings persisted and synced.');
+		return $this->buildWhitelistPersistenceResultWithReconcile(
+			$syncResult,
+			'admin_action',
+			'persisted_and_synced',
+			'Whitelist settings persisted and synced.'
+		);
+	}
+
+	private function buildWhitelistPersistenceResultWithReconcile(array $syncResult, $source, $resultCode, $resultMessage) {
+		$reconcileResult = $this->reconcileWhitelistForConnectedPlayers($source, true);
+		$syncDetails = (isset($syncResult['details']) && is_array($syncResult['details'])) ? $syncResult['details'] : array();
+
+		return array(
+			'success' => true,
+			'code' => (string) $resultCode,
+			'message' => (string) $resultMessage,
+			'details' => array(
+				'sync' => array(
+					'code' => isset($syncResult['code']) ? (string) $syncResult['code'] : 'guest_list_synced',
+					'message' => isset($syncResult['message']) ? (string) $syncResult['message'] : 'Whitelist guest list synchronized.',
+					'details' => $syncDetails,
+				),
+				'reconcile' => $reconcileResult,
+			),
+		);
 	}
 
 	private function persistVotePolicyAfterAdminAction($actionName, AdminActionResult $actionResult, array $snapshotBeforeAction) {
