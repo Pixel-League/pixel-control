@@ -761,3 +761,20 @@
 - For each completed phase in a PLAN execution, provide an essential-only summary and immediate next steps.
 - Any extra user-requested change/revert during PLAN execution must be appended as a new `[Todo]` step in the active phase before execution.
 - During this production-readiness PLAN execution, continue through remaining phases when explicitly requested by user, create one local commit per phase, and do not push.
+
+## Additional execution status (2026-02-24, pixel-sm-server production deployment template hardening)
+- Plan `PLAN-pixel-sm-server-production-ready-deployment-template.md` executed through phases 0..4 with additive/non-breaking delivery for `pixel-sm-server`:
+  - Docker hardening: `pixel-sm-server/Dockerfile` now uses `SHELL ["/bin/bash", "-o", "pipefail", "-c"]`, installs `tini`, validates bootstrap/health scripts at build time, and runs with `ENTRYPOINT ["/usr/bin/tini", "--"]`.
+  - Compose hardening: `pixel-sm-server/docker-compose.yml` now includes centralized JSON-file log rotation options, `stop_grace_period` controls, `init: true`, and `no-new-privileges` on `shootmania` while keeping baseline dev flow compatible.
+  - New production templates: `pixel-sm-server/.env.production.example` + `pixel-sm-server/docker-compose.production.yml` (additive override path, secret placeholders, production-oriented health/restart knobs).
+  - README is now deployment-first (fast production path, day-2 update/rollback, logs/health, explicit risk/blast-radius notes, and baseline fallback command).
+- Validation highlights:
+  - `docker build -f pixel-sm-server/Dockerfile -t pixel-sm-server:prod-readiness pixel-sm-server` passed.
+  - Runtime binary checks passed in built image (`php`, `envsubst`, `xmlstarlet`, `mysql`).
+  - Compose config rendering passed for base and production override paths.
+  - Production override runtime smoke (`--env-file pixel-sm-server/.env` + `docker-compose.production.yml`) reached `shootmania` healthy and shut down cleanly.
+- Incident memory (2026-02-24, production-template first launch remained unhealthy):
+  - symptom: `docker compose --env-file pixel-sm-server/.env.production.local ... up -d --build` started services but `shootmania` stayed unhealthy and restarted.
+  - root cause: production template intentionally ships placeholder credentials (`CHANGE_ME_*`), including dedicated login/password, which caused master-auth failures (`This player does not exist`, `Connection to master server lost`).
+  - fix: for deterministic local validation, use real local credentials via a safe equivalent env source (`--env-file pixel-sm-server/.env`) and optionally remap to free high ports after host-port preflight.
+  - validation: health polling reached `health_attempt_4: healthy` and `docker compose ... ps` reported `shootmania` `Up ... (healthy)` under production override.

@@ -1,0 +1,20 @@
+services:
+  mysql:
+    restart: always
+    stop_grace_period: ${PIXEL_SM_MYSQL_STOP_GRACE_PERIOD:-60s}
+    healthcheck:
+      interval: ${PIXEL_SM_MYSQL_HEALTHCHECK_INTERVAL:-10s}
+      timeout: ${PIXEL_SM_MYSQL_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${PIXEL_SM_MYSQL_HEALTHCHECK_RETRIES:-20}
+      start_period: ${PIXEL_SM_MYSQL_HEALTHCHECK_START_PERIOD:-20s}
+
+  shootmania:
+    restart: always
+    stop_grace_period: ${PIXEL_SM_SHOOTMANIA_STOP_GRACE_PERIOD:-120s}
+    environment:
+      PIXEL_SM_BOOTSTRAP_TIMEOUT_SECONDS: ${PIXEL_SM_BOOTSTRAP_TIMEOUT_SECONDS:-180}
+    healthcheck:
+      interval: ${PIXEL_SM_SHOOTMANIA_HEALTHCHECK_INTERVAL:-10s}
+      timeout: ${PIXEL_SM_SHOOTMANIA_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${PIXEL_SM_SHOOTMANIA_HEALTHCHECK_RETRIES:-30}
+      start_period: ${PIXEL_SM_SHOOTMANIA_HEALTHCHECK_START_PERIOD:-45s}

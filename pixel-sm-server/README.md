@@ -1,8 +1,90 @@
 # Pixel SM Server
 
-`pixel-sm-server` is the first-party local development stack for running a ShootMania dedicated server with ManiaControl and MySQL.
+`pixel-sm-server` is the first-party ShootMania + ManiaControl + MySQL stack used in the Pixel Control monorepo.
 
-It is designed for plugin and integration development in the Pixel Control monorepo, with deterministic startup, validation checks, and safe local workflows.
+It supports both production-like deployments and local plugin/integration development, with deterministic startup, health checks, and additive deployment templates.
+
+## Production deployment (fast path)
+
+Use this path for deployment-first operation. It keeps existing dev defaults intact and relies on additive production templates.
+
+1) Create a production env file:
+
+```bash
+cp .env.production.example .env.production.local
+```
+
+2) Edit `.env.production.local` and replace all `CHANGE_ME_*` values before startup.
+
+3) Start services with base + production override:
+
+```bash
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml up -d --build
+```
+
+4) Verify readiness:
+
+```bash
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml ps
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml logs --tail=150 shootmania
+```
+
+5) Stop services:
+
+```bash
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml down
+```
+
+## Production operations (day-2)
+
+### Update / redeploy
+
+```bash
+git pull --ff-only
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml up -d --build
+```
+
+### Rollback
+
+If a deployment regresses, return to a previous known-good revision and redeploy with the same production command path:
+
+```bash
+git checkout <known-good-commit-or-tag>
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml up -d --build
+```
+
+Immediate fallback to baseline local/default compose path (no production override):
+
+```bash
+docker compose --env-file .env -f docker-compose.yml up -d --build
+```
+
+### Logs and health
+
+```bash
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml logs -f shootmania
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml logs -f mysql
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml ps
+docker inspect --format='{{json .State.Health}}' "$(docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml ps -q shootmania)"
+```
+
+### Known risks and blast radius
+
+- If `.env.production.local` still contains placeholder credentials, `shootmania` can loop unhealthy while `mysql` remains healthy.
+- Typical symptom is dedicated runtime master-auth failure in logs (`This player does not exist` / `Connection to master server lost`).
+- Blast radius is limited to game service availability; MySQL volume data remains intact unless you explicitly remove volumes.
+- Immediate operational fallback is to redeploy with baseline compose path while fixing production env values:
+
+```bash
+docker compose --env-file .env -f docker-compose.yml up -d --build
+```
+
+## Security guidance
+
+- Never commit populated `.env.production.local` (or `.env`) files.
+- Replace every `CHANGE_ME_*` placeholder before exposing the stack on shared/public networks.
+- Keep XML-RPC (`PIXEL_SM_XMLRPC_PORT`) restricted at firewall/network level.
+- Keep mutable runtime paths outside `../ressources/*`.
 
 ## What you get
 
@@ -15,6 +97,7 @@ It is designed for plugin and integration development in the Pixel Control monor
 ## Repository layout
 
 - `docker-compose.yml`: default bridge networking stack
+- `docker-compose.production.yml`: additive production-oriented override
 - `docker-compose.host.yml`: optional host-network override
 - `Dockerfile`: runtime image (Ubuntu 20.04, PHP 7.4 compatibility baseline)
 - `scripts/bootstrap.sh`: runtime startup orchestration
@@ -32,7 +115,8 @@ It is designed for plugin and integration development in the Pixel Control monor
 - `runtime/server/`: local dedicated server + ManiaControl runtime
 - `TitlePacks/`: local title pack assets
 - `maps/`: local mode map pools (mounted into runtime)
-- `.env.example`: environment template
+- `.env.example`: developer/local environment template
+- `.env.production.example`: production deployment environment template
 
 ## Prerequisites
 
@@ -43,7 +127,7 @@ It is designed for plugin and integration development in the Pixel Control monor
 - Free local ports for XML-RPC/game/P2P (defaults in `.env.example`)
 - On Apple Silicon/ARM hosts, keep `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64`
 
-## Quick start
+## Developer quick start
 
 1) Create local environment file:
 
@@ -92,7 +176,7 @@ Look for:
 docker compose down
 ```
 
-## Day-to-day workflows
+## Developer and QA workflows
 
 ### Fast plugin iteration
 
@@ -282,7 +366,7 @@ Naming conventions:
 
 ## Key configuration
 
-Most users only need to adjust these variables in `.env`:
+Most users only need to adjust these variables in `.env` (developer path) or `.env.production.local` (deployment path):
 
 - Runtime mounts:
   - `PIXEL_SM_RUNTIME_SOURCE`
@@ -313,7 +397,7 @@ Most users only need to adjust these variables in `.env`:
   - `PIXEL_SM_QA_TELEMETRY_WAIT_SECONDS`, `PIXEL_SM_QA_TELEMETRY_KEEP_STACK_RUNNING`
   - `PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES` (`1` by default, set `0` for plugin-only capture)
 
-All available variables and defaults are documented in `.env.example`.
+All available variables and defaults are documented in `.env.example` and `.env.production.example`.
 
 ## Mode presets and title packs
 
