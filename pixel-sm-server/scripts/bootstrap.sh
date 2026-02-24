@@ -464,7 +464,7 @@ render_runtime_files() {
 
   validate_title_pack_asset
 
-  envsubst '${PIXEL_SM_XMLRPC_PORT} ${PIXEL_SM_DB_HOST} ${PIXEL_SM_DB_PORT} ${PIXEL_SM_DB_USER} ${PIXEL_SM_DB_PASSWORD} ${PIXEL_SM_DB_NAME} ${PIXEL_SM_MANIACONTROL_SUPERADMIN_PASSWORD}' \
+  envsubst '${PIXEL_SM_XMLRPC_PORT} ${PIXEL_SM_DB_HOST} ${PIXEL_SM_DB_PORT} ${PIXEL_SM_DB_USER} ${PIXEL_SM_DB_PASSWORD} ${PIXEL_SM_DB_NAME} ${PIXEL_SM_MANIACONTROL_SUPERADMIN_PASSWORD} ${PIXEL_SM_MANIACONTROL_MASTERADMIN_LOGIN}' \
     < /opt/pixel-sm/templates/maniacontrol/server.template.xml \
     > "${PIXEL_SM_SERVER_ROOT}/ManiaControl/configs/server.xml"
 

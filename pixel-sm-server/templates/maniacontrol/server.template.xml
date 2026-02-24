@@ -16,5 +16,6 @@
   </database>
 
   <masteradmins>
+    <login>${PIXEL_SM_MANIACONTROL_MASTERADMIN_LOGIN}</login>
   </masteradmins>
 </maniacontrol>

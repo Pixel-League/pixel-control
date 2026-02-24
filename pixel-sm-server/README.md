@@ -297,6 +297,8 @@ Most users only need to adjust these variables in `.env`:
   - `PIXEL_SM_XMLRPC_PORT`
   - `PIXEL_SM_GAME_PORT`
   - `PIXEL_SM_P2P_PORT`
+- Optional ManiaControl MasterAdmin login:
+  - `PIXEL_SM_MANIACONTROL_MASTERADMIN_LOGIN`
 - Optional plugin transport:
   - `PIXEL_CONTROL_API_BASE_URL`
   - `PIXEL_CONTROL_API_EVENT_PATH`
