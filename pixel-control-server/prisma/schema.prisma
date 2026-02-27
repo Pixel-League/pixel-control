@@ -1,0 +1,15 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model HealthCheck {
+  id        Int      @id @default(autoincrement())
+  status    String
+  checkedAt DateTime @default(now()) @map("checked_at")
+
+  @@map("health_checks")
+}
