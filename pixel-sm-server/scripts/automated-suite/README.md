@@ -15,6 +15,13 @@ This directory stores modular action/feature descriptors used by `scripts/test-a
 - The automated suite loads these scripts dynamically and validates the generated `matrix-validation.json` from `simulate-veto-control-payloads.sh matrix` against this required check list.
 - This keeps veto required coverage extension modular and avoids hardcoding check inventories inside the suite runner.
 
+## Admin link-auth case descriptors
+
+- Path: `scripts/automated-suite/admin-link-auth-cases/*.sh`
+- Contract: each script must print exactly one link-auth case id to stdout (`missing`, `invalid`, `mismatch`, or `valid`) and exit `0`.
+- The automated suite loads these scripts dynamically and runs `simulate-admin-control-payloads.sh matrix link_auth_case=<id>` as required checks.
+- This keeps link-auth negative/positive coverage modular instead of hardcoding case lists in the suite runner.
+
 ## Why this exists
 
 - Keeps the admin action list out of the monolithic test runner.
@@ -32,6 +39,12 @@ This directory stores modular action/feature descriptors used by `scripts/test-a
 1. Add a new `*.sh` file under `veto-checks/`.
 2. Print the canonical veto check id emitted by `matrix-validation.json`.
 3. Ensure `scripts/simulate-veto-control-payloads.sh matrix` emits and evaluates that check id.
+
+## Add a new admin link-auth case check
+
+1. Add a new `*.sh` file under `admin-link-auth-cases/`.
+2. Print one supported case id (`missing`, `invalid`, `mismatch`, `valid`).
+3. Ensure `scripts/simulate-admin-control-payloads.sh` supports that case and emits `matrix-validation.json` assertions.
 
 ## Related matrix step modules
 

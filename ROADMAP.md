@@ -16,10 +16,14 @@ Priority scale:
 - `P4`: low priority, optimization/hardening later
 - `P5`: backlog/nice-to-have
 
-## Current execution thread (session: 2026-02-20)
+## Current execution thread (session: 2026-02-24)
 
-Active plan file:
-- `PLAN-autonomous-execution-wave-5.md` (final autonomous plugin/dev-server closure: identity guardrails, team/slot constraint telemetry signaling, deterministic/manual evidence pipeline hardening, backend/API implementation paused)
+Active plan files:
+- `PLAN-autonomous-execution-wave-5.md` (plugin/dev-server closure complete; real-client manual gameplay evidence remains user-run)
+- `PLAN-pixel-control-server-nestjs-mvp.md` (backend reopened and implemented as NestJS MVP in `pixel-control-server/`)
+- `PLAN-pixel-control-server-nestjs-wave2-no-db.md` (wave-2 no-DB backend expansion completed: additive read models/endpoints + diagnostics/logging + write-compat guardrails)
+- `PLAN-pixel-control-server-nestjs-wave3-control-workflow-no-db.md` (wave-3 no-DB control/workflow APIs completed: eligibility policy, map-pool policy, assignment intents, desired-state, bounded control audit, write-compat guardrails)
+- `PLAN-pixel-control-server-prisma-raw-traceability-foundation.md` (wave-4 Prisma SQLite persistence foundation for raw lineage facts, additive/non-breaking write-route behavior)
 
 Checkpoint status (owner-ready):
 - [x] `Checkpoint A` (Owner: Executor) - Scaffolded first-party plugin foundation in `pixel-control-plugin/` with Plugin contract, callback registry stubs, async API shell, and queue/retry contracts.
@@ -41,15 +45,17 @@ Checkpoint status (owner-ready):
 - [x] `Checkpoint Q` (Owner: Executor) - Defined shared delivery error envelope + retry semantics contract (typed `DeliveryError`, retryable flags, retry-after hints, and ack parsing semantics).
 - [x] `Checkpoint R` (Owner: Executor) - Defined canonical event naming catalog + JSON schema baseline for envelope payloads and lifecycle variants.
 - [x] `Checkpoint S` (Owner: Executor) - Defined contract baseline for plugin->API ingestion and idempotency semantics.
-- [ ] `Checkpoint T` (Owner: Executor, deferred) - Runnable backend/API ingestion implementation is paused by user for now (code rollback requested in `pixel-control-server/`).
-- [ ] `Checkpoint U` (Owner: Executor, deferred) - Backend read/workflow APIs + contract tests remain deferred until backend phase re-opens.
+- [x] `Checkpoint T` (Owner: Executor) - Runnable backend/API ingestion MVP is implemented in `pixel-control-server/` (NestJS + typed contract ACK/rejected/error + compatibility routes).
+- [x] `Checkpoint Y` (Owner: Executor) - NestJS wave-2 no-DB backend expansion is complete (additive players/stats/maps/match/registration/diagnostics reads, structured ingestion outcome logging, and write-contract compatibility evidence under `pixel-control-server/logs/nestjs-wave2-no-db/`).
+- [ ] `Checkpoint U` (Owner: Executor, active) - Extend backend beyond MVP to durable storage and production auth hardening; wave-4 Prisma raw-traceability SQLite foundation is delivered as additive with write-route compatibility preserved.
 - [x] `Checkpoint V` (Owner: Executor) - Continued plugin-first execution with wave-3 telemetry expansion (roster/eligibility/admin-correlation + round/map aggregate + map-rotation baseline), deterministic local QA replay helper, and contract/doc synchronization.
 - [x] `Checkpoint W` (Owner: Executor) - Delivered wave-4 additive telemetry closure for team-side aggregate + win-context semantics, reconnect/side-change deterministic payloads, veto action/result export fallback semantics, and deterministic QA evidence indexing.
 - [x] `Checkpoint X` (Owner: Executor) - Delivered wave-5 plugin/dev-server hardening with deterministic identity validation drops, forced-team/slot-policy constraint signaling (telemetry-only), wave-5 manual evidence scaffolding/checkers, and final-wave handoff synchronization.
 
 Resume-from-here (single next action):
-- Wave-5 is the final autonomous plugin/dev-server wave in the current sequence; next action is user-run real-client gameplay matrix execution using `pixel-sm-server/logs/manual/wave5-real-client-20260220/MANUAL-TEST-MATRIX.md` plus `INDEX.md` evidence status tracking.
-- Handoff note: keep route expectations in `API_CONTRACT.md` and plugin capability inventory in `pixel-control-plugin/FEATURES.md` synchronized for every additive telemetry change.
+- Plugin/dev-server thread: user-run real-client gameplay matrix execution remains open using `pixel-sm-server/logs/manual/wave5-real-client-20260220/MANUAL-TEST-MATRIX.md` plus `INDEX.md` evidence tracking.
+- Backend thread: move from in-memory wave-3 backend to persistent storage + production auth model + plugin assignment/policy handshake while keeping plugin write-route contract additive.
+- Handoff note: keep route expectations in `API_CONTRACT.md` and plugin capability inventory in `pixel-control-plugin/README.md` synchronized for every additive telemetry change.
 
 ## Pixel Control Plugin
 
@@ -98,39 +104,46 @@ Note: wave-5 keeps schema `2026-02-20.1` additive and adds identity-validation g
 ## Pixel Control Server
 
 ### Platform and DX (local-first)
-- [ ] P0🔥 Scaffold Laravel API with local-first workflow
-- [ ] P0🔥 Define domain modules (Stats, Players, Maps, Match)
-- [ ] P1 Publish OpenAPI/Swagger docs for all endpoints
-- [ ] P1 Add structured logs and request correlation ids
+- [x] P0🔥 Scaffold NestJS API with local-first workflow
+- [x] P0🔥 Define MVP modules (`Ingestion`, `ReadModel`, `Auth`, `Health`)
+- [x] P1 Publish OpenAPI/Swagger docs for implemented endpoints
+- [x] P1 Add request correlation ids for contract responses
+- [x] P2 Add structured operational logging and sink strategy
 
 ### Ingestion API
-- [ ] P0🔥 Registration endpoint for plugin capability negotiation
-- [ ] P0🔥 Heartbeat endpoint for server liveness
-- [ ] P0🔥 Lifecycle event ingestion endpoint (deferred until backend phase resumes)
-- [ ] P1 Stats ingestion endpoint (single + batch)
-- [ ] P1 Maps/veto ingestion endpoint
-- [ ] P0🔥 Idempotency support for all write endpoints
+- [x] P0🔥 Connectivity ingestion endpoint for registration + heartbeat envelopes
+- [x] P0🔥 Lifecycle event ingestion endpoint
+- [x] P1 Stats ingestion endpoint (single + batch)
+- [x] P1 Admin/player/mode ingestion endpoints + compatibility bridge (`/plugin/events`, `/v1/plugin/events`)
+- [x] P0🔥 Idempotency support for all write endpoints
+- [ ] P2 Durable receipt/event storage (restart-safe)
 
 ### Domain: Stats
-- [ ] P1 Store raw events and derived aggregates (deferred until backend phase resumes)
-- [ ] P2 Build per-player/per-team/per-match read models
-- [ ] P2 Expose stats query endpoints for dashboards and tooling
+- [x] P1 In-memory raw-event journal + aggregate counters for ingestion/read-model MVP
+- [x] P1 Add no-DB stats read endpoints (`/v1/servers/:serverLogin/stats/{summary,players}`)
+- [ ] P2 Build durable per-player/per-team/per-match read models
+- [ ] P2 Expose extended stats query endpoints for dashboards and tooling
 - [ ] P4 Add recalculation/backfill jobs
 
 ### Domain: Players
+- [x] P1 Add no-DB per-server player snapshot read endpoints (`/v1/servers/:serverLogin/players*`)
+- [x] P1 Add no-DB per-server player eligibility policy API (`/v1/servers/:serverLogin/control/player-eligibility-policy`)
 - [ ] P1 Persist per-server player eligibility and permissions
-- [ ] P1 Expose APIs to manage allowed rosters
+- [ ] P1 Add plugin enforcement handshake for eligibility policies
 - [ ] P2 Add audit trail for permission changes
 
 ### Domain: Maps
+- [x] P1 Add no-DB map/veto state read endpoint (`/v1/servers/:serverLogin/maps/state`)
+- [x] P1 Add no-DB map-pool policy API (`/v1/servers/:serverLogin/control/map-pool-policy`)
 - [ ] P1 Persist map pools, map packs, veto sessions, map order
-- [ ] P2 Expose APIs for map-pool management
+- [ ] P2 Add plugin enforcement handshake for map-pool policies
 - [ ] P5 Add map metadata enrichment workflow (MX ids, aliases)
 
 ### Domain: Match
-- [ ] P1 Build canonical match timeline from lifecycle events
-- [ ] P1 Add explicit match state machine (pending/active/ended/cancelled)
-- [ ] P2 Expose match assignment APIs for plugin execution
+- [x] P1 Build canonical in-memory timeline from lifecycle events
+- [x] P1 Add explicit no-DB match state machine read endpoint (`/v1/servers/:serverLogin/match/state`)
+- [x] P2 Add no-DB match assignment intent APIs (`/v1/servers/:serverLogin/control/match-assignment-intents*`) with desired-state/audit projection
+- [ ] P2 Add plugin execution handshake for assignment intent ack/cancel flow
 
 ### Auth and security (decision pending)
 - [ ] P1 Document candidate auth models: API key per server, OAuth2-based, HMAC signatures
@@ -146,14 +159,14 @@ Note: wave-5 keeps schema `2026-02-20.1` additive and adds identity-validation g
 - [x] P0🔥 Define shared error format and retry semantics
 
 ### Reliability
-- [ ] P0🔥 Guarantee at-least-once delivery with server-side dedupe (implementation deferred; contract tracked in `API_CONTRACT.md`)
+- [x] P0🔥 Guarantee at-least-once delivery with server-side dedupe (MVP in-memory implementation)
 - [ ] P2 Define replay/backfill strategy after outages
 - [ ] P2 Define recovery flow after partial desynchronization
 
 ### Cross-domain workflows
-- [ ] P2 Match assignment flow (server decision -> plugin ack)
-- [ ] P1 Player eligibility flow (server policy -> plugin enforcement)
-- [ ] P1 Maps/veto flow (shared ownership + conflict resolution)
+- [ ] P2 Match assignment flow handshake (server decision -> plugin ack)
+- [ ] P1 Player eligibility policy handshake (server policy -> plugin enforcement)
+- [ ] P1 Maps policy handshake (server policy -> runtime conflict resolution)
 
 ### Test strategy
 - [ ] P1 Build callback simulation harness for XML-RPC and script callbacks

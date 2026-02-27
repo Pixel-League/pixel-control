@@ -49,6 +49,8 @@ bash pixel-sm-server/scripts/dev-plugin-hot-sync.sh
 - Local deterministic identity validation before enqueue/dispatch.
 - Bounded in-memory queue with retry policy and outage/recovery markers.
 - Connectivity envelopes include capability and queue/outage snapshots.
+- Connectivity registration + heartbeat both carry `capabilities.admin_control.*` snapshots.
+- Successful delegated policy mutations queue an immediate capability-refresh connectivity update.
 
 ### Lifecycle/player/combat telemetry
 
@@ -59,7 +61,7 @@ bash pixel-sm-server/scripts/dev-plugin-hot-sync.sh
 
 ### Plugin-owned policy modules
 
-- Whitelist state: enabled flag + normalized login registry + guest-list sync.
+- Whitelist state: enabled flag + normalized login registry + guest-list sync + immediate connected-player reconciliation with bounded periodic sweep.
 - Vote policy state: callback-cancel mode or strict callvote-disable mode.
 - Team roster state: login->team assignments + policy flags.
 - Series state: `best_of`, `maps_score`, `current_map_score` with persistence + rollback on write failures.
@@ -99,7 +101,9 @@ Examples:
 ### Security notes
 
 - Chat path is actor-bound and permission-gated by native plugin rights.
-- Communication payload path currently runs in temporary trusted mode; network scoping is required in non-local environments.
+- Link configuration is restricted to super/master admin via `//pcadmin server.link.set base_url=<url> link_token=<token>` and `//pcadmin server.link.status`.
+- Communication payload path requires linked auth fields (`server_login`, `auth.mode=link_bearer`, `auth.token`) for `PixelControl.Admin.ListActions` and `PixelControl.Admin.ExecuteAction`.
+- Link settings resolve env-first with setting fallback (`PIXEL_CONTROL_LINK_SERVER_URL`, `PIXEL_CONTROL_LINK_TOKEN`); token output is always fingerprint-masked in operator responses.
 
 ## Veto control surface
 

@@ -1,8 +1,90 @@
 # Pixel SM Server
 
-`pixel-sm-server` is the first-party local development stack for running a ShootMania dedicated server with ManiaControl and MySQL.
+`pixel-sm-server` is the first-party ShootMania + ManiaControl + MySQL stack used in the Pixel Control monorepo.
 
-It is designed for plugin and integration development in the Pixel Control monorepo, with deterministic startup, validation checks, and safe local workflows.
+It supports both production-like deployments and local plugin/integration development, with deterministic startup, health checks, and additive deployment templates.
+
+## Production deployment (fast path)
+
+Use this path for deployment-first operation. It keeps existing dev defaults intact and relies on additive production templates.
+
+1) Create a production env file:
+
+```bash
+cp .env.production.example .env.production.local
+```
+
+2) Edit `.env.production.local` and replace all `CHANGE_ME_*` values before startup.
+
+3) Start services with base + production override:
+
+```bash
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml up -d --build
+```
+
+4) Verify readiness:
+
+```bash
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml ps
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml logs --tail=150 shootmania
+```
+
+5) Stop services:
+
+```bash
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml down
+```
+
+## Production operations (day-2)
+
+### Update / redeploy
+
+```bash
+git pull --ff-only
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml up -d --build
+```
+
+### Rollback
+
+If a deployment regresses, return to a previous known-good revision and redeploy with the same production command path:
+
+```bash
+git checkout <known-good-commit-or-tag>
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml up -d --build
+```
+
+Immediate fallback to baseline local/default compose path (no production override):
+
+```bash
+docker compose --env-file .env -f docker-compose.yml up -d --build
+```
+
+### Logs and health
+
+```bash
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml logs -f shootmania
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml logs -f mysql
+docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml ps
+docker inspect --format='{{json .State.Health}}' "$(docker compose --env-file .env.production.local -f docker-compose.yml -f docker-compose.production.yml ps -q shootmania)"
+```
+
+### Known risks and blast radius
+
+- If `.env.production.local` still contains placeholder credentials, `shootmania` can loop unhealthy while `mysql` remains healthy.
+- Typical symptom is dedicated runtime master-auth failure in logs (`This player does not exist` / `Connection to master server lost`).
+- Blast radius is limited to game service availability; MySQL volume data remains intact unless you explicitly remove volumes.
+- Immediate operational fallback is to redeploy with baseline compose path while fixing production env values:
+
+```bash
+docker compose --env-file .env -f docker-compose.yml up -d --build
+```
+
+## Security guidance
+
+- Never commit populated `.env.production.local` (or `.env`) files.
+- Replace every `CHANGE_ME_*` placeholder before exposing the stack on shared/public networks.
+- Keep XML-RPC (`PIXEL_SM_XMLRPC_PORT`) restricted at firewall/network level.
+- Keep mutable runtime paths outside `../ressources/*`.
 
 ## What you get
 
@@ -15,6 +97,7 @@ It is designed for plugin and integration development in the Pixel Control monor
 ## Repository layout
 
 - `docker-compose.yml`: default bridge networking stack
+- `docker-compose.production.yml`: additive production-oriented override
 - `docker-compose.host.yml`: optional host-network override
 - `Dockerfile`: runtime image (Ubuntu 20.04, PHP 7.4 compatibility baseline)
 - `scripts/bootstrap.sh`: runtime startup orchestration
@@ -32,7 +115,8 @@ It is designed for plugin and integration development in the Pixel Control monor
 - `runtime/server/`: local dedicated server + ManiaControl runtime
 - `TitlePacks/`: local title pack assets
 - `maps/`: local mode map pools (mounted into runtime)
-- `.env.example`: environment template
+- `.env.example`: developer/local environment template
+- `.env.production.example`: production deployment environment template
 
 ## Prerequisites
 
@@ -43,7 +127,7 @@ It is designed for plugin and integration development in the Pixel Control monor
 - Free local ports for XML-RPC/game/P2P (defaults in `.env.example`)
 - On Apple Silicon/ARM hosts, keep `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64`
 
-## Quick start
+## Developer quick start
 
 1) Create local environment file:
 
@@ -92,7 +176,7 @@ Look for:
 docker compose down
 ```
 
-## Day-to-day workflows
+## Developer and QA workflows
 
 ### Fast plugin iteration
 
@@ -174,7 +258,7 @@ Default behavior:
 - Covers `elite,joust` mode profiles.
 - Runs launch validation + wave-4 plugin-only replay per mode.
 - Runs strict wave-3 and wave-4 replay gate in `elite`.
-- Runs admin response assertions, admin payload capture assertions, and response/payload correlation checks.
+- Runs admin response assertions, admin link-auth matrix checks (`missing|invalid|mismatch|valid`), admin payload capture assertions, and response/payload correlation checks.
 - Exits non-zero when a required check fails.
 - Keeps real-client combat callbacks out of automated pass/fail: `OnShoot`, `OnHit`, `OnNearMiss`, `OnArmorEmpty`, `OnCapture`.
 
@@ -205,6 +289,10 @@ bash scripts/simulate-admin-control-payloads.sh execute map.add mx_id=12345
 bash scripts/simulate-admin-control-payloads.sh execute map.remove map_uid=SomeMapUid
 bash scripts/simulate-admin-control-payloads.sh execute auth.grant target_login=SomePlayer auth_level=admin
 bash scripts/simulate-admin-control-payloads.sh matrix target_login=SomePlayer map_uid=SomeMapUid mx_id=12345
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=missing
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=invalid link_server_login=crunkserver1 link_token=invalid-token
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=mismatch link_server_login=crunkserver1 link_token=pixel-control-dev-link-token
+bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=valid link_server_login=crunkserver1 link_token=pixel-control-dev-link-token
 ```
 
 Behavior notes:
@@ -213,6 +301,8 @@ Behavior notes:
   - `PixelControl.Admin.ListActions`
   - `PixelControl.Admin.ExecuteAction`
 - Matrix mode replays the full delegated admin action catalog and writes artifacts under `logs/qa/admin-payload-sim-<timestamp>/`.
+- Link-auth matrix options map to communication payload fields (`server_login`, `auth.mode`, `auth.token`) and assert deterministic outcomes via `matrix-validation.json`.
+- Link-auth cases are: `missing`, `invalid`, `mismatch`, `valid`.
 - Override output root with `PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT` when you need run-local artifact directories.
 - If no communication password/port is provided, the helper tries to auto-read socket settings from `mc_settings` and falls back to `127.0.0.1:31501` with empty password.
 
@@ -276,7 +366,7 @@ Naming conventions:
 
 ## Key configuration
 
-Most users only need to adjust these variables in `.env`:
+Most users only need to adjust these variables in `.env` (developer path) or `.env.production.local` (deployment path):
 
 - Runtime mounts:
   - `PIXEL_SM_RUNTIME_SOURCE`
@@ -291,10 +381,14 @@ Most users only need to adjust these variables in `.env`:
   - `PIXEL_SM_XMLRPC_PORT`
   - `PIXEL_SM_GAME_PORT`
   - `PIXEL_SM_P2P_PORT`
+- Optional ManiaControl MasterAdmin login:
+  - `PIXEL_SM_MANIACONTROL_MASTERADMIN_LOGIN`
 - Optional plugin transport:
   - `PIXEL_CONTROL_API_BASE_URL`
   - `PIXEL_CONTROL_API_EVENT_PATH`
   - `PIXEL_CONTROL_AUTH_MODE` / `PIXEL_CONTROL_AUTH_VALUE`
+  - `PIXEL_CONTROL_LINK_SERVER_URL`
+  - `PIXEL_CONTROL_LINK_TOKEN`
 - Optional replay knobs (`replay-core-telemetry-wave3.sh` and `replay-extended-telemetry-wave4.sh`):
   - `PIXEL_SM_QA_COMPOSE_FILES`
   - `PIXEL_SM_QA_XMLRPC_PORT`, `PIXEL_SM_QA_GAME_PORT`, `PIXEL_SM_QA_P2P_PORT`
@@ -303,7 +397,7 @@ Most users only need to adjust these variables in `.env`:
   - `PIXEL_SM_QA_TELEMETRY_WAIT_SECONDS`, `PIXEL_SM_QA_TELEMETRY_KEEP_STACK_RUNNING`
   - `PIXEL_SM_QA_TELEMETRY_INJECT_FIXTURES` (`1` by default, set `0` for plugin-only capture)
 
-All available variables and defaults are documented in `.env.example`.
+All available variables and defaults are documented in `.env.example` and `.env.production.example`.
 
 ## Mode presets and title packs
 

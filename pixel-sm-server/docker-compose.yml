@@ -1,7 +1,14 @@
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: ${PIXEL_SM_LOG_MAX_SIZE:-10m}
+    max-file: ${PIXEL_SM_LOG_MAX_FILE:-5}
+
 services:
   mysql:
     image: mysql:8.0
     restart: unless-stopped
+    stop_grace_period: ${PIXEL_SM_MYSQL_STOP_GRACE_PERIOD:-30s}
     command: ["--default-authentication-plugin=mysql_native_password"]
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -15,14 +22,19 @@ services:
       retries: 20
       start_period: 10s
     volumes:
-      - mysql_data:/var/lib/mysql
+      - ./data/mysql:/var/lib/mysql
+    logging: *default-logging
 
   shootmania:
     platform: ${PIXEL_SM_RUNTIME_PLATFORM:-linux/amd64}
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: pixel-sm-server/Dockerfile
     restart: unless-stopped
+    stop_grace_period: ${PIXEL_SM_SHOOTMANIA_STOP_GRACE_PERIOD:-90s}
+    init: true
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       mysql:
         condition: service_healthy
@@ -47,10 +59,12 @@ services:
       PIXEL_SM_MANIACONTROL_SUPERADMIN_PASSWORD: ${PIXEL_SM_MANIACONTROL_SUPERADMIN_PASSWORD}
       PIXEL_SM_MANIACONTROL_ADMIN_PASSWORD: ${PIXEL_SM_MANIACONTROL_ADMIN_PASSWORD}
       PIXEL_SM_MANIACONTROL_USER_PASSWORD: ${PIXEL_SM_MANIACONTROL_USER_PASSWORD}
+      PIXEL_SM_MANIACONTROL_MASTERADMIN_LOGIN: ${PIXEL_SM_MANIACONTROL_MASTERADMIN_LOGIN:-}
       PIXEL_SM_MANIACONTROL_LOG_LEVEL: ${PIXEL_SM_MANIACONTROL_LOG_LEVEL}
       PIXEL_SM_BOOTSTRAP_TIMEOUT_SECONDS: ${PIXEL_SM_BOOTSTRAP_TIMEOUT_SECONDS}
       PIXEL_SM_START_MANIACONTROL: ${PIXEL_SM_START_MANIACONTROL}
       PIXEL_CONTROL_AUTO_ENABLE: ${PIXEL_CONTROL_AUTO_ENABLE}
+      PIXEL_CONTROL_ADMIN_CONTROL_ENABLED: ${PIXEL_CONTROL_ADMIN_CONTROL_ENABLED:-0}
       PIXEL_CONTROL_API_BASE_URL: ${PIXEL_CONTROL_API_BASE_URL:-}
       PIXEL_CONTROL_API_EVENT_PATH: ${PIXEL_CONTROL_API_EVENT_PATH:-}
       PIXEL_CONTROL_API_TIMEOUT_SECONDS: ${PIXEL_CONTROL_API_TIMEOUT_SECONDS:-}
@@ -62,6 +76,8 @@ services:
       PIXEL_CONTROL_AUTH_MODE: ${PIXEL_CONTROL_AUTH_MODE:-}
       PIXEL_CONTROL_AUTH_VALUE: ${PIXEL_CONTROL_AUTH_VALUE:-}
       PIXEL_CONTROL_AUTH_HEADER: ${PIXEL_CONTROL_AUTH_HEADER:-}
+      PIXEL_CONTROL_LINK_SERVER_URL: ${PIXEL_CONTROL_LINK_SERVER_URL:-}
+      PIXEL_CONTROL_LINK_TOKEN: ${PIXEL_CONTROL_LINK_TOKEN:-}
       PIXEL_CONTROL_VETO_DRAFT_ENABLED: ${PIXEL_CONTROL_VETO_DRAFT_ENABLED:-}
       PIXEL_CONTROL_VETO_DRAFT_COMMAND: ${PIXEL_CONTROL_VETO_DRAFT_COMMAND:-}
       PIXEL_CONTROL_VETO_DRAFT_DEFAULT_MODE: ${PIXEL_CONTROL_VETO_DRAFT_DEFAULT_MODE:-}
@@ -86,6 +102,5 @@ services:
       - ${PIXEL_SM_TITLEPACKS_SOURCE}:/opt/pixel-sm/titlepacks
       - ${PIXEL_SM_MAPS_SOURCE:-./maps}:/opt/pixel-sm/mode-maps:ro
       - ${PIXEL_CONTROL_PLUGIN_SOURCE}:/opt/pixel-sm/pixel-control-plugin-src:ro
+    logging: *default-logging
 
-volumes:
-  mysql_data:

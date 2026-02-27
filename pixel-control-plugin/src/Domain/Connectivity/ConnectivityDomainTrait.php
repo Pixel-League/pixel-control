@@ -35,6 +35,7 @@ trait ConnectivityDomainTrait {
 	private function buildHeartbeatPayload() {
 		return array(
 			'type' => 'plugin_heartbeat',
+			'capabilities' => $this->buildCapabilitiesPayload(),
 			'queue_depth' => $this->eventQueue ? $this->eventQueue->count() : 0,
 			'queue' => $this->buildQueueTelemetrySnapshot(),
 			'retry' => $this->buildRetryTelemetrySnapshot(),

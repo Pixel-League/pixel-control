@@ -2,6 +2,7 @@
 
 namespace PixelControl\Domain\Admin;
 
+use ManiaControl\Admin\AuthenticationManager;
 use ManiaControl\Communication\CommunicationAnswer;
 use ManiaControl\Players\Player;
 use PixelControl\Admin\AdminActionCatalog;
@@ -18,6 +19,22 @@ trait AdminControlIngressTrait {
 		$commandRequest = $this->parseAdminControlCommandRequest($chatCallback);
 		$actionName = $commandRequest['action_name'];
 		$parameters = $commandRequest['parameters'];
+
+		if ($this->isServerLinkCommandAction($actionName)) {
+			$result = $this->executeServerLinkCommand($actionName, $parameters, $player);
+			if ($result->isSuccess()) {
+				$this->maniaControl->getChat()->sendSuccess($result->getMessage(), $player);
+				return;
+			}
+
+			if ($result->getCode() === 'admin_command_unauthorized') {
+				$this->maniaControl->getAuthenticationManager()->sendNotAllowed($player);
+				return;
+			}
+
+			$this->maniaControl->getChat()->sendError($result->getMessage(), $player);
+			return;
+		}
 
 		if ($actionName === '' || $actionName === 'help' || $actionName === 'list') {
 			$this->sendAdminControlHelp($player);
@@ -53,6 +70,11 @@ trait AdminControlIngressTrait {
 		}
 
 		$requestPayload = $this->normalizeCommunicationPayload($data);
+		$authorization = $this->resolveLinkedCommunicationAuthorization($requestPayload);
+		if (!$authorization['authorized']) {
+			return new CommunicationAnswer($authorization['response'], true);
+		}
+
 		$actionName = isset($requestPayload['action']) ? (string) $requestPayload['action'] : '';
 		if ($actionName === '') {
 			$actionName = isset($requestPayload['action_name']) ? (string) $requestPayload['action_name'] : '';
@@ -77,7 +99,7 @@ trait AdminControlIngressTrait {
 			array(
 				'allow_actorless' => true,
 				'skip_permission_checks' => true,
-				'security_mode' => 'payload_untrusted',
+				'security_mode' => 'link_bearer',
 			)
 		);
 
@@ -86,6 +108,12 @@ trait AdminControlIngressTrait {
 
 
 	public function handleAdminControlCommunicationList($data) {
+		$requestPayload = $this->normalizeCommunicationPayload($data);
+		$authorization = $this->resolveLinkedCommunicationAuthorization($requestPayload);
+		if (!$authorization['authorized']) {
+			return new CommunicationAnswer($authorization['response'], true);
+		}
+
 		$payload = array(
 			'enabled' => $this->adminControlEnabled,
 			'command' => $this->adminControlCommandName,
@@ -99,11 +127,13 @@ trait AdminControlIngressTrait {
 					'permission_model' => 'maniacontrol_plugin_rights',
 				),
 				'communication' => array(
-					'authentication_mode' => 'none_temporary',
+					'authentication_mode' => 'link_bearer',
 					'actor_login_required' => false,
-					'permission_model' => 'trusted_payload_no_actor',
+					'permission_model' => 'linked_server_actorless',
+					'required_fields' => array('server_login', 'auth.mode', 'auth.token'),
 				),
 			),
+			'link' => $this->buildLinkStatusPayload(),
 			'whitelist' => $this->buildWhitelistCapabilitySnapshot(),
 			'vote_policy' => $this->getVotePolicySnapshot(),
 			'team_control' => $this->buildTeamControlCapabilitySnapshot(),
@@ -112,6 +142,323 @@ trait AdminControlIngressTrait {
 		);
 
 		return new CommunicationAnswer($payload, false);
+	}
+
+
+	private function isServerLinkCommandAction($actionName) {
+		$normalizedAction = strtolower(trim((string) $actionName));
+		return ($normalizedAction === 'server.link.set' || $normalizedAction === 'server.link.status');
+	}
+
+
+	private function executeServerLinkCommand($actionName, array $parameters, Player $player) {
+		if (!$this->isServerLinkCommandAuthorized($player)) {
+			return AdminActionResult::failure(
+				(string) $actionName,
+				'admin_command_unauthorized',
+				'Server link configuration requires super admin or master admin rights.'
+			);
+		}
+
+		$normalizedAction = strtolower(trim((string) $actionName));
+		if ($normalizedAction === 'server.link.status') {
+			return $this->executeServerLinkStatusCommand();
+		}
+
+		if ($normalizedAction === 'server.link.set') {
+			return $this->executeServerLinkSetCommand($parameters);
+		}
+
+		return AdminActionResult::failure(
+			$normalizedAction,
+			'invalid_parameters',
+			'Unknown server link command. Use //'.$this->adminControlCommandName.' server.link.status.'
+		);
+	}
+
+
+	private function isServerLinkCommandAuthorized(Player $player) {
+		return AuthenticationManager::checkRight($player, AuthenticationManager::AUTH_LEVEL_SUPERADMIN);
+	}
+
+
+	private function executeServerLinkSetCommand(array $parameters) {
+		$baseUrl = isset($parameters['base_url']) ? trim((string) $parameters['base_url']) : '';
+		$linkToken = isset($parameters['link_token']) ? trim((string) $parameters['link_token']) : '';
+
+		if ($baseUrl === '' || $linkToken === '') {
+			return AdminActionResult::failure(
+				'server.link.set',
+				'missing_parameters',
+				'Missing parameters. Usage: //'.$this->adminControlCommandName.' server.link.set base_url=<url> link_token=<token>.'
+			);
+		}
+
+		$normalizedBaseUrl = $this->normalizeServerLinkBaseUrl($baseUrl);
+		if ($normalizedBaseUrl === '') {
+			return AdminActionResult::failure(
+				'server.link.set',
+				'invalid_parameters',
+				'Invalid base_url. Only absolute http/https URLs are accepted.'
+			);
+		}
+
+		$settingManager = $this->maniaControl->getSettingManager();
+		$baseUrlWritten = $settingManager->setSetting($this, self::SETTING_LINK_SERVER_URL, $normalizedBaseUrl);
+		$tokenWritten = $settingManager->setSetting($this, self::SETTING_LINK_TOKEN, $linkToken);
+
+		if (!$baseUrlWritten || !$tokenWritten) {
+			return AdminActionResult::failure(
+				'server.link.set',
+				'setting_write_failed',
+				'Unable to persist server link settings.'
+			);
+		}
+
+		$this->applyRuntimeLinkTransportOverrides($normalizedBaseUrl, $linkToken);
+
+		$linkSnapshot = $this->resolveLinkConfigurationSnapshot(false);
+		return AdminActionResult::success(
+			'server.link.set',
+			'Server link updated. base_url=' . $linkSnapshot['base_url']
+			. ', token_fingerprint=' . $linkSnapshot['token_fingerprint_masked']
+			. ', token_source=' . $linkSnapshot['token_source']
+			. '.'
+		);
+	}
+
+
+	private function executeServerLinkStatusCommand() {
+		$linkSnapshot = $this->resolveLinkConfigurationSnapshot(false);
+		$status = $linkSnapshot['linked'] ? 'linked' : 'not_linked';
+
+		return AdminActionResult::success(
+			'server.link.status',
+			'Server link status: ' . $status
+			. ', base_url=' . ($linkSnapshot['base_url'] !== '' ? $linkSnapshot['base_url'] : '<unset>')
+			. ', token_fingerprint=' . $linkSnapshot['token_fingerprint_masked']
+			. ', base_url_source=' . $linkSnapshot['base_url_source']
+			. ', token_source=' . $linkSnapshot['token_source']
+			. '.'
+		);
+	}
+
+
+	private function normalizeServerLinkBaseUrl($baseUrl) {
+		$trimmedBaseUrl = trim((string) $baseUrl);
+		if ($trimmedBaseUrl === '') {
+			return '';
+		}
+
+		$validatedUrl = filter_var($trimmedBaseUrl, FILTER_VALIDATE_URL);
+		if (!is_string($validatedUrl) || $validatedUrl === '') {
+			return '';
+		}
+
+		$parsedUrl = parse_url($validatedUrl);
+		if (!is_array($parsedUrl) || !isset($parsedUrl['scheme'])) {
+			return '';
+		}
+
+		$scheme = strtolower(trim((string) $parsedUrl['scheme']));
+		if ($scheme !== 'http' && $scheme !== 'https') {
+			return '';
+		}
+
+		return rtrim($validatedUrl, '/');
+	}
+
+
+	private function applyRuntimeLinkTransportOverrides($baseUrl, $linkToken) {
+		if (!$this->apiClient) {
+			return;
+		}
+
+		if ($baseUrl !== '' && method_exists($this->apiClient, 'setBaseUrl')) {
+			$this->apiClient->setBaseUrl($baseUrl);
+		}
+
+		if ($linkToken !== '' && method_exists($this->apiClient, 'setAuthMode') && method_exists($this->apiClient, 'setAuthValue')) {
+			$this->apiClient->setAuthMode('bearer');
+			$this->apiClient->setAuthValue($linkToken);
+		}
+	}
+
+
+	private function buildLinkStatusPayload() {
+		$linkSnapshot = $this->resolveLinkConfigurationSnapshot(false);
+
+		return array(
+			'linked' => $linkSnapshot['linked'],
+			'base_url' => $linkSnapshot['base_url'],
+			'base_url_source' => $linkSnapshot['base_url_source'],
+			'token_source' => $linkSnapshot['token_source'],
+			'token_fingerprint' => $linkSnapshot['token_fingerprint_masked'],
+		);
+	}
+
+
+	private function resolveLinkConfigurationSnapshot($includeSecretToken) {
+		$baseUrl = $this->resolveRuntimeStringSetting(self::SETTING_LINK_SERVER_URL, 'PIXEL_CONTROL_LINK_SERVER_URL', '');
+		$linkToken = $this->resolveRuntimeStringSetting(self::SETTING_LINK_TOKEN, 'PIXEL_CONTROL_LINK_TOKEN', '');
+		$tokenFingerprint = $this->buildLinkTokenFingerprint($linkToken);
+		$baseUrlSource = $this->hasRuntimeEnvValue('PIXEL_CONTROL_LINK_SERVER_URL') ? 'env' : 'setting';
+		$tokenSource = $this->hasRuntimeEnvValue('PIXEL_CONTROL_LINK_TOKEN') ? 'env' : 'setting';
+
+		$snapshot = array(
+			'linked' => ($baseUrl !== '' && $linkToken !== ''),
+			'base_url' => $baseUrl,
+			'base_url_source' => $baseUrlSource,
+			'token_source' => $tokenSource,
+			'token_fingerprint' => $tokenFingerprint,
+			'token_fingerprint_masked' => $this->maskLinkTokenFingerprint($tokenFingerprint),
+		);
+
+		if ($includeSecretToken) {
+			$snapshot['link_token'] = $linkToken;
+		}
+
+		return $snapshot;
+	}
+
+
+	private function buildLinkTokenFingerprint($linkToken) {
+		$normalizedToken = trim((string) $linkToken);
+		if ($normalizedToken === '') {
+			return '';
+		}
+
+		return hash('sha256', $normalizedToken);
+	}
+
+
+	private function maskLinkTokenFingerprint($tokenFingerprint) {
+		$normalizedFingerprint = trim((string) $tokenFingerprint);
+		if ($normalizedFingerprint === '') {
+			return 'not_set';
+		}
+
+		if (strlen($normalizedFingerprint) <= 12) {
+			return $normalizedFingerprint;
+		}
+
+		return substr($normalizedFingerprint, 0, 8) . '...' . substr($normalizedFingerprint, -4);
+	}
+
+
+	private function resolveLinkedCommunicationAuthorization(array $requestPayload) {
+		$linkSnapshot = $this->resolveLinkConfigurationSnapshot(true);
+		if (!$linkSnapshot['linked']) {
+			return array(
+				'authorized' => false,
+				'response' => $this->buildLinkedCommunicationRejection(
+					'admin_command_unauthorized',
+					'Server link is not configured. Configure link credentials via //'.$this->adminControlCommandName.' server.link.set.',
+					array('reason' => 'server_not_linked')
+				),
+			);
+		}
+
+		$expectedServerLogin = $this->resolveLocalServerLoginForLinkAuth();
+		if ($expectedServerLogin === '') {
+			return array(
+				'authorized' => false,
+				'response' => $this->buildLinkedCommunicationRejection(
+					'admin_command_unauthorized',
+					'Local server identity is unavailable for link authorization.',
+					array('reason' => 'local_server_login_unavailable')
+				),
+			);
+		}
+
+		$providedServerLogin = '';
+		if (isset($requestPayload['server_login'])) {
+			$providedServerLogin = strtolower(trim((string) $requestPayload['server_login']));
+		}
+
+		$authMode = '';
+		$authToken = '';
+		if (isset($requestPayload['auth']) && is_array($requestPayload['auth'])) {
+			if (isset($requestPayload['auth']['mode'])) {
+				$authMode = strtolower(trim((string) $requestPayload['auth']['mode']));
+			}
+			if (isset($requestPayload['auth']['token'])) {
+				$authToken = trim((string) $requestPayload['auth']['token']);
+			}
+		}
+
+		if ($providedServerLogin === '' || $authMode === '' || $authToken === '') {
+			return array(
+				'authorized' => false,
+				'response' => $this->buildLinkedCommunicationRejection(
+					'link_auth_missing',
+					'Missing link authentication payload fields (server_login, auth.mode, auth.token).'
+				),
+			);
+		}
+
+		if ($authMode !== 'link_bearer') {
+			return array(
+				'authorized' => false,
+				'response' => $this->buildLinkedCommunicationRejection(
+					'link_auth_invalid',
+					'Invalid auth.mode. Expected link_bearer.'
+				),
+			);
+		}
+
+		if ($providedServerLogin !== $expectedServerLogin) {
+			return array(
+				'authorized' => false,
+				'response' => $this->buildLinkedCommunicationRejection(
+					'link_server_mismatch',
+					'Provided server_login does not match local plugin server identity.',
+					array(
+						'provided_server_login' => $providedServerLogin,
+						'expected_server_login' => $expectedServerLogin,
+					)
+				),
+			);
+		}
+
+		$expectedLinkToken = isset($linkSnapshot['link_token']) ? (string) $linkSnapshot['link_token'] : '';
+		if ($expectedLinkToken === '' || !hash_equals($expectedLinkToken, $authToken)) {
+			return array(
+				'authorized' => false,
+				'response' => $this->buildLinkedCommunicationRejection(
+					'link_auth_invalid',
+					'Provided link bearer token is invalid.'
+				),
+			);
+		}
+
+		return array('authorized' => true, 'response' => array());
+	}
+
+
+	private function buildLinkedCommunicationRejection($code, $message, array $details = array()) {
+		return array(
+			'action_name' => 'server_scoped_admin',
+			'success' => false,
+			'code' => trim((string) $code),
+			'message' => trim((string) $message),
+			'details' => $details,
+		);
+	}
+
+
+	private function resolveLocalServerLoginForLinkAuth() {
+		if (!$this->maniaControl || !$this->maniaControl->getServer()) {
+			return '';
+		}
+
+		$serverLogin = '';
+		$server = $this->maniaControl->getServer();
+		if (isset($server->login)) {
+			$serverLogin = trim((string) $server->login);
+		}
+
+		return strtolower($serverLogin);
 	}
 
 
@@ -372,18 +719,14 @@ trait AdminControlIngressTrait {
 			'Usage: //' . $this->adminControlCommandName . ' <action> key=value ...',
 			$player
 		);
+		$this->maniaControl->getChat()->sendInformation(
+			'Server link commands (super/master admin only): server.link.set base_url=<url> link_token=<token>, server.link.status',
+			$player
+		);
 
-		foreach ($actionNames as $actionName) {
-			$definition = (isset($actionDefinitions[$actionName]) && is_array($actionDefinitions[$actionName]))
-				? $actionDefinitions[$actionName]
-				: array();
-			$requiredParameters = $this->extractAdminActionHelpParameters($definition, 'required_parameters');
-			$optionalParameters = $this->extractAdminActionHelpParameters($definition, 'optional_parameters');
-
-			$this->maniaControl->getChat()->sendInformation(
-				$this->formatAdminActionHelpLine($actionName, $requiredParameters, $optionalParameters),
-				$player
-			);
+		$familyLines = $this->buildAdminActionHelpFamilyLines($actionDefinitions);
+		foreach ($familyLines as $familyLine) {
+			$this->maniaControl->getChat()->sendInformation($familyLine, $player);
 		}
 	}
 
@@ -407,27 +750,133 @@ trait AdminControlIngressTrait {
 	}
 
 
-	private function formatAdminActionHelpLine($actionName, array $requiredParameters, array $optionalParameters) {
-		$segments = array('- ' . $actionName);
-		$requiredPart = $this->formatAdminActionHelpParameterGroup($requiredParameters, 'required');
-		$optionalPart = $this->formatAdminActionHelpParameterGroup($optionalParameters, 'optional');
-		if ($requiredPart !== '') {
-			$segments[] = $requiredPart;
-		}
-		if ($optionalPart !== '') {
-			$segments[] = $optionalPart;
+	private function buildAdminActionHelpFamilyLines(array $actionDefinitions) {
+		$families = array();
+		$actionNames = array_keys($actionDefinitions);
+		sort($actionNames);
+
+		foreach ($actionNames as $actionName) {
+			$actionDefinition = (isset($actionDefinitions[$actionName]) && is_array($actionDefinitions[$actionName]))
+				? $actionDefinitions[$actionName]
+				: array();
+			$familyKey = $this->buildAdminActionHelpFamilyKey($actionName);
+			if (!isset($families[$familyKey])) {
+				$families[$familyKey] = array();
+			}
+
+			$families[$familyKey][] = array(
+				'label' => $this->buildAdminActionHelpActionLabel($actionName),
+				'required_parameters' => $this->extractAdminActionHelpParameters($actionDefinition, 'required_parameters'),
+				'optional_parameters' => $this->extractAdminActionHelpParameters($actionDefinition, 'optional_parameters'),
+			);
 		}
 
-		return implode(' | ', $segments);
+		ksort($families);
+
+		$familyLines = array();
+		foreach ($families as $familyKey => $familyActions) {
+			usort($familyActions, function ($left, $right) {
+				$leftLabel = isset($left['label']) ? trim((string) $left['label']) : '';
+				$rightLabel = isset($right['label']) ? trim((string) $right['label']) : '';
+				return strcmp($leftLabel, $rightLabel);
+			});
+
+			$familyLines[] = $this->formatAdminActionFamilyHelpLine($familyKey, $familyActions);
+		}
+
+		return $familyLines;
 	}
 
 
-	private function formatAdminActionHelpParameterGroup(array $parameters, $label) {
-		if (empty($parameters)) {
+	private function buildAdminActionHelpFamilyKey($actionName) {
+		$normalizedActionName = strtolower(trim((string) $actionName));
+		if ($normalizedActionName === '') {
+			return 'unknown';
+		}
+
+		$segments = explode('.', $normalizedActionName);
+		if (count($segments) <= 1) {
+			return $normalizedActionName;
+		}
+
+		array_pop($segments);
+		$familyKey = implode('.', $segments);
+		if ($familyKey !== '') {
+			return $familyKey;
+		}
+
+		return $normalizedActionName;
+	}
+
+
+	private function buildAdminActionHelpActionLabel($actionName) {
+		$normalizedActionName = strtolower(trim((string) $actionName));
+		if ($normalizedActionName === '') {
+			return 'unknown';
+		}
+
+		$segments = explode('.', $normalizedActionName);
+		$actionLabel = array_pop($segments);
+		if (is_string($actionLabel) && trim($actionLabel) !== '') {
+			return trim($actionLabel);
+		}
+
+		return $normalizedActionName;
+	}
+
+
+	private function formatAdminActionFamilyHelpLine($familyKey, array $familyActions) {
+		$actionSegments = array();
+		foreach ($familyActions as $familyAction) {
+			$actionSegments[] = $this->formatAdminActionHelpActionLabel(
+				(isset($familyAction['label']) ? (string) $familyAction['label'] : ''),
+				(isset($familyAction['required_parameters']) && is_array($familyAction['required_parameters']))
+					? $familyAction['required_parameters']
+					: array(),
+				(isset($familyAction['optional_parameters']) && is_array($familyAction['optional_parameters']))
+					? $familyAction['optional_parameters']
+					: array()
+			);
+		}
+
+		$normalizedFamilyKey = trim((string) $familyKey);
+		if ($normalizedFamilyKey === '') {
+			$normalizedFamilyKey = 'unknown';
+		}
+
+		return '- ' . $normalizedFamilyKey . ': ' . implode(' | ', $actionSegments);
+	}
+
+
+	private function formatAdminActionHelpActionLabel($actionLabel, array $requiredParameters, array $optionalParameters) {
+		$normalizedActionLabel = trim((string) $actionLabel);
+		if ($normalizedActionLabel === '') {
+			$normalizedActionLabel = 'unknown';
+		}
+
+		$parameterHint = $this->formatAdminActionHelpParameterHint($requiredParameters, $optionalParameters);
+		if ($parameterHint === '') {
+			return $normalizedActionLabel;
+		}
+
+		return $normalizedActionLabel . $parameterHint;
+	}
+
+
+	private function formatAdminActionHelpParameterHint(array $requiredParameters, array $optionalParameters) {
+		$segments = array();
+		if (!empty($requiredParameters)) {
+			$segments[] = 'req:' . implode(',', $requiredParameters);
+		}
+		if (!empty($optionalParameters)) {
+			$segments[] = 'opt:' . implode(',', $optionalParameters);
+		}
+
+		if (empty($segments)) {
 			return '';
 		}
 
-		return $label . ': ' . implode(', ', $parameters);
+		return '(' . implode(';', $segments) . ')';
 	}
 
 
@@ -494,11 +943,13 @@ trait AdminControlIngressTrait {
 					'permission_model' => 'maniacontrol_plugin_rights',
 				),
 				'communication' => array(
-					'authentication_mode' => 'none_temporary',
+					'authentication_mode' => 'link_bearer',
 					'actor_login_required' => false,
-					'permission_model' => 'trusted_payload_no_actor',
+					'permission_model' => 'linked_server_actorless',
+					'required_fields' => array('server_login', 'auth.mode', 'auth.token'),
 				),
 			),
+			'link' => $this->buildLinkStatusPayload(),
 			'actions' => $actionNames,
 			'whitelist' => $this->buildWhitelistCapabilitySnapshot(),
 			'vote_policy' => $this->getVotePolicySnapshot(),

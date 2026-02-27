@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 AUTOMATED_SUITE_DIR="${PROJECT_DIR}/scripts/automated-suite"
 ADMIN_ACTION_SPECS_DIR="${AUTOMATED_SUITE_DIR}/admin-actions"
+ADMIN_LINK_AUTH_CASE_SPECS_DIR="${AUTOMATED_SUITE_DIR}/admin-link-auth-cases"
 VETO_CHECK_SPECS_DIR="${AUTOMATED_SUITE_DIR}/veto-checks"
 
 DEV_MODE_SCRIPT="${PROJECT_DIR}/scripts/dev-mode-compose.sh"
@@ -26,6 +27,9 @@ ACK_STUB_RECEIPT_ID="${PIXEL_SM_AUTOMATED_SUITE_ACK_STUB_RECEIPT_ID:-automated-s
 COMM_SOCKET_HOST="${PIXEL_SM_AUTOMATED_SUITE_COMM_HOST:-127.0.0.1}"
 COMM_SOCKET_PORT="${PIXEL_SM_AUTOMATED_SUITE_COMM_PORT:-31501}"
 COMM_SOCKET_WAIT_ATTEMPTS="${PIXEL_SM_AUTOMATED_SUITE_COMM_WAIT_ATTEMPTS:-45}"
+AUTOMATED_LINK_SERVER_URL="${PIXEL_SM_AUTOMATED_SUITE_LINK_SERVER_URL:-http://127.0.0.1:8080}"
+AUTOMATED_LINK_TOKEN="${PIXEL_SM_AUTOMATED_SUITE_LINK_TOKEN:-automated-suite-link-token}"
+AUTOMATED_LINK_SERVER_LOGIN="${PIXEL_SM_AUTOMATED_SUITE_LINK_SERVER_LOGIN:-}"
 
 DEFAULT_MODES_CSV="elite,joust"
 REQUESTED_MODES_CSV="$DEFAULT_MODES_CSV"
@@ -357,16 +361,23 @@ ensure_required_scripts() {
   [ -f "$ACK_STUB_SCRIPT" ] || fail "Missing script: ${ACK_STUB_SCRIPT}"
   [ -f "$DEV_PLUGIN_SYNC_SCRIPT" ] || fail "Missing script: ${DEV_PLUGIN_SYNC_SCRIPT}"
   [ -d "$ADMIN_ACTION_SPECS_DIR" ] || fail "Missing directory: ${ADMIN_ACTION_SPECS_DIR}"
+  [ -d "$ADMIN_LINK_AUTH_CASE_SPECS_DIR" ] || fail "Missing directory: ${ADMIN_LINK_AUTH_CASE_SPECS_DIR}"
   [ -d "$VETO_CHECK_SPECS_DIR" ] || fail "Missing directory: ${VETO_CHECK_SPECS_DIR}"
 
   local spec_file=""
   local admin_spec_count=0
+  local admin_link_auth_case_spec_count=0
   local veto_spec_count=0
 
   shopt -s nullglob
   for spec_file in "$ADMIN_ACTION_SPECS_DIR"/*.sh; do
     [ -f "$spec_file" ] || continue
     admin_spec_count=$((admin_spec_count + 1))
+  done
+
+  for spec_file in "$ADMIN_LINK_AUTH_CASE_SPECS_DIR"/*.sh; do
+    [ -f "$spec_file" ] || continue
+    admin_link_auth_case_spec_count=$((admin_link_auth_case_spec_count + 1))
   done
 
   for spec_file in "$VETO_CHECK_SPECS_DIR"/*.sh; do
@@ -376,6 +387,7 @@ ensure_required_scripts() {
   shopt -u nullglob
 
   [ "$admin_spec_count" -gt 0 ] || fail "No admin action spec scripts found in ${ADMIN_ACTION_SPECS_DIR}"
+  [ "$admin_link_auth_case_spec_count" -gt 0 ] || fail "No admin link-auth case spec scripts found in ${ADMIN_LINK_AUTH_CASE_SPECS_DIR}"
   [ "$veto_spec_count" -gt 0 ] || fail "No veto check spec scripts found in ${VETO_CHECK_SPECS_DIR}"
 }
 
@@ -955,6 +967,8 @@ run_mode_admin_payload_assertions() {
       env \
         PIXEL_SM_DEV_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
         PIXEL_SM_DEV_ARTIFACT_DIR="$payload_root" \
+        PIXEL_CONTROL_LINK_SERVER_URL="$AUTOMATED_LINK_SERVER_URL" \
+        PIXEL_CONTROL_LINK_TOKEN="$AUTOMATED_LINK_TOKEN" \
         PIXEL_CONTROL_API_BASE_URL="http://host.docker.internal:${ACTIVE_ACK_STUB_PORT}" \
         bash "$DEV_PLUGIN_SYNC_SCRIPT"
 
@@ -1459,6 +1473,108 @@ if errors:
 PY
 }
 
+load_admin_link_auth_case_ids() {
+  local spec_dir="$1"
+  local spec_file=""
+  local case_id=""
+  local duplicate_case_id=""
+  local -a case_ids=()
+
+  if [ ! -d "$spec_dir" ]; then
+    fail "Missing admin link-auth case specs directory: ${spec_dir}"
+  fi
+
+  shopt -s nullglob
+  for spec_file in "$spec_dir"/*.sh; do
+    [ -f "$spec_file" ] || continue
+    case_id="$(bash "$spec_file" 2>/dev/null || true)"
+    case_id="$(trim_whitespace "$case_id")"
+    if [ -z "$case_id" ]; then
+      continue
+    fi
+
+    duplicate_case_id=""
+    for duplicate_case_id in "${case_ids[@]}"; do
+      if [ "$duplicate_case_id" = "$case_id" ]; then
+        duplicate_case_id="$case_id"
+        break
+      fi
+      duplicate_case_id=""
+    done
+
+    if [ -n "$duplicate_case_id" ]; then
+      continue
+    fi
+
+    case_ids+=("$case_id")
+  done
+  shopt -u nullglob
+
+  if [ "${#case_ids[@]}" -eq 0 ]; then
+    fail "No admin link-auth case ids loaded from ${spec_dir}"
+  fi
+
+  printf '%s\n' "${case_ids[@]}"
+}
+
+run_mode_admin_link_auth_assertions() {
+  local mode="$1"
+  local mode_dir="${RUN_DIR}/modes/${mode}"
+  local admin_dir="${mode_dir}/admin-sim"
+  local response_root="${admin_dir}/response"
+  local link_auth_root="${response_root}/link-auth"
+  local -a link_auth_cases=()
+  local -a command_args=()
+  local case_id=""
+  local output_root=""
+
+  mkdir -p "$link_auth_root"
+
+  mapfile -t link_auth_cases < <(load_admin_link_auth_case_ids "$ADMIN_LINK_AUTH_CASE_SPECS_DIR")
+
+  for case_id in "${link_auth_cases[@]}"; do
+    output_root="${link_auth_root}/${case_id}"
+    command_args=("matrix" "link_auth_case=${case_id}")
+
+    case "$case_id" in
+      valid)
+        command_args+=("link_token=${AUTOMATED_LINK_TOKEN}")
+        if [ -n "$AUTOMATED_LINK_SERVER_LOGIN" ]; then
+          command_args+=("link_server_login=${AUTOMATED_LINK_SERVER_LOGIN}")
+        fi
+        ;;
+      invalid)
+        command_args+=("link_token=invalid-token")
+        if [ -n "$AUTOMATED_LINK_SERVER_LOGIN" ]; then
+          command_args+=("link_server_login=${AUTOMATED_LINK_SERVER_LOGIN}")
+        fi
+        ;;
+      mismatch)
+        command_args+=("link_token=${AUTOMATED_LINK_TOKEN}")
+        if [ -n "$AUTOMATED_LINK_SERVER_LOGIN" ]; then
+          command_args+=("link_server_login=${AUTOMATED_LINK_SERVER_LOGIN}")
+        fi
+        ;;
+      missing)
+        ;;
+      *)
+        fail "Unsupported admin link-auth case id from descriptors: ${case_id}"
+        ;;
+    esac
+
+    run_check_command \
+      "mode.${mode}.admin.link_auth.${case_id}" \
+      "1" \
+      "Run admin matrix link-auth case (${case_id})" \
+      "$output_root" \
+      run_logged_command_with_mode_recovery "$mode" "${admin_dir}/link-auth-${case_id}-command.log" \
+        env \
+          PIXEL_SM_ADMIN_SIM_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
+          PIXEL_SM_ADMIN_SIM_OUTPUT_ROOT="$output_root" \
+          bash "$ADMIN_SIMULATION_SCRIPT" "${command_args[@]}"
+  done
+}
+
 run_mode_admin_response_assertions() {
   local mode="$1"
   local mode_dir="${RUN_DIR}/modes/${mode}"
@@ -1482,6 +1598,8 @@ run_mode_admin_response_assertions() {
       env \
         PIXEL_SM_DEV_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
         PIXEL_SM_DEV_ARTIFACT_DIR="$admin_dir" \
+        PIXEL_CONTROL_LINK_SERVER_URL="$AUTOMATED_LINK_SERVER_URL" \
+        PIXEL_CONTROL_LINK_TOKEN="$AUTOMATED_LINK_TOKEN" \
         bash "$DEV_PLUGIN_SYNC_SCRIPT"
 
   run_check_command \
@@ -1916,6 +2034,8 @@ main() {
   log "Requested modes CSV: ${REQUESTED_MODES_CSV}"
   log "Optional mode matrix validation: ${WITH_MODE_MATRIX_VALIDATION}"
   log "Compose files: ${AUTOMATED_COMPOSE_FILES}"
+  log "Admin link server url: ${AUTOMATED_LINK_SERVER_URL}"
+  log "Admin link token status: $( [ -n "$AUTOMATED_LINK_TOKEN" ] && printf '%s' "set(length=${#AUTOMATED_LINK_TOKEN})" || printf '%s' 'unset' )"
   log "Run directory: ${RUN_DIR}"
   log "Run manifest: ${RUN_MANIFEST_FILE}"
   log "Check ledger: ${CHECK_RESULTS_FILE}"
@@ -1927,6 +2047,7 @@ main() {
     run_mode_launch_validation "$mode"
     run_mode_wave4_plugin_only "$mode"
     run_mode_admin_response_assertions "$mode"
+    run_mode_admin_link_auth_assertions "$mode"
     run_mode_admin_payload_assertions "$mode" "$mode_index"
     run_mode_admin_correlation_assertions "$mode"
     run_mode_veto_response_assertions "$mode"

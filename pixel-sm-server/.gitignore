@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 runtime/server/*
 !runtime/server/.gitkeep
 TitlePacks/*
@@ -9,3 +10,4 @@ logs/qa/*
 !logs/qa/.gitkeep
 logs/dev/*
 !logs/dev/.gitkeep
+data/

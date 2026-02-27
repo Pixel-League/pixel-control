@@ -213,6 +213,7 @@ trait AdminControlExecutionTrait {
 				$requestSource,
 				$securityMode
 			);
+			$this->queueConnectivityCapabilityRefreshAfterAdminAction($normalizedActionName, $requestSource, $logActor);
 			Logger::log(
 				'[PixelControl][admin][action_success] action=' . $normalizedActionName
 				. ', source=' . $requestSource
@@ -459,6 +460,53 @@ trait AdminControlExecutionTrait {
 		}
 
 		return 'unknown';
+	}
+
+
+	private function shouldQueueConnectivityRefreshAfterAdminAction($actionName) {
+		return in_array(
+			$actionName,
+			array(
+				AdminActionCatalog::ACTION_WHITELIST_ENABLE,
+				AdminActionCatalog::ACTION_WHITELIST_DISABLE,
+				AdminActionCatalog::ACTION_WHITELIST_ADD,
+				AdminActionCatalog::ACTION_WHITELIST_REMOVE,
+				AdminActionCatalog::ACTION_WHITELIST_CLEAN,
+				AdminActionCatalog::ACTION_WHITELIST_SYNC,
+				AdminActionCatalog::ACTION_VOTE_POLICY_SET,
+				AdminActionCatalog::ACTION_TEAM_POLICY_SET,
+				AdminActionCatalog::ACTION_TEAM_ROSTER_ASSIGN,
+				AdminActionCatalog::ACTION_TEAM_ROSTER_UNASSIGN,
+				AdminActionCatalog::ACTION_MATCH_BO_SET,
+				AdminActionCatalog::ACTION_MATCH_MAPS_SET,
+				AdminActionCatalog::ACTION_MATCH_SCORE_SET,
+			),
+			true
+		);
+	}
+
+
+	private function queueConnectivityCapabilityRefreshAfterAdminAction($actionName, $requestSource, $actorLogin) {
+		if (!$this->shouldQueueConnectivityRefreshAfterAdminAction($actionName)) {
+			return;
+		}
+
+		$heartbeatPayload = $this->buildHeartbeatPayload();
+		$heartbeatPayload['refresh'] = array(
+			'trigger' => 'admin_policy_mutation',
+			'action_name' => (string) $actionName,
+			'source' => (string) $requestSource,
+			'actor' => trim((string) $actorLogin),
+			'triggered_at' => time(),
+		);
+
+		$this->queueConnectivityEvent('heartbeat', $heartbeatPayload);
+		Logger::log(
+			'[PixelControl][connectivity][capability_refresh_queued] action=' . (string) $actionName
+			. ', source=' . (string) $requestSource
+			. ', actor=' . trim((string) $actorLogin)
+			. '.'
+		);
 	}
 
 }

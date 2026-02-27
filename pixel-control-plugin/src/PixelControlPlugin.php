@@ -62,6 +62,8 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	const SETTING_API_AUTH_MODE = 'Pixel Control API Auth Mode';
 	const SETTING_API_AUTH_VALUE = 'Pixel Control API Auth Value';
 	const SETTING_API_AUTH_HEADER = 'Pixel Control API Auth Header';
+	const SETTING_LINK_SERVER_URL = 'Pixel Control Link Server URL';
+	const SETTING_LINK_TOKEN = 'Pixel Control Link Token';
 	const SETTING_QUEUE_MAX_SIZE = 'Pixel Control Queue Max Size';
 	const SETTING_DISPATCH_BATCH_SIZE = 'Pixel Control Dispatch Batch Size';
 	const SETTING_HEARTBEAT_INTERVAL_SECONDS = 'Pixel Control Heartbeat Interval Seconds';
@@ -121,6 +123,10 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	private $whitelistRecentDeniedAt = array();
 	/** @var int $whitelistDenyCooldownSeconds */
 	private $whitelistDenyCooldownSeconds = 5;
+	/** @var int $whitelistReconcileIntervalSeconds */
+	private $whitelistReconcileIntervalSeconds = 5;
+	/** @var int $whitelistLastReconcileAt */
+	private $whitelistLastReconcileAt = 0;
 	/** @var string $whitelistGuestListLastSyncHash */
 	private $whitelistGuestListLastSyncHash = '';
 	/** @var int $whitelistGuestListLastSyncAt */

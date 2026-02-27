@@ -84,6 +84,142 @@ class FakeChat {
 }
 
 class FakeMapManager {
+	public $currentMap = null;
+
+	public function getCurrentMap() {
+		return $this->currentMap;
+	}
+}
+
+class FakeClient {
+	public $kickCalls = array();
+	public $kickFailures = array();
+	public $kickExceptions = array();
+	public $guestList = array();
+	public $guestListCleanCount = 0;
+	public $guestListSaveCalls = array();
+	public $saveGuestListException = null;
+	public $callVoteTimeout = 120000;
+
+	public function kick($login, $reason = '') {
+		$normalizedLogin = strtolower(trim((string) $login));
+		$this->kickCalls[] = array(
+			'login' => $normalizedLogin,
+			'reason' => (string) $reason,
+		);
+
+		if (isset($this->kickExceptions[$normalizedLogin]) && $this->kickExceptions[$normalizedLogin] instanceof \Throwable) {
+			throw $this->kickExceptions[$normalizedLogin];
+		}
+
+		if (isset($this->kickFailures[$normalizedLogin])) {
+			return false;
+		}
+
+		return true;
+	}
+
+	public function cleanGuestList() {
+		$this->guestList = array();
+		$this->guestListCleanCount++;
+		return true;
+	}
+
+	public function addGuest($login) {
+		$this->guestList[] = strtolower(trim((string) $login));
+		return true;
+	}
+
+	public function saveGuestList($filename = '') {
+		$this->guestListSaveCalls[] = (string) $filename;
+		if ($this->saveGuestListException instanceof \Throwable) {
+			throw $this->saveGuestListException;
+		}
+
+		return true;
+	}
+
+	public function cancelVote() {
+		return true;
+	}
+
+	public function setCallVoteTimeOut($value) {
+		$this->callVoteTimeout = max(0, (int) $value);
+		return true;
+	}
+
+	public function getCallVoteTimeOut() {
+		return $this->callVoteTimeout;
+	}
+}
+
+class FakeLinkApiClient {
+	public $baseUrl = '';
+	public $authMode = 'none';
+	public $authValue = '';
+
+	public function setBaseUrl($baseUrl) {
+		$this->baseUrl = (string) $baseUrl;
+	}
+
+	public function setAuthMode($authMode) {
+		$this->authMode = (string) $authMode;
+	}
+
+	public function setAuthValue($authValue) {
+		$this->authValue = (string) $authValue;
+	}
+}
+
+class FakeServer {
+	public $login;
+	public $titleId;
+	public $port;
+	public $p2pPort;
+
+	public function __construct($login = 'server-local') {
+		$this->login = (string) $login;
+		$this->titleId = 'SMStorm@nadeolabs';
+		$this->port = 2350;
+		$this->p2pPort = 3450;
+	}
+}
+
+class FakePlayerManager {
+	private $players = array();
+
+	public function registerPlayer($player) {
+		if (!is_object($player) || !isset($player->login)) {
+			return;
+		}
+
+		$this->players[strtolower((string) $player->login)] = $player;
+	}
+
+	public function getPlayer($login, $fetchOnline = false) {
+		$normalizedLogin = strtolower(trim((string) $login));
+		if ($normalizedLogin === '') {
+			return null;
+		}
+
+		if (!array_key_exists($normalizedLogin, $this->players)) {
+			return null;
+		}
+
+		return $this->players[$normalizedLogin];
+	}
+
+	public function getPlayers($includeSpectators = false) {
+		return array_values($this->players);
+	}
+
+	public function getPlayerCount($activeOnly = false, $includeSpectators = true) {
+		return count($this->players);
+	}
+
+	public function getSpectatorCount() {
+		return 0;
+	}
 }
 
 class FakeManiaControl {
@@ -91,17 +227,26 @@ class FakeManiaControl {
 	private $authenticationManager;
 	private $mapManager;
 	private $chat;
+	private $server;
+	private $playerManager;
+	private $client;
 
 	public function __construct(
 		$settingManager = null,
 		$authenticationManager = null,
 		$mapManager = null,
-		$chat = null
+		$chat = null,
+		$server = null,
+		$playerManager = null,
+		$client = null
 	) {
 		$this->settingManager = $settingManager ?: new FakeSettingManager();
 		$this->authenticationManager = $authenticationManager ?: new FakeAuthenticationManager();
 		$this->mapManager = $mapManager ?: new FakeMapManager();
 		$this->chat = $chat ?: new FakeChat();
+		$this->server = $server ?: new FakeServer();
+		$this->playerManager = $playerManager ?: new FakePlayerManager();
+		$this->client = $client ?: new FakeClient();
 	}
 
 	public function getSettingManager() {
@@ -118,6 +263,18 @@ class FakeManiaControl {
 
 	public function getChat() {
 		return $this->chat;
+	}
+
+	public function getServer() {
+		return $this->server;
+	}
+
+	public function getPlayerManager() {
+		return $this->playerManager;
+	}
+
+	public function getClient() {
+		return $this->client;
 	}
 }
 

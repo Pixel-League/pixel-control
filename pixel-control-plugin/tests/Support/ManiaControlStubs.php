@@ -60,7 +60,53 @@ namespace ManiaControl\Admin;
 if (!class_exists('ManiaControl\\Admin\\AuthenticationManager', false)) {
 	class AuthenticationManager {
 		const AUTH_LEVEL_PLAYER = 0;
-		const AUTH_LEVEL_MODERATOR = 2;
+		const AUTH_LEVEL_MODERATOR = 1;
+		const AUTH_LEVEL_ADMIN = 2;
+		const AUTH_LEVEL_SUPERADMIN = 3;
+		const AUTH_LEVEL_MASTERADMIN = 4;
+		const AUTH_NAME_PLAYER = 'Player';
+		const AUTH_NAME_MODERATOR = 'Moderator';
+		const AUTH_NAME_ADMIN = 'Admin';
+		const AUTH_NAME_SUPERADMIN = 'SuperAdmin';
+		const AUTH_NAME_MASTERADMIN = 'MasterAdmin';
+
+		public static function checkRight($player, $neededAuthLevel) {
+			return isset($player->authLevel) && ((int) $player->authLevel >= (int) $neededAuthLevel);
+		}
+
+		public static function getAuthLevelName($authLevel) {
+			switch ((int) $authLevel) {
+				case self::AUTH_LEVEL_MASTERADMIN:
+					return self::AUTH_NAME_MASTERADMIN;
+				case self::AUTH_LEVEL_SUPERADMIN:
+					return self::AUTH_NAME_SUPERADMIN;
+				case self::AUTH_LEVEL_ADMIN:
+					return self::AUTH_NAME_ADMIN;
+				case self::AUTH_LEVEL_MODERATOR:
+					return self::AUTH_NAME_MODERATOR;
+				case self::AUTH_LEVEL_PLAYER:
+					return self::AUTH_NAME_PLAYER;
+				default:
+					return '-';
+			}
+		}
+
+		public static function getAuthLevel($authLevelName) {
+			switch ((string) $authLevelName) {
+				case self::AUTH_NAME_MASTERADMIN:
+					return self::AUTH_LEVEL_MASTERADMIN;
+				case self::AUTH_NAME_SUPERADMIN:
+					return self::AUTH_LEVEL_SUPERADMIN;
+				case self::AUTH_NAME_ADMIN:
+					return self::AUTH_LEVEL_ADMIN;
+				case self::AUTH_NAME_MODERATOR:
+					return self::AUTH_LEVEL_MODERATOR;
+				case self::AUTH_NAME_PLAYER:
+					return self::AUTH_LEVEL_PLAYER;
+				default:
+					return -1;
+			}
+		}
 
 		public function sendNotAllowed($player) {
 			return null;
