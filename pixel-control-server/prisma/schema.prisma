@@ -13,3 +13,44 @@ model HealthCheck {
 
   @@map("health_checks")
 }
+
+model Server {
+  id            String    @id @default(uuid())
+  serverLogin   String    @unique @map("server_login")
+  serverName    String?   @map("server_name")
+  linkToken     String?   @map("link_token")
+  linked        Boolean   @default(false)
+  gameMode      String?   @map("game_mode")
+  titleId       String?   @map("title_id")
+  pluginVersion String?   @map("plugin_version")
+  lastHeartbeat DateTime? @map("last_heartbeat")
+  online        Boolean   @default(false)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  connectivityEvents ConnectivityEvent[]
+
+  @@map("servers")
+}
+
+model ConnectivityEvent {
+  id             String   @id @default(uuid())
+  serverId       String   @map("server_id")
+  eventName      String   @map("event_name")
+  eventId        String   @map("event_id")
+  eventCategory  String   @map("event_category")
+  idempotencyKey String   @unique @map("idempotency_key")
+  sourceCallback String   @map("source_callback")
+  sourceSequence BigInt   @map("source_sequence")
+  sourceTime     BigInt   @map("source_time")
+  schemaVersion  String   @map("schema_version")
+  payload        Json
+  metadata       Json?
+  receivedAt     DateTime @default(now()) @map("received_at")
+
+  server Server @relation(fields: [serverId], references: [id])
+
+  @@index([serverId])
+  @@index([eventCategory])
+  @@map("connectivity_events")
+}

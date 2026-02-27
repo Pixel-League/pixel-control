@@ -26,8 +26,12 @@ RUN apt-get update \
 
 WORKDIR /opt/pixel-sm
 
-COPY scripts /opt/pixel-sm/scripts
-COPY templates /opt/pixel-sm/templates
+# Build context is the monorepo root (context: ..)
+COPY pixel-sm-server/scripts /opt/pixel-sm/scripts
+COPY pixel-sm-server/templates /opt/pixel-sm/templates
+
+# Bake the Pixel Control plugin into the image
+COPY pixel-control-plugin/src /opt/pixel-sm/pixel-control-plugin-src
 
 RUN chmod +x /opt/pixel-sm/scripts/*.sh
 

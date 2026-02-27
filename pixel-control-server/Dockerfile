@@ -24,12 +24,23 @@ WORKDIR /app
 COPY --from=build /app/package.json /app/package-lock.json ./
 RUN npm ci --omit=dev
 
-# Copy the generated Prisma client into node_modules
+# Prisma client + CLI + engines (runtime + auto-migration)
 COPY --from=build /app/node_modules/.prisma/ node_modules/.prisma/
-COPY --from=build /app/node_modules/@prisma/client/ node_modules/@prisma/client/
+COPY --from=build /app/node_modules/@prisma/ node_modules/@prisma/
+COPY --from=build /app/node_modules/prisma/ node_modules/prisma/
+
+# dotenv (required by prisma.config.ts)
+COPY --from=build /app/node_modules/dotenv/ node_modules/dotenv/
+
+# Prisma config + schema + migrations (for migrate deploy at startup)
+COPY --from=build /app/prisma.config.ts ./
+COPY --from=build /app/prisma/ prisma/
 
 COPY --from=build /app/dist/ dist/
 
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

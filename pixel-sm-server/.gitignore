@@ -10,3 +10,4 @@ logs/qa/*
 !logs/qa/.gitkeep
 logs/dev/*
 !logs/dev/.gitkeep
+data/

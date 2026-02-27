@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -12,6 +13,10 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter(),
   );
+
+  app.setGlobalPrefix('v1');
+
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Pixel Control API')

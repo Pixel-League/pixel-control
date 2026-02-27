@@ -22,14 +22,14 @@ services:
       retries: 20
       start_period: 10s
     volumes:
-      - mysql_data:/var/lib/mysql
+      - ./data/mysql:/var/lib/mysql
     logging: *default-logging
 
   shootmania:
     platform: ${PIXEL_SM_RUNTIME_PLATFORM:-linux/amd64}
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: pixel-sm-server/Dockerfile
     restart: unless-stopped
     stop_grace_period: ${PIXEL_SM_SHOOTMANIA_STOP_GRACE_PERIOD:-90s}
     init: true
@@ -64,6 +64,7 @@ services:
       PIXEL_SM_BOOTSTRAP_TIMEOUT_SECONDS: ${PIXEL_SM_BOOTSTRAP_TIMEOUT_SECONDS}
       PIXEL_SM_START_MANIACONTROL: ${PIXEL_SM_START_MANIACONTROL}
       PIXEL_CONTROL_AUTO_ENABLE: ${PIXEL_CONTROL_AUTO_ENABLE}
+      PIXEL_CONTROL_ADMIN_CONTROL_ENABLED: ${PIXEL_CONTROL_ADMIN_CONTROL_ENABLED:-0}
       PIXEL_CONTROL_API_BASE_URL: ${PIXEL_CONTROL_API_BASE_URL:-}
       PIXEL_CONTROL_API_EVENT_PATH: ${PIXEL_CONTROL_API_EVENT_PATH:-}
       PIXEL_CONTROL_API_TIMEOUT_SECONDS: ${PIXEL_CONTROL_API_TIMEOUT_SECONDS:-}
@@ -103,5 +104,3 @@ services:
       - ${PIXEL_CONTROL_PLUGIN_SOURCE}:/opt/pixel-sm/pixel-control-plugin-src:ro
     logging: *default-logging
 
-volumes:
-  mysql_data:

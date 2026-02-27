@@ -1,6 +1,7 @@
 node_modules
 dist
 generated
+data
 .env
 *.md
 .git

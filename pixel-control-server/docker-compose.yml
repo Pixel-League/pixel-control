@@ -9,7 +9,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pixel -d pixel_control"]
       interval: 5s
@@ -26,6 +26,5 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: "postgresql://pixel:pixel@postgres:5432/pixel_control?schema=public"
+      ONLINE_THRESHOLD_SECONDS: ${ONLINE_THRESHOLD_SECONDS:-360}
 
-volumes:
-  pgdata:

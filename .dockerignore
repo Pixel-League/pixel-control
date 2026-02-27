@@ -1,0 +1,35 @@
+# This .dockerignore is used when building pixel-sm-server
+# (build context = monorepo root)
+
+# Git
+.git
+
+# Node.js (pixel-control-server)
+pixel-control-server/node_modules
+pixel-control-server/dist
+pixel-control-server/data
+
+# SM server runtime (large binaries, bind-mounted at runtime)
+pixel-sm-server/runtime/server/*
+!pixel-sm-server/runtime/server/.gitkeep
+pixel-sm-server/TitlePacks/*
+!pixel-sm-server/TitlePacks/.gitkeep
+pixel-sm-server/data
+pixel-sm-server/logs
+
+# Reference resources (large, immutable)
+ressources
+
+# Local dev sandbox
+.local-dev
+
+# Plugin tests & docs (not needed in image)
+pixel-control-plugin/tests
+pixel-control-plugin/docs
+pixel-control-plugin/scripts
+
+# Env files
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.production.example
