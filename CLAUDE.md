@@ -96,14 +96,15 @@ bash scripts/dev-mode-compose.sh joust relaunch
 - Plugin domain logic uses **PHP traits** (e.g. `ConnectivityDomainTrait`, `VetoDraftDomainTrait`).
 - ManiaControl plugin pattern: implement `Plugin` interface (`prepare`, `load`, `unload`, metadata getters), wire callbacks via managers, settings via `SettingManager`.
 - NestJS server: Fastify platform, modules per domain, Prisma for DB, Vitest for tests.
-- Auth model (plugin→server): `link_bearer` token in progress — **not finalized**; document in ROADMAP before locking.
+- Auth model (plugin→server): `link_bearer` token — finalized. API generates UUID tokens on first registration or explicit rotate.
 - Multi-mode support is mandatory: Elite, Siege, Battle, Joust, Custom (not Elite-only).
 - No inline TS imports — use static imports at file top.
+- `NEW_API_CONTRACT.md` (repo root) is the **route/contract source of truth** — keep it updated on every plugin→server change.
 
 ## CI / Release
 - **No CI configured** (no `.github/workflows/`, no `.gitlab-ci.yml`).
 - No release/versioning process defined yet.
-- Current active branch: `feat/pixel-api` (NestJS server scaffold replacing previous contract-only stub).
+- Current active branch: `main` (P0 + P1 both complete and merged).
 
 ## Gotchas
 - **Apple Silicon**: set `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64` — game binaries are x86.
@@ -111,6 +112,7 @@ bash scripts/dev-mode-compose.sh joust relaunch
 - **Battle mode** needs `SMStormBattle@nadeolabs.Title.Pack.gbx` downloaded manually via `bash scripts/fetch-titlepack.sh SMStormBattle@nadeolabs`.
 - Server API runs on **port 3000**; PostgreSQL exposed locally on **port 5433** (Docker: 5433→5432).
 - Plugin check-quality uses PHP CLI syntax-lint (`php -l`) — requires PHP in PATH.
-- `pixel-control-server/src/app.module.ts` is a minimal scaffold on `feat/pixel-api`; domain modules are not yet wired.
 - Keep control-surface names stable: `PixelControl.Admin.*`, `PixelControl.VetoDraft.*`, `//pcadmin`, `/pcveto`.
 - `SM_SCORES` is the score/winner source for win-context enrichment in lifecycle aggregates.
+- **Admin events** are NOT a separate category — admin actions are embedded in lifecycle events as metadata fields.
+- **Plugin sends NO batch events** — it dispatches events individually. BatchService is forward-compatible scaffolding only.

@@ -3,16 +3,18 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConnectivityModule } from './connectivity/connectivity.module';
+import { IngestionModule } from './ingestion/ingestion.module';
 import { LinkModule } from './link/link.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { StatusModule } from './status/status.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     LinkModule,
-    ConnectivityModule,
+    IngestionModule,
+    StatusModule,
   ],
   controllers: [AppController],
   providers: [AppService],

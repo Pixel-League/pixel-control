@@ -37,6 +37,86 @@ export class ConnectivityService {
       this.config.get<number>('ONLINE_THRESHOLD_SECONDS') ?? 360;
   }
 
+  /**
+   * Ingests a connectivity event (plugin_registration or plugin_heartbeat).
+   * Writes to ConnectivityEvent table (backward compat) and updates Server heartbeat/metadata.
+   * Idempotency and server lookup/auto-registration are handled by IngestionService BEFORE calling this.
+   *
+   * @param serverId - The resolved server UUID (already guaranteed to exist in DB)
+   * @param pluginVersion - Plugin version from header (optional)
+   * @param envelope - Validated event envelope
+   */
+  async ingestConnectivityEvent(
+    serverId: string,
+    pluginVersion: string | undefined,
+    envelope: EventEnvelopeDto,
+  ): Promise<void> {
+    const now = new Date();
+    const serverUpdate: {
+      lastHeartbeat: Date;
+      online: boolean;
+      pluginVersion?: string;
+      serverName?: string;
+      gameMode?: string;
+      titleId?: string;
+    } = {
+      lastHeartbeat: now,
+      online: isServerOnline(now, this.onlineThresholdSeconds),
+    };
+
+    if (pluginVersion) {
+      serverUpdate.pluginVersion = pluginVersion;
+    }
+
+    const payload = envelope.payload as PluginRegistrationPayload;
+    if (payload.type === 'plugin_registration' && payload.context?.server) {
+      const ctx = payload.context.server;
+      if (ctx.name) {
+        serverUpdate.serverName = ctx.name;
+      }
+      if (ctx.game_mode) {
+        serverUpdate.gameMode = ctx.game_mode;
+      }
+      if (ctx.title_id) {
+        serverUpdate.titleId = ctx.title_id;
+      }
+    }
+
+    // Store connectivity event and update server in a transaction
+    await this.prisma.$transaction([
+      this.prisma.connectivityEvent.create({
+        data: {
+          serverId,
+          eventName: envelope.event_name,
+          eventId: envelope.event_id,
+          eventCategory: envelope.event_category,
+          idempotencyKey: envelope.idempotency_key,
+          sourceCallback: envelope.source_callback,
+          sourceSequence: BigInt(envelope.source_sequence),
+          sourceTime: BigInt(envelope.source_time),
+          schemaVersion: envelope.schema_version,
+          payload: envelope.payload as Prisma.InputJsonValue,
+          metadata: envelope.metadata
+            ? (envelope.metadata as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        },
+      }),
+      this.prisma.server.update({
+        where: { id: serverId },
+        data: serverUpdate,
+      }),
+    ]);
+
+    this.logger.debug(
+      `Connectivity event stored: serverId=${serverId}, event=${envelope.event_name}`,
+    );
+  }
+
+  /**
+   * Legacy method used by ConnectivityController (kept for backward compatibility
+   * with existing P0 controller tests until controller is replaced by IngestionController).
+   * @deprecated Use ingestConnectivityEvent(serverId, ...) via IngestionService instead.
+   */
   async ingestEvent(
     serverLogin: string,
     pluginVersion: string | undefined,
@@ -66,62 +146,7 @@ export class ConnectivityService {
         });
       }
 
-      // Build server update from event
-      const now = new Date();
-      const serverUpdate: {
-        lastHeartbeat: Date;
-        online: boolean;
-        pluginVersion?: string;
-        serverName?: string;
-        gameMode?: string;
-        titleId?: string;
-      } = {
-        lastHeartbeat: now,
-        online: isServerOnline(now, this.onlineThresholdSeconds),
-      };
-
-      if (pluginVersion) {
-        serverUpdate.pluginVersion = pluginVersion;
-      }
-
-      const payload = envelope.payload as PluginRegistrationPayload;
-      if (payload.type === 'plugin_registration' && payload.context?.server) {
-        const ctx = payload.context.server;
-        if (ctx.name) {
-          serverUpdate.serverName = ctx.name;
-        }
-        if (ctx.game_mode) {
-          serverUpdate.gameMode = ctx.game_mode;
-        }
-        if (ctx.title_id) {
-          serverUpdate.titleId = ctx.title_id;
-        }
-      }
-
-      // Store event and update server in a transaction
-      await this.prisma.$transaction([
-        this.prisma.connectivityEvent.create({
-          data: {
-            serverId: server.id,
-            eventName: envelope.event_name,
-            eventId: envelope.event_id,
-            eventCategory: envelope.event_category,
-            idempotencyKey: envelope.idempotency_key,
-            sourceCallback: envelope.source_callback,
-            sourceSequence: BigInt(envelope.source_sequence),
-            sourceTime: BigInt(envelope.source_time),
-            schemaVersion: envelope.schema_version,
-            payload: envelope.payload as Prisma.InputJsonValue,
-            metadata: envelope.metadata
-              ? (envelope.metadata as Prisma.InputJsonValue)
-              : Prisma.JsonNull,
-          },
-        }),
-        this.prisma.server.update({
-          where: { id: server.id },
-          data: serverUpdate,
-        }),
-      ]);
+      await this.ingestConnectivityEvent(server.id, pluginVersion, envelope);
 
       return { ack: { status: 'accepted' } };
     } catch (error) {

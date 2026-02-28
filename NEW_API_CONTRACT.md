@@ -578,15 +578,11 @@ The plugin sends events via async HTTP POST to the configured API server. Events
 
 **Ingestion API endpoints:**
 
-| Method | Endpoint                               | Description                         | Dev Status | Priority  |
-| ------ | -------------------------------------- | ----------------------------------- | ---------- | --------- |
-| `POST` | `/v1/plugin/events/connectivity`       | Receive connectivity events         | Done ✅    | P0.5🔥    |
-| `POST` | `/v1/plugin/events/lifecycle`          | Receive lifecycle events            | Todo 🛑    | P1.1      |
-| `POST` | `/v1/plugin/events/stats`              | Receive combat/stats events         | Todo 🛑    | P1.2      |
-| `POST` | `/v1/plugin/events/players`            | Receive player events               | Todo 🛑    | P1.3      |
-| `POST` | `/v1/plugin/events/mode`               | Receive mode-specific events        | Todo 🛑    | P1.5      |
-| `POST` | `/v1/plugin/events/admin`              | Receive admin action events         | Todo 🛑    | P1.6      |
-| `POST` | `/v1/plugin/events/batch`              | Receive queued batch flush          | Todo 🛑    | P1.4      |
+> **Note (P1):** The plugin sends ALL event categories to the single `POST /v1/plugin/events` endpoint. Category routing is performed server-side based on the `event_category` field. The per-category URL variants listed in the original contract do not match the plugin's actual behavior and have been replaced by the unified endpoint.
+
+| Method | Endpoint                               | Description                                                                                   | Dev Status | Priority  |
+| ------ | -------------------------------------- | --------------------------------------------------------------------------------------------- | ---------- | --------- |
+| `POST` | `/v1/plugin/events`                    | Unified ingestion: all categories (connectivity, lifecycle, combat, player, mode, batch)      | Done ✅    | P0.5+P1   |
 
 ## 2.2 Event Envelope
 
@@ -650,8 +646,8 @@ Category: `connectivity`. Trigger: plugin startup + periodic timer.
 
 | Method | Endpoint                                          | Description                                     | Dev Status | Priority |
 | ------ | ------------------------------------------------- | ----------------------------------------------- | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/status`                 | Latest server status (from heartbeat + registration) | Todo 🛑    | P1.7     |
-| `GET`  | `/v1/servers/:serverLogin/status/health`          | Plugin health (queue, outage, connectivity)      | Todo 🛑    | P1.8     |
+| `GET`  | `/v1/servers/:serverLogin/status`                 | Latest server status (from heartbeat + registration) | Done ✅    | P1.7     |
+| `GET`  | `/v1/servers/:serverLogin/status/health`          | Plugin health (queue, outage, connectivity)      | Done ✅    | P1.8     |
 | `GET`  | `/v1/servers/:serverLogin/status/capabilities`    | Plugin capabilities snapshot                     | Todo 🛑    | P2.10    |
 
 ---
@@ -1061,8 +1057,8 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 
 | Method | Endpoint                                    | Source Category  | Description                           | Dev Status | Priority |
 | ------ | ------------------------------------------- | ---------------- | ------------------------------------- | ---------- | -------- |
-| `GET`  | `.../status`                                | connectivity     | Server status (heartbeat data)        | Todo 🛑    | P1.7     |
-| `GET`  | `.../status/health`                         | connectivity     | Plugin health (queue, outage)         | Todo 🛑    | P1.8     |
+| `GET`  | `.../status`                                | connectivity     | Server status (heartbeat data)        | Done ✅    | P1.7     |
+| `GET`  | `.../status/health`                         | connectivity     | Plugin health (queue, outage)         | Done ✅    | P1.8     |
 | `GET`  | `.../status/capabilities`                   | connectivity     | Plugin capabilities                   | Todo 🛑    | P2.10    |
 | `GET`  | `.../maps`                                  | lifecycle        | Map pool (from telemetry)             | Todo 🛑    | P2.11    |
 | `GET`  | `.../players`                               | player           | Current player list                   | Todo 🛑    | P2.1     |
@@ -1087,12 +1083,8 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 
 ## 4.4 Ingestion Endpoints (plugin → server, internal)
 
-| Method | Endpoint                               | Description                         | Dev Status | Priority  |
-| ------ | -------------------------------------- | ----------------------------------- | ---------- | --------- |
-| `POST` | `/v1/plugin/events/connectivity`       | Connectivity events (registration, heartbeat) | Done ✅    | P0.5🔥    |
-| `POST` | `/v1/plugin/events/lifecycle`          | Lifecycle events                    | Todo 🛑    | P1.1      |
-| `POST` | `/v1/plugin/events/stats`              | Combat/stats events                 | Todo 🛑    | P1.2      |
-| `POST` | `/v1/plugin/events/players`            | Player events                       | Todo 🛑    | P1.3      |
-| `POST` | `/v1/plugin/events/mode`               | Mode-specific events                | Todo 🛑    | P1.5      |
-| `POST` | `/v1/plugin/events/admin`              | Admin action events                 | Todo 🛑    | P1.6      |
-| `POST` | `/v1/plugin/events/batch`              | Queued batch flush                  | Todo 🛑    | P1.4      |
+> **Note (P1):** The plugin sends ALL event categories to the single `POST /v1/plugin/events` endpoint. Category routing is performed server-side based on `event_category`. Per-category URLs do not exist in the implementation.
+
+| Method | Endpoint                               | Description                                                                                   | Dev Status | Priority  |
+| ------ | -------------------------------------- | --------------------------------------------------------------------------------------------- | ---------- | --------- |
+| `POST` | `/v1/plugin/events`                    | Unified ingestion: all categories (connectivity, lifecycle, combat, player, mode, batch)      | Done ✅    | P0.5+P1   |
