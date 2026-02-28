@@ -3,6 +3,60 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StatsReadService } from './stats-read.service';
 
+// ---------------------------------------------------------------------------
+// Factory helpers for lifecycle events (used by per-map / per-series tests)
+// ---------------------------------------------------------------------------
+
+let lifecycleSeq = 0;
+
+const makeLifecycleEvent = (overrides: {
+  variant: string;
+  sourceTime?: bigint;
+  mapUid?: string;
+  mapName?: string;
+  aggregateStats?: {
+    scope?: string;
+    player_counters_delta?: Record<string, {
+      kills?: number; deaths?: number; hits?: number; shots?: number;
+      misses?: number; rockets?: number; lasers?: number; accuracy?: number;
+    }>;
+    team_counters_delta?: unknown[];
+    totals?: Record<string, number>;
+    win_context?: Record<string, unknown>;
+    window?: { duration_seconds?: number; started_at?: number; ended_at?: number };
+  };
+}) => {
+  lifecycleSeq += 1;
+  return {
+    id: `evt-lc-${lifecycleSeq}`,
+    eventId: `pc-evt-lifecycle-${lifecycleSeq}`,
+    eventName: `pixel_control.lifecycle.event_${lifecycleSeq}`,
+    eventCategory: 'lifecycle',
+    sourceCallback: 'LIFECYCLE',
+    sourceTime: overrides.sourceTime ?? BigInt(lifecycleSeq * 1_000),
+    idempotencyKey: `idem-lc-${lifecycleSeq}`,
+    schemaVersion: '2026-02-20.1',
+    receivedAt: new Date('2026-02-28T10:00:00Z'),
+    metadata: null,
+    payload: {
+      variant: overrides.variant,
+      ...(overrides.mapUid !== undefined
+        ? {
+            map_rotation: {
+              current_map: {
+                uid: overrides.mapUid,
+                name: overrides.mapName ?? overrides.mapUid,
+              },
+            },
+          }
+        : {}),
+      ...(overrides.aggregateStats !== undefined
+        ? { aggregate_stats: overrides.aggregateStats }
+        : {}),
+    },
+  };
+};
+
 const makeServer = (overrides = {}) => ({
   id: 'server-uuid',
   serverLogin: 'test-server',
@@ -214,6 +268,306 @@ describe('StatsReadService', () => {
       expect(result.scores_snapshot).toEqual({ teams: [], players: [] });
       expect(result.scores_result).toEqual({ result_state: 'team_win', winning_side: 'team_a' });
       expect(result.event_id).toBe('pc-evt-combat-1');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // P2.5 per-map / per-series combat stats
+  // -------------------------------------------------------------------------
+
+  const makeMapEndEvent = (
+    mapUid: string,
+    mapName: string,
+    sourceTime: bigint,
+    playerCounters: Record<string, {
+      kills?: number; deaths?: number; hits?: number; shots?: number;
+      misses?: number; rockets?: number; lasers?: number; accuracy?: number;
+    }> = {},
+    totals: Record<string, number> = {},
+    winContext: Record<string, unknown> = {},
+  ) =>
+    makeLifecycleEvent({
+      variant: 'map.end',
+      sourceTime,
+      mapUid,
+      mapName,
+      aggregateStats: {
+        scope: 'map',
+        player_counters_delta: playerCounters,
+        team_counters_delta: [],
+        totals,
+        win_context: winContext,
+        window: { duration_seconds: 120 },
+      },
+    });
+
+  describe('getMapCombatStatsList', () => {
+    beforeEach(() => { lifecycleSeq = 0; });
+
+    it('returns empty maps array when no lifecycle events', async () => {
+      prisma.event.findMany.mockResolvedValue([]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      expect(result.maps).toHaveLength(0);
+      expect(result.pagination.total).toBe(0);
+      expect(result.server_login).toBe('test-server');
+    });
+
+    it('returns map entries from map.end events with scope=map', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha Arena', BigInt(2_000_000), { p1: { kills: 5, shots: 100 } }, { kills: 5 }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      expect(result.maps).toHaveLength(1);
+      expect(result.maps[0].map_uid).toBe('uid-alpha');
+      expect(result.maps[0].map_name).toBe('Alpha Arena');
+      expect(result.maps[0].player_stats['p1'].kills).toBe(5);
+      expect(result.maps[0].totals.kills).toBe(5);
+    });
+
+    it('ignores lifecycle events that are not map.end', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeLifecycleEvent({ variant: 'round.end', sourceTime: BigInt(1_000_000) }),
+        makeLifecycleEvent({ variant: 'map.begin', sourceTime: BigInt(500_000) }),
+        makeMapEndEvent('uid-beta', 'Beta Arena', BigInt(2_000_000)),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      expect(result.maps).toHaveLength(1);
+      expect(result.maps[0].map_uid).toBe('uid-beta');
+    });
+
+    it('ignores map.end events without aggregate_stats', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeLifecycleEvent({ variant: 'map.end', sourceTime: BigInt(1_000_000), mapUid: 'uid-no-agg' }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      expect(result.maps).toHaveLength(0);
+    });
+
+    it('ignores map.end events without aggregate_stats.scope=map', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeLifecycleEvent({
+          variant: 'map.end',
+          sourceTime: BigInt(1_000_000),
+          mapUid: 'uid-wrong-scope',
+          aggregateStats: { scope: 'round' },
+        }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      expect(result.maps).toHaveLength(0);
+    });
+
+    it('applies pagination (limit)', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-a', 'Map A', BigInt(3_000_000)),
+        makeMapEndEvent('uid-b', 'Map B', BigInt(2_000_000)),
+        makeMapEndEvent('uid-c', 'Map C', BigInt(1_000_000)),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 2, 0);
+
+      expect(result.maps).toHaveLength(2);
+      expect(result.pagination.total).toBe(3);
+      expect(result.pagination.limit).toBe(2);
+    });
+
+    it('applies pagination (offset)', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-a', 'Map A', BigInt(3_000_000)),
+        makeMapEndEvent('uid-b', 'Map B', BigInt(2_000_000)),
+        makeMapEndEvent('uid-c', 'Map C', BigInt(1_000_000)),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 2, 1);
+
+      expect(result.maps).toHaveLength(2);
+      expect(result.maps[0].map_uid).toBe('uid-b');
+    });
+
+    it('extracts win_context and duration_seconds', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-x', 'X Map', BigInt(1_000_000), {}, {}, { winner_team_id: 0 }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      expect(result.maps[0].win_context).toEqual({ winner_team_id: 0 });
+      expect(result.maps[0].duration_seconds).toBe(120);
+    });
+  });
+
+  describe('getMapCombatStats (single map by UID)', () => {
+    beforeEach(() => { lifecycleSeq = 0; });
+
+    it('returns stats for matching map_uid', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), { p1: { kills: 3 } }),
+      ]);
+
+      const result = await service.getMapCombatStats('test-server', 'uid-alpha');
+
+      expect(result.map_uid).toBe('uid-alpha');
+      expect(result.player_stats['p1'].kills).toBe(3);
+    });
+
+    it('throws NotFoundException when map UID not found', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000)),
+      ]);
+
+      await expect(
+        service.getMapCombatStats('test-server', 'uid-missing'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns the latest occurrence when multiple map.end events exist for the same UID', async () => {
+      // Prisma returns desc order, so latest is first
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha v2', BigInt(3_000_000), { p1: { kills: 9 } }),
+        makeMapEndEvent('uid-alpha', 'Alpha v1', BigInt(1_000_000), { p1: { kills: 2 } }),
+      ]);
+
+      const result = await service.getMapCombatStats('test-server', 'uid-alpha');
+
+      expect(result.player_stats['p1'].kills).toBe(9);
+      expect(result.map_name).toBe('Alpha v2');
+    });
+  });
+
+  describe('getMapPlayerCombatStats (single player on map)', () => {
+    beforeEach(() => { lifecycleSeq = 0; });
+
+    it('returns player counters when player exists', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), {
+          player1: { kills: 7, deaths: 2, hits: 40, shots: 80, misses: 40, rockets: 30, lasers: 10, accuracy: 0.5 },
+        }),
+      ]);
+
+      const result = await service.getMapPlayerCombatStats('test-server', 'uid-alpha', 'player1');
+
+      expect(result.player_login).toBe('player1');
+      expect(result.map_uid).toBe('uid-alpha');
+      expect(result.counters.kills).toBe(7);
+      expect(result.counters.accuracy).toBe(0.5);
+    });
+
+    it('throws NotFoundException when player not found on map', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), { known_player: { kills: 1 } }),
+      ]);
+
+      await expect(
+        service.getMapPlayerCombatStats('test-server', 'uid-alpha', 'unknown_player'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when map UID not found', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000)),
+      ]);
+
+      await expect(
+        service.getMapPlayerCombatStats('test-server', 'uid-missing', 'player1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getSeriesCombatStatsList', () => {
+    beforeEach(() => { lifecycleSeq = 0; });
+
+    it('returns empty series array when no match begin/end events', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000)),
+      ]);
+
+      const result = await service.getSeriesCombatStatsList('test-server', 50, 0);
+
+      expect(result.series).toHaveLength(0);
+      expect(result.pagination.total).toBe(0);
+    });
+
+    it('correctly pairs match.begin and match.end events into one series', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeLifecycleEvent({ variant: 'match.begin', sourceTime: BigInt(1_000_000) }),
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(2_000_000), { p1: { kills: 5 } }, { kills: 5 }),
+        makeMapEndEvent('uid-beta', 'Beta', BigInt(3_000_000), { p1: { kills: 3 } }, { kills: 3 }),
+        makeLifecycleEvent({ variant: 'match.end', sourceTime: BigInt(4_000_000) }),
+      ]);
+
+      const result = await service.getSeriesCombatStatsList('test-server', 50, 0);
+
+      expect(result.series).toHaveLength(1);
+      expect(result.series[0].total_maps_played).toBe(2);
+      expect(result.series[0].maps[0].map_uid).toBe('uid-alpha');
+      expect(result.series[0].maps[1].map_uid).toBe('uid-beta');
+    });
+
+    it('includes only map.end events within the series time window', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-before', 'Before', BigInt(500_000)),
+        makeLifecycleEvent({ variant: 'match.begin', sourceTime: BigInt(1_000_000) }),
+        makeMapEndEvent('uid-inside', 'Inside', BigInt(2_000_000)),
+        makeLifecycleEvent({ variant: 'match.end', sourceTime: BigInt(3_000_000) }),
+        makeMapEndEvent('uid-after', 'After', BigInt(4_000_000)),
+      ]);
+
+      const result = await service.getSeriesCombatStatsList('test-server', 50, 0);
+
+      expect(result.series[0].maps).toHaveLength(1);
+      expect(result.series[0].maps[0].map_uid).toBe('uid-inside');
+    });
+
+    it('computes series_totals by summing all map totals', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeLifecycleEvent({ variant: 'match.begin', sourceTime: BigInt(1_000_000) }),
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(2_000_000), {}, { kills: 10, deaths: 5 }),
+        makeMapEndEvent('uid-beta', 'Beta', BigInt(3_000_000), {}, { kills: 8, deaths: 4 }),
+        makeLifecycleEvent({ variant: 'match.end', sourceTime: BigInt(4_000_000) }),
+      ]);
+
+      const result = await service.getSeriesCombatStatsList('test-server', 50, 0);
+
+      expect(result.series[0].series_totals.kills).toBe(18);
+      expect(result.series[0].series_totals.deaths).toBe(9);
+    });
+
+    it('excludes incomplete series (match.begin without match.end)', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeLifecycleEvent({ variant: 'match.begin', sourceTime: BigInt(1_000_000) }),
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(2_000_000)),
+        // no match.end
+      ]);
+
+      const result = await service.getSeriesCombatStatsList('test-server', 50, 0);
+
+      expect(result.series).toHaveLength(0);
+    });
+
+    it('applies pagination', async () => {
+      // Two complete series
+      prisma.event.findMany.mockResolvedValue([
+        makeLifecycleEvent({ variant: 'match.begin', sourceTime: BigInt(1_000_000) }),
+        makeMapEndEvent('uid-a1', 'A1', BigInt(2_000_000)),
+        makeLifecycleEvent({ variant: 'match.end', sourceTime: BigInt(3_000_000) }),
+        makeLifecycleEvent({ variant: 'match.begin', sourceTime: BigInt(4_000_000) }),
+        makeMapEndEvent('uid-b1', 'B1', BigInt(5_000_000)),
+        makeLifecycleEvent({ variant: 'match.end', sourceTime: BigInt(6_000_000) }),
+      ]);
+
+      const result = await service.getSeriesCombatStatsList('test-server', 1, 0);
+
+      expect(result.series).toHaveLength(1);
+      expect(result.pagination.total).toBe(2);
     });
   });
 });

@@ -713,10 +713,66 @@ Weapon IDs: `1`=laser, `2`=rocket, `3`=nucleus, `4`=grenade, `5`=arrow, `6`=miss
 
 | Method | Endpoint                                                  | Description                                  | Dev Status | Priority |
 | ------ | --------------------------------------------------------- | -------------------------------------------- | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/stats/combat`                   | Aggregated combat stats (current session)    | Done ✅    | P2.3     |
-| `GET`  | `/v1/servers/:serverLogin/stats/combat/players`           | Per-player combat counters                   | Done ✅    | P2.4     |
-| `GET`  | `/v1/servers/:serverLogin/stats/combat/players/:login`    | Single player combat counters                | Done ✅    | P2.5     |
-| `GET`  | `/v1/servers/:serverLogin/stats/scores`                   | Latest scores snapshot                       | Done ✅    | P2.6     |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat`                              | Aggregated combat stats (current session)    | Done ✅    | P2.3     |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/players`                      | Per-player combat counters                   | Done ✅    | P2.4     |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/players/:login`               | Single player combat counters                | Done ✅    | P2.5     |
+| `GET`  | `/v1/servers/:serverLogin/stats/scores`                              | Latest scores snapshot                       | Done ✅    | P2.6     |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/maps`                         | Per-map combat stats list (paginated)        | Done ✅    | P2.5.1   |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/maps/:mapUid`                 | Combat stats for a specific map UID          | Done ✅    | P2.5.2   |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/maps/:mapUid/players/:login`  | Player combat stats on a specific map        | Done ✅    | P2.5.3   |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/series`                       | Per-series (Best-Of) combat stats (paginated)| Done ✅    | P2.5.4   |
+
+### Per-Map / Per-Series Combat Stats (P2.5 additions)
+
+Data source: lifecycle events (category `lifecycle`) stored in the `Event` table. Specifically:
+- **Map entries** come from `map.end` variant events that carry `payload.aggregate_stats` with `scope: "map"`.
+- **Series entries** are formed by pairing `match.begin` and `match.end` variant lifecycle events; all `map.end` events whose `sourceTime` falls between the pair's begin/end times are included as that series's maps.
+
+**`GET /v1/servers/:serverLogin/stats/combat/maps`** (P2.5.1)
+- Query params: `limit` (default 50, max 200), `offset` (default 0), `since` (ISO8601), `until` (ISO8601).
+- Response: `{ server_login, maps: MapCombatStatsEntry[], pagination: { total, limit, offset } }`.
+- Maps ordered most-recent first (by `sourceTime` of the `map.end` event).
+
+**`GET /v1/servers/:serverLogin/stats/combat/maps/:mapUid`** (P2.5.2)
+- Returns the latest `MapCombatStatsEntry` for the given `mapUid`. 404 if not found.
+
+**`GET /v1/servers/:serverLogin/stats/combat/maps/:mapUid/players/:login`** (P2.5.3)
+- Returns `{ server_login, map_uid, map_name, player_login, counters: PlayerCountersDelta, played_at }`.
+- 404 if map or player not found.
+
+**`GET /v1/servers/:serverLogin/stats/combat/series`** (P2.5.4)
+- Query params: `limit`, `offset`, `since`, `until` (same as maps endpoint).
+- Response: `{ server_login, series: SeriesCombatEntry[], pagination: { total, limit, offset } }`.
+- Only complete series (both `match.begin` and `match.end`) are returned. Series ordered most-recent first.
+
+**`MapCombatStatsEntry` shape:**
+```json
+{
+  "map_uid": "uid-alpha",
+  "map_name": "Alpha Arena",
+  "played_at": "2026-02-28T10:00:00.000Z",
+  "duration_seconds": 120,
+  "player_stats": {
+    "player1": { "kills": 5, "deaths": 2, "hits": 20, "shots": 40, "misses": 20, "rockets": 10, "lasers": 10, "accuracy": 0.5 }
+  },
+  "team_stats": [...],
+  "totals": { "kills": 5, "deaths": 2 },
+  "win_context": { "winner_team_id": 0 },
+  "event_id": "pc-evt-lifecycle-..."
+}
+```
+
+**`SeriesCombatEntry` shape:**
+```json
+{
+  "match_started_at": "2026-02-28T09:00:00.000Z",
+  "match_ended_at": "2026-02-28T10:30:00.000Z",
+  "total_maps_played": 2,
+  "maps": [...],
+  "series_totals": { "kills": 18, "deaths": 9 },
+  "series_win_context": { "winner_team_id": 0 }
+}
+```
 
 ---
 
@@ -1064,10 +1120,14 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `GET`  | `.../players`                               | player           | Current player list                   | Done ✅    | P2.1     |
 | `GET`  | `.../players/:login`                        | player           | Single player state                   | Done ✅    | P2.2     |
 | `GET`  | `.../players/:login/history`                | player           | Player connection history             | Todo 🛑    | P5.15    |
-| `GET`  | `.../stats/combat`                          | combat           | Aggregated combat stats               | Done ✅    | P2.3     |
-| `GET`  | `.../stats/combat/players`                  | combat           | Per-player combat counters            | Done ✅    | P2.4     |
-| `GET`  | `.../stats/combat/players/:login`           | combat           | Single player combat stats            | Done ✅    | P2.5     |
-| `GET`  | `.../stats/scores`                          | combat           | Latest scores snapshot                | Done ✅    | P2.6     |
+| `GET`  | `.../stats/combat`                              | combat           | Aggregated combat stats               | Done ✅    | P2.3     |
+| `GET`  | `.../stats/combat/players`                      | combat           | Per-player combat counters            | Done ✅    | P2.4     |
+| `GET`  | `.../stats/combat/players/:login`               | combat           | Single player combat stats            | Done ✅    | P2.5     |
+| `GET`  | `.../stats/scores`                              | combat           | Latest scores snapshot                | Done ✅    | P2.6     |
+| `GET`  | `.../stats/combat/maps`                         | lifecycle        | Per-map combat stats list             | Done ✅    | P2.5.1   |
+| `GET`  | `.../stats/combat/maps/:mapUid`                 | lifecycle        | Combat stats for specific map         | Done ✅    | P2.5.2   |
+| `GET`  | `.../stats/combat/maps/:mapUid/players/:login`  | lifecycle        | Player combat stats on specific map   | Done ✅    | P2.5.3   |
+| `GET`  | `.../stats/combat/series`                       | lifecycle        | Per-series (BO) combat stats          | Done ✅    | P2.5.4   |
 | `GET`  | `.../lifecycle`                             | lifecycle        | Current lifecycle state               | Done ✅    | P2.7     |
 | `GET`  | `.../lifecycle/map-rotation`                | lifecycle        | Map rotation + veto state             | Done ✅    | P2.8     |
 | `GET`  | `.../lifecycle/aggregate-stats`             | lifecycle        | Latest aggregate stats                | Done ✅    | P2.9     |
