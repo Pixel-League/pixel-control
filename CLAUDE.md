@@ -104,7 +104,7 @@ bash scripts/dev-mode-compose.sh joust relaunch
 ## CI / Release
 - **No CI configured** (no `.github/workflows/`, no `.gitlab-ci.yml`).
 - No release/versioning process defined yet.
-- Current active branch: `main` (P0 + P1 both complete and merged).
+- Current active branch: `main` (P0 + P1 + P2 all complete and merged).
 
 ## Gotchas
 - **Apple Silicon**: set `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64` — game binaries are x86.

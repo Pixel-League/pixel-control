@@ -72,6 +72,14 @@ export interface ServerHealthResponse {
   connectivity_metrics: ConnectivityMetrics;
 }
 
+export interface CapabilitiesResponse {
+  server_login: string;
+  online: boolean;
+  capabilities: Record<string, unknown> | null;
+  source: string | null;
+  source_time: string | null;
+}
+
 interface HeartbeatPayload {
   queue?: QueueHealth;
   retry?: RetryHealth;
@@ -347,6 +355,64 @@ export class StatusService {
         recovery_flush_pending:
           (outage as OutageHealth).recovery_flush_pending ?? false,
       },
+    };
+  }
+
+  async getServerCapabilities(serverLogin: string): Promise<CapabilitiesResponse> {
+    const server = await this.prisma.server.findUnique({
+      where: { serverLogin },
+    });
+
+    if (!server) {
+      throw new NotFoundException(`Server '${serverLogin}' not found`);
+    }
+
+    const online = server.lastHeartbeat
+      ? isServerOnline(server.lastHeartbeat, this.onlineThresholdSeconds)
+      : false;
+
+    // Try registration event first (richest capabilities snapshot)
+    const registrationEvent = await this.prisma.connectivityEvent.findFirst({
+      where: { serverId: server.id, eventName: { contains: 'registration' } },
+      orderBy: { receivedAt: 'desc' },
+    });
+
+    if (registrationEvent) {
+      const payload = registrationEvent.payload as Record<string, unknown>;
+      const capabilities = (payload?.capabilities as Record<string, unknown>) ?? null;
+      return {
+        server_login: serverLogin,
+        online,
+        capabilities,
+        source: 'plugin_registration',
+        source_time: registrationEvent.receivedAt.toISOString(),
+      };
+    }
+
+    // Fall back to latest heartbeat
+    const heartbeatEvent = await this.prisma.connectivityEvent.findFirst({
+      where: { serverId: server.id, eventName: { contains: 'heartbeat' } },
+      orderBy: { receivedAt: 'desc' },
+    });
+
+    if (heartbeatEvent) {
+      const payload = heartbeatEvent.payload as Record<string, unknown>;
+      const capabilities = (payload?.capabilities as Record<string, unknown>) ?? null;
+      return {
+        server_login: serverLogin,
+        online,
+        capabilities,
+        source: 'plugin_heartbeat',
+        source_time: heartbeatEvent.receivedAt.toISOString(),
+      };
+    }
+
+    return {
+      server_login: serverLogin,
+      online,
+      capabilities: null,
+      source: null,
+      source_time: null,
     };
   }
 

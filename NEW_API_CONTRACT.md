@@ -175,7 +175,7 @@ Aliases: `map.next`, `map.skip_current` → `map.skip`; `map.res` → `map.resta
 | `POST`   | `/v1/servers/:serverLogin/maps/queue`         | `{ map_uid }`         | Queue map for next   | Todo 🛑    | P3.4     |
 | `POST`   | `/v1/servers/:serverLogin/maps`               | `{ mx_id }`           | Add map from MX     | Todo 🛑    | P3.5     |
 | `DELETE`  | `/v1/servers/:serverLogin/maps/:mapUid`      | —                     | Remove map          | Todo 🛑    | P3.6     |
-| `GET`    | `/v1/servers/:serverLogin/maps`               | —                     | List map pool (from plugin telemetry) | Todo 🛑    | P2.11    |
+| `GET`    | `/v1/servers/:serverLogin/maps`               | —                     | List map pool (from plugin telemetry) | Done ✅    | P2.11    |
 
 #### Warmup & Pause
 
@@ -246,7 +246,7 @@ Team values: `0`, `1`, `red`, `blue`, `team_a`, `team_b`, `a`, `b` (normalized t
 | `POST` | `/v1/servers/:serverLogin/players/:login/force-team`         | `{ team }`     | Force to team       | Todo 🛑    | P4.6     |
 | `POST` | `/v1/servers/:serverLogin/players/:login/force-play`         | —              | Force to play       | Todo 🛑    | P4.7     |
 | `POST` | `/v1/servers/:serverLogin/players/:login/force-spec`         | —              | Force to spectator  | Todo 🛑    | P4.8     |
-| `GET`  | `/v1/servers/:serverLogin/players`                           | —              | List players (from plugin telemetry) | Todo 🛑    | P2.1     |
+| `GET`  | `/v1/servers/:serverLogin/players`                           | —              | List players (from plugin telemetry) | Done ✅    | P2.1     |
 
 #### Auth Management
 
@@ -648,7 +648,7 @@ Category: `connectivity`. Trigger: plugin startup + periodic timer.
 | ------ | ------------------------------------------------- | ----------------------------------------------- | ---------- | -------- |
 | `GET`  | `/v1/servers/:serverLogin/status`                 | Latest server status (from heartbeat + registration) | Done ✅    | P1.7     |
 | `GET`  | `/v1/servers/:serverLogin/status/health`          | Plugin health (queue, outage, connectivity)      | Done ✅    | P1.8     |
-| `GET`  | `/v1/servers/:serverLogin/status/capabilities`    | Plugin capabilities snapshot                     | Todo 🛑    | P2.10    |
+| `GET`  | `/v1/servers/:serverLogin/status/capabilities`    | Plugin capabilities snapshot                     | Done ✅    | P2.10    |
 
 ---
 
@@ -713,10 +713,10 @@ Weapon IDs: `1`=laser, `2`=rocket, `3`=nucleus, `4`=grenade, `5`=arrow, `6`=miss
 
 | Method | Endpoint                                                  | Description                                  | Dev Status | Priority |
 | ------ | --------------------------------------------------------- | -------------------------------------------- | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/stats/combat`                   | Aggregated combat stats (current session)    | Todo 🛑    | P2.3     |
-| `GET`  | `/v1/servers/:serverLogin/stats/combat/players`           | Per-player combat counters                   | Todo 🛑    | P2.4     |
-| `GET`  | `/v1/servers/:serverLogin/stats/combat/players/:login`    | Single player combat counters                | Todo 🛑    | P2.5     |
-| `GET`  | `/v1/servers/:serverLogin/stats/scores`                   | Latest scores snapshot                       | Todo 🛑    | P2.6     |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat`                   | Aggregated combat stats (current session)    | Done ✅    | P2.3     |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/players`           | Per-player combat counters                   | Done ✅    | P2.4     |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/players/:login`    | Single player combat counters                | Done ✅    | P2.5     |
+| `GET`  | `/v1/servers/:serverLogin/stats/scores`                   | Latest scores snapshot                       | Done ✅    | P2.6     |
 
 ---
 
@@ -819,9 +819,9 @@ All lifecycle events share a base payload:
 
 | Method | Endpoint                                              | Description                                  | Dev Status | Priority |
 | ------ | ----------------------------------------------------- | -------------------------------------------- | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/lifecycle`                  | Current lifecycle state (phase, warmup, pause) | Todo 🛑    | P2.7     |
-| `GET`  | `/v1/servers/:serverLogin/lifecycle/map-rotation`     | Current map rotation + veto state            | Todo 🛑    | P2.8     |
-| `GET`  | `/v1/servers/:serverLogin/lifecycle/aggregate-stats`  | Latest aggregate stats (round/map scope)     | Todo 🛑    | P2.9     |
+| `GET`  | `/v1/servers/:serverLogin/lifecycle`                  | Current lifecycle state (phase, warmup, pause) | Done ✅    | P2.7     |
+| `GET`  | `/v1/servers/:serverLogin/lifecycle/map-rotation`     | Current map rotation + veto state            | Done ✅    | P2.8     |
+| `GET`  | `/v1/servers/:serverLogin/lifecycle/aggregate-stats`  | Latest aggregate stats (round/map scope)     | Done ✅    | P2.9     |
 
 ---
 
@@ -886,8 +886,8 @@ Category: `player`. Trigger: ManiaControl player callbacks (automatic on connect
 
 | Method | Endpoint                                                | Description                               | Dev Status | Priority |
 | ------ | ------------------------------------------------------- | ----------------------------------------- | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/players`                      | Current player list with state            | Todo 🛑    | P2.1     |
-| `GET`  | `/v1/servers/:serverLogin/players/:login`               | Single player state                       | Todo 🛑    | P2.2     |
+| `GET`  | `/v1/servers/:serverLogin/players`                      | Current player list with state            | Done ✅    | P2.1     |
+| `GET`  | `/v1/servers/:serverLogin/players/:login`               | Single player state                       | Done ✅    | P2.2     |
 | `GET`  | `/v1/servers/:serverLogin/players/:login/history`       | Player connection/state history            | Todo 🛑    | P5.15    |
 
 ---
@@ -915,7 +915,7 @@ Payload: `raw_callback_summary` with argument list from the script callback.
 
 | Method | Endpoint                                               | Description                                | Dev Status | Priority |
 | ------ | ------------------------------------------------------ | ------------------------------------------ | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/mode`                        | Current game mode + active mode events     | Todo 🛑    | P2.12    |
+| `GET`  | `/v1/servers/:serverLogin/mode`                        | Current game mode + active mode events     | Done ✅    | P2.12    |
 
 ---
 
@@ -1059,18 +1059,18 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | ------ | ------------------------------------------- | ---------------- | ------------------------------------- | ---------- | -------- |
 | `GET`  | `.../status`                                | connectivity     | Server status (heartbeat data)        | Done ✅    | P1.7     |
 | `GET`  | `.../status/health`                         | connectivity     | Plugin health (queue, outage)         | Done ✅    | P1.8     |
-| `GET`  | `.../status/capabilities`                   | connectivity     | Plugin capabilities                   | Todo 🛑    | P2.10    |
-| `GET`  | `.../maps`                                  | lifecycle        | Map pool (from telemetry)             | Todo 🛑    | P2.11    |
-| `GET`  | `.../players`                               | player           | Current player list                   | Todo 🛑    | P2.1     |
-| `GET`  | `.../players/:login`                        | player           | Single player state                   | Todo 🛑    | P2.2     |
+| `GET`  | `.../status/capabilities`                   | connectivity     | Plugin capabilities                   | Done ✅    | P2.10    |
+| `GET`  | `.../maps`                                  | lifecycle        | Map pool (from telemetry)             | Done ✅    | P2.11    |
+| `GET`  | `.../players`                               | player           | Current player list                   | Done ✅    | P2.1     |
+| `GET`  | `.../players/:login`                        | player           | Single player state                   | Done ✅    | P2.2     |
 | `GET`  | `.../players/:login/history`                | player           | Player connection history             | Todo 🛑    | P5.15    |
-| `GET`  | `.../stats/combat`                          | combat           | Aggregated combat stats               | Todo 🛑    | P2.3     |
-| `GET`  | `.../stats/combat/players`                  | combat           | Per-player combat counters            | Todo 🛑    | P2.4     |
-| `GET`  | `.../stats/combat/players/:login`           | combat           | Single player combat stats            | Todo 🛑    | P2.5     |
-| `GET`  | `.../stats/scores`                          | combat           | Latest scores snapshot                | Todo 🛑    | P2.6     |
-| `GET`  | `.../lifecycle`                             | lifecycle        | Current lifecycle state               | Todo 🛑    | P2.7     |
-| `GET`  | `.../lifecycle/map-rotation`                | lifecycle        | Map rotation + veto state             | Todo 🛑    | P2.8     |
-| `GET`  | `.../lifecycle/aggregate-stats`             | lifecycle        | Latest aggregate stats                | Todo 🛑    | P2.9     |
+| `GET`  | `.../stats/combat`                          | combat           | Aggregated combat stats               | Done ✅    | P2.3     |
+| `GET`  | `.../stats/combat/players`                  | combat           | Per-player combat counters            | Done ✅    | P2.4     |
+| `GET`  | `.../stats/combat/players/:login`           | combat           | Single player combat stats            | Done ✅    | P2.5     |
+| `GET`  | `.../stats/scores`                          | combat           | Latest scores snapshot                | Done ✅    | P2.6     |
+| `GET`  | `.../lifecycle`                             | lifecycle        | Current lifecycle state               | Done ✅    | P2.7     |
+| `GET`  | `.../lifecycle/map-rotation`                | lifecycle        | Map rotation + veto state             | Done ✅    | P2.8     |
+| `GET`  | `.../lifecycle/aggregate-stats`             | lifecycle        | Latest aggregate stats                | Done ✅    | P2.9     |
 | `GET`  | `.../votes/policy`                          | connectivity     | Current vote policy                   | Todo 🛑    | P5.13    |
 | `GET`  | `.../teams/policy`                          | connectivity     | Current team policy                   | Todo 🛑    | P4.10    |
 | `GET`  | `.../teams/roster`                          | connectivity     | Current roster                        | Todo 🛑    | P4.13    |
@@ -1079,7 +1079,7 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `GET`  | `.../match/maps-score`                      | connectivity     | Maps score state                      | Todo 🛑    | P3.14    |
 | `GET`  | `.../match/round-score`                     | connectivity     | Round score state                     | Todo 🛑    | P3.16    |
 | `GET`  | `.../veto/status`                           | veto             | Veto/draft session state              | Todo 🛑    | P4.1     |
-| `GET`  | `.../mode`                                  | mode             | Current game mode + events            | Todo 🛑    | P2.12    |
+| `GET`  | `.../mode`                                  | mode             | Current game mode + events            | Done ✅    | P2.12    |
 
 ## 4.4 Ingestion Endpoints (plugin → server, internal)
 

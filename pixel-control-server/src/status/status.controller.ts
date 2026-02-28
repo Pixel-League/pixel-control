@@ -11,7 +11,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ServerHealthResponse, ServerStatusResponse, StatusService } from './status.service';
+import { CapabilitiesResponse, ServerHealthResponse, ServerStatusResponse, StatusService } from './status.service';
 
 @ApiTags('Server Status')
 @Controller('servers')
@@ -86,6 +86,44 @@ export class StatusController {
   ): Promise<ServerHealthResponse> {
     try {
       return await this.statusService.getServerHealth(serverLogin);
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        throw err;
+      }
+      throw new NotFoundException(`Server '${serverLogin}' not found`);
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Get plugin capabilities snapshot',
+    description:
+      'Returns the plugin capabilities as reported during the most recent plugin registration event. ' +
+      'Falls back to the latest heartbeat event if no registration event is available. ' +
+      'Capabilities include: admin_control, queue, transport, callbacks, and any other fields ' +
+      'declared by the plugin at startup. Returns capabilities: null if no connectivity data exists.',
+  })
+  @ApiParam({
+    name: 'serverLogin',
+    description: 'The dedicated server login (unique identifier)',
+    example: 'pixel-elite-1.server.local',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Capabilities snapshot returned. Fields: server_login, online, ' +
+      'capabilities (object or null), source ("plugin_registration" | "plugin_heartbeat" | null), ' +
+      'source_time (ISO8601 or null).',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Server not found — server has never connected or been registered.',
+  })
+  @Get(':serverLogin/status/capabilities')
+  async getServerCapabilities(
+    @Param('serverLogin') serverLogin: string,
+  ): Promise<CapabilitiesResponse> {
+    try {
+      return await this.statusService.getServerCapabilities(serverLogin);
     } catch (err) {
       if (err instanceof NotFoundException) {
         throw err;

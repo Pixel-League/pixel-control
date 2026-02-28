@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StatusController } from './status.controller';
 import {
+  CapabilitiesResponse,
   ServerHealthResponse,
   ServerStatusResponse,
   StatusService,
@@ -64,9 +65,23 @@ const makeHealthResponse = (): ServerHealthResponse => ({
   },
 });
 
+const makeCapabilitiesResponse = (): CapabilitiesResponse => ({
+  server_login: 'test-server',
+  online: true,
+  capabilities: {
+    admin_control: { enabled: true },
+    queue: { max_size: 2000 },
+    transport: { mode: 'bearer' },
+    callbacks: { connectivity: true },
+  },
+  source: 'plugin_registration',
+  source_time: '2026-02-28T09:00:00.000Z',
+});
+
 const makeServiceStub = () => ({
   getServerStatus: vi.fn(),
   getServerHealth: vi.fn(),
+  getServerCapabilities: vi.fn(),
 });
 
 describe('StatusController', () => {
@@ -172,6 +187,53 @@ describe('StatusController', () => {
 
       await expect(
         controller.getServerHealth('test-server'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('GET /servers/:serverLogin/status/capabilities', () => {
+    it('returns 200 with capabilities shape', async () => {
+      const capResp = makeCapabilitiesResponse();
+      service.getServerCapabilities.mockResolvedValue(capResp);
+
+      const result = await controller.getServerCapabilities('test-server');
+
+      expect(result).toEqual(capResp);
+      expect(service.getServerCapabilities).toHaveBeenCalledWith('test-server');
+    });
+
+    it('returns null capabilities when no connectivity data exists', async () => {
+      service.getServerCapabilities.mockResolvedValue({
+        server_login: 'test-server',
+        online: false,
+        capabilities: null,
+        source: null,
+        source_time: null,
+      });
+
+      const result = await controller.getServerCapabilities('test-server');
+
+      expect(result.capabilities).toBeNull();
+      expect(result.source).toBeNull();
+    });
+
+    it('throws NotFoundException for unknown server', async () => {
+      service.getServerCapabilities.mockRejectedValue(
+        new NotFoundException("Server 'unknown-server' not found"),
+      );
+
+      await expect(
+        controller.getServerCapabilities('unknown-server'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('wraps unknown errors as NotFoundException', async () => {
+      service.getServerCapabilities.mockRejectedValue(
+        new Error('Unexpected error'),
+      );
+
+      await expect(
+        controller.getServerCapabilities('test-server'),
       ).rejects.toThrow(NotFoundException);
     });
   });

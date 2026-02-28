@@ -145,6 +145,65 @@ describe('StatusService', () => {
     });
   });
 
+  describe('getServerCapabilities', () => {
+    it('throws NotFoundException for unknown server', async () => {
+      prisma.server.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getServerCapabilities('unknown-server'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns capabilities from latest registration event', async () => {
+      prisma.server.findUnique.mockResolvedValue(makeServer());
+      prisma.connectivityEvent.findFirst.mockImplementation((args: { where: { eventName?: { contains?: string } } }) => {
+        if (args?.where?.eventName?.contains === 'registration') {
+          return Promise.resolve({
+            payload: {
+              capabilities: { admin_control: { enabled: true } },
+            },
+            receivedAt: new Date('2026-02-28T09:00:00Z'),
+          });
+        }
+        return Promise.resolve(null);
+      });
+
+      const result = await service.getServerCapabilities('test-server');
+
+      expect(result.capabilities).toEqual({ admin_control: { enabled: true } });
+      expect(result.source).toBe('plugin_registration');
+    });
+
+    it('falls back to heartbeat when no registration event', async () => {
+      prisma.server.findUnique.mockResolvedValue(makeServer());
+      prisma.connectivityEvent.findFirst.mockImplementation((args: { where: { eventName?: { contains?: string } } }) => {
+        if (args?.where?.eventName?.contains === 'registration') {
+          return Promise.resolve(null);
+        }
+        return Promise.resolve({
+          payload: { capabilities: { transport: { mode: 'bearer' } } },
+          receivedAt: new Date('2026-02-28T10:00:00Z'),
+        });
+      });
+
+      const result = await service.getServerCapabilities('test-server');
+
+      expect(result.capabilities).toEqual({ transport: { mode: 'bearer' } });
+      expect(result.source).toBe('plugin_heartbeat');
+    });
+
+    it('returns null capabilities when no connectivity events', async () => {
+      prisma.server.findUnique.mockResolvedValue(makeServer());
+      prisma.connectivityEvent.findFirst.mockResolvedValue(null);
+
+      const result = await service.getServerCapabilities('test-server');
+
+      expect(result.capabilities).toBeNull();
+      expect(result.source).toBeNull();
+      expect(result.source_time).toBeNull();
+    });
+  });
+
   describe('getServerHealth', () => {
     it('returns full health for known server', async () => {
       prisma.server.findUnique.mockResolvedValue(makeServer());
