@@ -93,18 +93,18 @@ bash scripts/dev-mode-compose.sh joust relaunch
 - Envelope schema version: `2026-02-20.1` — evolve additively only (no breaking field changes).
 - Event naming: `pixel_control.<category>.<normalized_source_callback>`.
 - Identity: `event_id = pc-evt-<category>-<callback>-<seq>`, `idempotency_key = pc-idem-<sha1(event_id)>`.
-- Plugin domain logic uses **PHP traits** (e.g. `ConnectivityDomainTrait`, `VetoDraftDomainTrait`).
+- Plugin domain logic uses **PHP traits** (e.g. `ConnectivityDomainTrait`, `CombatDomainTrait`, `EliteRoundTrackingTrait`).
 - ManiaControl plugin pattern: implement `Plugin` interface (`prepare`, `load`, `unload`, metadata getters), wire callbacks via managers, settings via `SettingManager`.
 - NestJS server: Fastify platform, modules per domain, Prisma for DB, Vitest for tests.
 - Auth model (plugin→server): `link_bearer` token — finalized. API generates UUID tokens on first registration or explicit rotate.
-- Multi-mode support is mandatory: Elite, Siege, Battle, Joust, Custom (not Elite-only).
+- Plugin is **Elite-only** after PLAN-ELITE-ENRICHMENT (all 14 phases done). VetoDraft, Admin Control, Access Control, Series Control, and Team Control subsystems have been removed. Only Elite mode callbacks remain in `CallbackRegistry.php`.
 - No inline TS imports — use static imports at file top.
 - `NEW_API_CONTRACT.md` (repo root) is the **route/contract source of truth** — keep it updated on every plugin→server change.
 
 ## CI / Release
 - **No CI configured** (no `.github/workflows/`, no `.gitlab-ci.yml`).
 - No release/versioning process defined yet.
-- Current active branch: `main` (P0 + P1 + P2 all complete and merged).
+- Current active branch: `feat/p2-read-api` (P2 + P2.5 + P2.6 + Elite enrichment — not yet merged into `main`).
 
 ## Gotchas
 - **Apple Silicon**: set `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64` — game binaries are x86.

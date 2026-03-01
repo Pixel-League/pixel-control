@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
+import { EliteContext } from '../common/interfaces/elite-context.interface';
 import { PaginatedResponse, paginate } from '../common/dto/read-response.dto';
 import { ServerResolverService } from '../common/services/server-resolver.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -248,6 +249,8 @@ interface RawCombatPayload {
   scores_section?: string;
   scores_snapshot?: Record<string, unknown>;
   scores_result?: Record<string, unknown>;
+  /** Present for combat events emitted during an active Elite turn. Null/absent for non-Elite events. */
+  elite_context?: EliteContext | null;
 }
 
 @Injectable()

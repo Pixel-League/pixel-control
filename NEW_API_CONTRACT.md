@@ -722,6 +722,10 @@ Weapon IDs: `1`=laser, `2`=rocket, `3`=nucleus, `4`=grenade, `5`=arrow, `6`=miss
 | `GET`  | `/v1/servers/:serverLogin/stats/combat/maps/:mapUid/players/:login`  | Player combat stats on a specific map        | Done ✅    | P2.5.3   |
 | `GET`  | `/v1/servers/:serverLogin/stats/combat/series`                       | Per-series (Best-Of) combat stats (paginated)| Done ✅    | P2.5.4   |
 | `GET`  | `/v1/servers/:serverLogin/stats/combat/players/:login/maps`          | Player combat stats across recent maps       | Done ✅    | P2.6     |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/turns`                        | List Elite turn summaries (paginated)        | Done ✅    | P2.12    |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/turns/:turnNumber`            | Single Elite turn summary by turn number     | Done ✅    | P2.13    |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/players/:login/clutches`      | Clutch statistics for a player               | Done ✅    | P2.14    |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/players/:login/turns`         | Per-turn Elite history for a player          | Done ✅    | P2.15    |
 
 ### Per-Map / Per-Series Combat Stats (P2.5 additions)
 
@@ -856,6 +860,83 @@ Data source: lifecycle events (category `lifecycle`) stored in the `Event` table
   "pagination": { "total": 15, "limit": 10, "offset": 0 }
 }
 ```
+
+### Elite Turn Endpoints (P2.12–P2.15)
+
+Data source: `combat` category events in the `Event` table where `payload.event_kind === 'elite_turn_summary'`. Emitted by the plugin at the end of each Elite round via `EliteRoundTrackingTrait.handleEliteEndTurn()`.
+
+**`elite_turn_summary` event payload shape:**
+```json
+{
+  "event_kind": "elite_turn_summary",
+  "turn_number": 3,
+  "attacker_login": "player1",
+  "defender_logins": ["def1", "def2", "def3"],
+  "attacker_team_id": 0,
+  "outcome": "time_limit",
+  "duration_seconds": 45,
+  "defense_success": true,
+  "per_player_stats": {
+    "player1": { "kills": 2, "deaths": 0, "hits": 5, "shots": 8, "misses": 3, "rocket_hits": 2 },
+    "def1": { "kills": 0, "deaths": 1, "hits": 1, "shots": 2, "misses": 1, "rocket_hits": 0 }
+  },
+  "map_uid": "uid-alpha",
+  "map_name": "Alpha Arena",
+  "clutch": {
+    "is_clutch": true,
+    "clutch_player_login": "def3",
+    "alive_defenders_at_end": 1,
+    "total_defenders": 3
+  }
+}
+```
+
+Clutch detection rule: `is_clutch = defense_success && alive_defenders_at_end === 1 && total_defenders > 1`.
+Victory type mapping: `1=time_limit` (defense_success=true), `2=capture` (defense_success=false), `3=attacker_eliminated` (defense_success=true), `4=defenders_eliminated` (defense_success=false).
+
+**`GET /v1/servers/:serverLogin/stats/combat/turns`** (P2.12)
+- Query params: `limit` (default 50, max 200), `offset` (default 0), `since` (ISO8601), `until` (ISO8601).
+- Response: `{ server_login, turns: EliteTurnSummary[], pagination: { total, limit, offset } }`.
+- Turns ordered most-recent first (by `sourceTime`).
+- Returns empty `turns: []` (not 404) if no turn summaries exist.
+
+**`GET /v1/servers/:serverLogin/stats/combat/turns/:turnNumber`** (P2.13)
+- Path param: `turnNumber` (integer, 1-based).
+- Response: full `EliteTurnSummary` plus `server_login`, `event_id`, `recorded_at` (ISO8601).
+- Returns 404 if the turn number has no recorded event.
+- When the server plugin is restarted the turn counter resets; the most recent event with the requested turn number is returned.
+
+**`GET /v1/servers/:serverLogin/stats/combat/players/:login/clutches`** (P2.14)
+- Path param: `login` — player login to query.
+- Response: `{ server_login, player_login, clutch_count, total_defense_rounds, clutch_rate, clutch_turns: EliteClutchTurnRef[] }`.
+- `clutch_rate` = `clutch_count / total_defense_rounds` rounded to 4 dp (0.0 when `total_defense_rounds === 0`).
+- `clutch_turns` lists only turns where this player was the clutch winner.
+- Each `EliteClutchTurnRef`: `{ turn_number, map_uid, map_name, recorded_at, defender_logins, alive_defenders_at_end, total_defenders, outcome }`.
+- Returns zeroed response (not 404) if player has no clutches or no defense rounds on record.
+
+**`GET /v1/servers/:serverLogin/stats/combat/players/:login/turns`** (P2.15)
+- Path params: `login` — player login to query.
+- Query params: `limit` (default 50, max 200), `offset` (default 0).
+- Response: `{ server_login, player_login, data: PlayerEliteTurnEntry[], pagination: { total, limit, offset } }`.
+- Each `PlayerEliteTurnEntry`: `{ turn_number, map_uid, map_name, recorded_at, role ('attacker'|'defender'), stats: EliteTurnPlayerStats, outcome, defense_success, clutch: EliteClutchInfo }`.
+- `EliteTurnPlayerStats`: `{ kills, deaths, hits, shots, misses, rocket_hits }`.
+- Only turns where the player participated (as attacker or defender) are included.
+- Returns empty `data: []` (not 404) if player has no turns on record.
+
+**`elite_context` in regular combat events:**
+Every combat event emitted during an active Elite round carries an `elite_context` field in its payload:
+```json
+{
+  "elite_context": {
+    "turn_number": 3,
+    "attacker_login": "player1",
+    "defender_logins": ["def1", "def2", "def3"],
+    "attacker_team_id": 0,
+    "phase": "attack"
+  }
+}
+```
+`phase` is `"attack"` if the event's shooter is the attacker, `"defense"` if a defender, `null` if indeterminate. The field is `null` (or absent) for non-Elite events. Existing `/stats/combat` endpoints pass `elite_context` through unchanged in their raw payload responses.
 
 ---
 
@@ -1212,6 +1293,10 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `GET`  | `.../stats/combat/maps/:mapUid/players/:login`  | lifecycle        | Player combat stats on specific map   | Done ✅    | P2.5.3   |
 | `GET`  | `.../stats/combat/series`                       | lifecycle        | Per-series (BO) combat stats          | Done ✅    | P2.5.4   |
 | `GET`  | `.../stats/combat/players/:login/maps`          | lifecycle        | Player combat history per map         | Done ✅    | P2.6     |
+| `GET`  | `.../stats/combat/turns`                        | combat           | List Elite turn summaries (paginated) | Done ✅    | P2.12    |
+| `GET`  | `.../stats/combat/turns/:turnNumber`            | combat           | Single Elite turn by turn number      | Done ✅    | P2.13    |
+| `GET`  | `.../stats/combat/players/:login/clutches`      | combat           | Clutch stats for a player             | Done ✅    | P2.14    |
+| `GET`  | `.../stats/combat/players/:login/turns`         | combat           | Per-turn Elite history for a player   | Done ✅    | P2.15    |
 | `GET`  | `.../lifecycle`                             | lifecycle        | Current lifecycle state               | Done ✅    | P2.7     |
 | `GET`  | `.../lifecycle/map-rotation`                | lifecycle        | Map rotation + veto state             | Done ✅    | P2.8     |
 | `GET`  | `.../lifecycle/aggregate-stats`             | lifecycle        | Latest aggregate stats                | Done ✅    | P2.9     |

@@ -44,11 +44,6 @@ trait CoreDomainTrait {
 		$this->initializeSettings();
 		$this->initializeSourceSequence();
 		$this->initializeEventPipeline();
-		$this->initializeSeriesControlState();
-		$this->initializeAccessControlState();
-		$this->initializeTeamControlState();
-		$this->initializeAdminDelegationLayer();
-		$this->initializeVetoDraftFeature();
 		$this->callbackRegistry = new CallbackRegistry();
 		$this->callbackRegistry->register($maniaControl, $this);
 		$this->registerPeriodicTimers();
@@ -71,36 +66,12 @@ trait CoreDomainTrait {
 
 	public function unload() {
 		Logger::log('[PixelControl] Unloading plugin.');
-		$this->unregisterAdminControlEntryPoints();
-		$this->unregisterVetoDraftEntryPoints();
-
-		$this->nativeAdminGateway = null;
-		$this->whitelistState = null;
-		$this->votePolicyState = null;
-		$this->teamRosterState = null;
-		$this->whitelistRecentDeniedAt = array();
-		$this->whitelistLastReconcileAt = 0;
-		$this->whitelistGuestListLastSyncHash = '';
-		$this->whitelistGuestListLastSyncAt = 0;
-		$this->votePolicyLastCallVoteTimeoutMs = 0;
-		$this->votePolicyStrictRuntimeApplied = false;
-		$this->teamControlForcedTeamsState = null;
-		$this->teamControlLastRuntimeApplyAt = 0;
-		$this->teamControlLastRuntimeApplySource = 'bootstrap';
-		$this->teamControlRecentForcedAt = array();
-		$this->teamControlLastReconcileAt = 0;
-		$this->adminControlEnabled = false;
-		$this->adminControlCommandName = 'pcadmin';
-		$this->adminControlPauseActive = null;
-		$this->adminControlPauseObservedAt = 0;
-		$this->adminControlPauseStateMaxAgeSeconds = 120;
 		$this->retryPolicy = null;
 		$this->eventQueue = null;
 		$this->apiClient = null;
 		$this->callbackRegistry = null;
 		$this->playerCombatStatsStore = null;
 		$this->playerStateCache = array();
-		$this->recentAdminActionContexts = array();
 		$this->roundAggregateBaseline = null;
 		$this->roundAggregateStartedAt = 0;
 		$this->roundAggregateStartedBy = 'unknown';
@@ -114,29 +85,6 @@ trait CoreDomainTrait {
 		$this->playerConstraintPolicyCache = null;
 		$this->playerConstraintPolicyCapturedAt = 0;
 		$this->playerConstraintPolicyErrorLogAt = 0;
-		$this->vetoDraftActions = array();
-		$this->vetoDraftActionSequence = 0;
-		$this->vetoDraftEnabled = false;
-		$this->vetoDraftCommandName = 'pcveto';
-		$this->vetoDraftDefaultMode = 'matchmaking_vote';
-		$this->vetoDraftMatchmakingDurationSeconds = 60;
-		$this->vetoDraftMatchmakingAutostartMinPlayers = 2;
-		$this->vetoDraftMatchmakingAutostartArmed = true;
-		$this->vetoDraftMatchmakingAutostartSuppressed = false;
-		$this->vetoDraftMatchmakingAutostartPending = null;
-		$this->vetoDraftMatchmakingAutostartLastCancellation = '';
-		$this->vetoDraftMatchmakingReadyArmed = false;
-		$this->vetoDraftTournamentActionTimeoutSeconds = 45;
-		$this->vetoDraftDefaultBestOf = 3;
-		$this->vetoDraftLaunchImmediately = true;
-		$this->vetoDraftMapPoolService = null;
-		$this->vetoDraftQueueApplier = null;
-		$this->vetoDraftCoordinator = null;
-		$this->seriesControlState = null;
-		$this->vetoDraftCompatibilitySnapshot = null;
-		$this->vetoDraftLastAppliedSessionId = '';
-		$this->vetoDraftMatchmakingLifecycleContext = null;
-		$this->vetoDraftMatchmakingLifecycleLastSnapshot = null;
 		$this->heartbeatIntervalSeconds = 120;
 		$this->resetDeliveryTelemetry();
 		$this->maniaControl = null;
@@ -145,19 +93,14 @@ trait CoreDomainTrait {
 	}
 
 	public function handleLifecycleCallback(...$callbackArguments) {
-		$this->handleTeamControlLifecycleCallback($callbackArguments);
-		$this->handleMatchmakingLifecycleFromCallback($callbackArguments);
 		$this->queueCallbackEvent('lifecycle', $callbackArguments);
 	}
 
 	public function handlePlayerCallback(...$callbackArguments) {
-		$this->handleAccessControlPlayerCallback($callbackArguments);
-		$this->handleTeamControlPlayerCallback($callbackArguments);
 		$this->queueCallbackEvent('player', $callbackArguments);
 	}
 
 	public function handleVoteCallback(...$callbackArguments) {
-		$this->handleVotePolicyCallback($callbackArguments);
 	}
 
 	public function handleCombatCallback(...$callbackArguments) {
@@ -185,14 +128,10 @@ trait CoreDomainTrait {
 	}
 
 	public function handleDispatchTimerTick() {
-		$this->handleAccessControlPolicyTick();
-		$this->handleTeamControlPolicyTick();
 		$this->dispatchQueuedEvents();
 	}
 
 	public function handleHeartbeatTimerTick() {
-		$this->handleAccessControlPolicyTick();
-		$this->handleTeamControlPolicyTick();
 		$this->resolvePlayerConstraintPolicyContext(true);
 		$this->queueConnectivityEvent('heartbeat', $this->buildHeartbeatPayload());
 		$this->dispatchQueuedEvents();
@@ -213,11 +152,6 @@ trait CoreDomainTrait {
 		$settingManager->initSetting($this, self::SETTING_QUEUE_MAX_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_QUEUE_MAX_SIZE, 'PIXEL_CONTROL_QUEUE_MAX_SIZE', 2000, 1));
 		$settingManager->initSetting($this, self::SETTING_DISPATCH_BATCH_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1));
 		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1));
-		$this->initializeAccessControlSettings();
-		$this->initializeTeamControlSettings();
-		$this->initializeAdminControlSettings();
-		$this->initializeVetoDraftSettings();
-		$this->initializeSeriesControlSettings();
 	}
 
 	private function initializeEventPipeline() {
@@ -258,7 +192,6 @@ trait CoreDomainTrait {
 		$this->retryPolicy = new ExponentialBackoffRetryPolicy($maxRetryAttempts, $retryBackoffSeconds);
 		$this->playerCombatStatsStore = new PlayerCombatStatsStore();
 		$this->playerStateCache = array();
-		$this->recentAdminActionContexts = array();
 		$this->roundAggregateBaseline = null;
 		$this->roundAggregateStartedAt = 0;
 		$this->roundAggregateStartedBy = 'unknown';
@@ -272,8 +205,6 @@ trait CoreDomainTrait {
 		$this->playerConstraintPolicyCache = null;
 		$this->playerConstraintPolicyCapturedAt = 0;
 		$this->playerConstraintPolicyErrorLogAt = 0;
-		$this->vetoDraftActions = array();
-		$this->vetoDraftActionSequence = 0;
 		$this->resetDeliveryTelemetry();
 
 		Logger::log(
@@ -299,9 +230,8 @@ trait CoreDomainTrait {
 		$timerManager = $this->maniaControl->getTimerManager();
 		$timerManager->registerTimerListening($this, 'handleDispatchTimerTick', 1000);
 		$timerManager->registerTimerListening($this, 'handleHeartbeatTimerTick', $this->heartbeatIntervalSeconds * 1000);
-		$timerManager->registerTimerListening($this, 'handleVetoDraftTimerTick', 1000);
 
-		Logger::log('[PixelControl] Timers registered: dispatch=1s, heartbeat=' . $this->heartbeatIntervalSeconds . 's, veto_tick=1s.');
+		Logger::log('[PixelControl] Timers registered: dispatch=1s, heartbeat=' . $this->heartbeatIntervalSeconds . 's.');
 	}
 
 	private function resolveRuntimeStringSetting($settingName, $environmentVariableName, $fallback) {

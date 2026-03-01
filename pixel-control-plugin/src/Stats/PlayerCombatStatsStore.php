@@ -27,6 +27,27 @@ class PlayerCombatStatsStore {
 	/** @var array $eliteRoundDeaths Per-player death count during current round, keyed by login */
 	private $eliteRoundDeaths = array();
 
+	/** @var int $eliteTurnNumber Monotonically incrementing turn counter, reset on store reset */
+	private $eliteTurnNumber = 0;
+
+	/** @var int|null $eliteAttackerTeamId Team ID of the attacker in the current round */
+	private $eliteAttackerTeamId = null;
+
+	/** @var array $eliteRoundShots Per-player shot count during current round, keyed by login */
+	private $eliteRoundShots = array();
+
+	/** @var array $eliteRoundMisses Per-player miss count during current round, keyed by login */
+	private $eliteRoundMisses = array();
+
+	/** @var array $eliteRoundKills Per-player kill count during current round, keyed by login */
+	private $eliteRoundKills = array();
+
+	/** @var int $eliteRoundStartedAt Unix timestamp when the current round started */
+	private $eliteRoundStartedAt = 0;
+
+	/** @var string[] $eliteRoundAliveDefenders Logins of defenders still alive in the current round */
+	private $eliteRoundAliveDefenders = array();
+
 	/**
 	 * Reset all tracked counters.
 	 */
@@ -38,6 +59,13 @@ class PlayerCombatStatsStore {
 		$this->eliteRoundHits = array();
 		$this->eliteRoundRocketHits = array();
 		$this->eliteRoundDeaths = array();
+		$this->eliteTurnNumber = 0;
+		$this->eliteAttackerTeamId = null;
+		$this->eliteRoundShots = array();
+		$this->eliteRoundMisses = array();
+		$this->eliteRoundKills = array();
+		$this->eliteRoundStartedAt = 0;
+		$this->eliteRoundAliveDefenders = array();
 	}
 
 	/**
@@ -60,6 +88,8 @@ class PlayerCombatStatsStore {
 		if ($weaponId === self::WEAPON_ROCKET) {
 			$this->playerCounters[$normalizedLogin]['rockets']++;
 		}
+
+		$this->trackEliteRoundShot($normalizedLogin);
 	}
 
 	/**
@@ -97,6 +127,7 @@ class PlayerCombatStatsStore {
 
 		$this->ensurePlayer($normalizedLogin);
 		$this->playerCounters[$normalizedLogin]['misses']++;
+		$this->trackEliteRoundMiss($normalizedLogin);
 	}
 
 	/**
@@ -108,6 +139,7 @@ class PlayerCombatStatsStore {
 		if ($normalizedKillerLogin !== null) {
 			$this->ensurePlayer($normalizedKillerLogin);
 			$this->playerCounters[$normalizedKillerLogin]['kills']++;
+			$this->trackEliteRoundKill($normalizedKillerLogin);
 		}
 
 		$normalizedVictimLogin = $this->normalizeLogin($victimLogin);
@@ -123,10 +155,13 @@ class PlayerCombatStatsStore {
 	 *
 	 * @param string $attackerLogin
 	 * @param string[] $defenderLogins
+	 * @param int|null $attackerTeamId
 	 */
-	public function openEliteRound($attackerLogin, array $defenderLogins) {
+	public function openEliteRound($attackerLogin, array $defenderLogins, $attackerTeamId = null) {
+		$this->eliteTurnNumber++;
 		$this->eliteRoundActive = true;
 		$this->eliteRoundAttackerLogin = $this->normalizeLogin($attackerLogin);
+		$this->eliteAttackerTeamId = ($attackerTeamId !== null) ? (int) $attackerTeamId : null;
 		$this->eliteRoundDefenderLogins = array();
 		foreach ($defenderLogins as $login) {
 			$normalized = $this->normalizeLogin($login);
@@ -137,6 +172,11 @@ class PlayerCombatStatsStore {
 		$this->eliteRoundHits = array();
 		$this->eliteRoundRocketHits = array();
 		$this->eliteRoundDeaths = array();
+		$this->eliteRoundShots = array();
+		$this->eliteRoundMisses = array();
+		$this->eliteRoundKills = array();
+		$this->eliteRoundStartedAt = time();
+		$this->eliteRoundAliveDefenders = $this->eliteRoundDefenderLogins;
 
 		// Ensure all participants are tracked
 		if ($this->eliteRoundAttackerLogin !== null) {
@@ -201,6 +241,90 @@ class PlayerCombatStatsStore {
 	 */
 	public function isEliteRoundActive() {
 		return $this->eliteRoundActive;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getEliteTurnNumber() {
+		return $this->eliteTurnNumber;
+	}
+
+	/**
+	 * @return string|null
+	 */
+	public function getEliteAttackerLogin() {
+		return $this->eliteRoundAttackerLogin;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getEliteDefenderLogins() {
+		return $this->eliteRoundDefenderLogins;
+	}
+
+	/**
+	 * @return int|null
+	 */
+	public function getEliteAttackerTeamId() {
+		return $this->eliteAttackerTeamId;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getEliteRoundStartedAt() {
+		return $this->eliteRoundStartedAt;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getAliveDefenderCount() {
+		return count($this->eliteRoundAliveDefenders);
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getAliveDefenderLogins() {
+		return array_values($this->eliteRoundAliveDefenders);
+	}
+
+	/**
+	 * Snapshot all per-turn tracking data for use in a turn summary event.
+	 *
+	 * @return array
+	 */
+	public function snapshotEliteRoundStats() {
+		$allLogins = array_unique(array_merge(
+			$this->eliteRoundAttackerLogin !== null ? array($this->eliteRoundAttackerLogin) : array(),
+			$this->eliteRoundDefenderLogins
+		));
+
+		$perPlayer = array();
+		foreach ($allLogins as $login) {
+			$perPlayer[$login] = array(
+				'kills' => isset($this->eliteRoundKills[$login]) ? (int) $this->eliteRoundKills[$login] : 0,
+				'deaths' => isset($this->eliteRoundDeaths[$login]) ? (int) $this->eliteRoundDeaths[$login] : 0,
+				'hits' => isset($this->eliteRoundHits[$login]) ? (int) $this->eliteRoundHits[$login] : 0,
+				'shots' => isset($this->eliteRoundShots[$login]) ? (int) $this->eliteRoundShots[$login] : 0,
+				'misses' => isset($this->eliteRoundMisses[$login]) ? (int) $this->eliteRoundMisses[$login] : 0,
+				'rocket_hits' => isset($this->eliteRoundRocketHits[$login]) ? (int) $this->eliteRoundRocketHits[$login] : 0,
+			);
+		}
+
+		ksort($perPlayer);
+
+		return array(
+			'per_player' => $perPlayer,
+			'turn_number' => $this->eliteTurnNumber,
+			'attacker_login' => $this->eliteRoundAttackerLogin,
+			'defender_logins' => $this->eliteRoundDefenderLogins,
+			'attacker_team_id' => $this->eliteAttackerTeamId,
+			'started_at' => $this->eliteRoundStartedAt,
+		);
 	}
 
 	/**
@@ -351,6 +475,60 @@ class PlayerCombatStatsStore {
 			$this->eliteRoundDeaths[$login] = 0;
 		}
 		$this->eliteRoundDeaths[$login]++;
+
+		// Remove dead defenders from the alive list
+		$aliveIndex = array_search($login, $this->eliteRoundAliveDefenders, true);
+		if ($aliveIndex !== false) {
+			array_splice($this->eliteRoundAliveDefenders, $aliveIndex, 1);
+		}
+	}
+
+	/**
+	 * Track a shot during an active Elite round.
+	 *
+	 * @param string $login Already normalized login
+	 */
+	private function trackEliteRoundShot($login) {
+		if (!$this->eliteRoundActive) {
+			return;
+		}
+
+		if (!isset($this->eliteRoundShots[$login])) {
+			$this->eliteRoundShots[$login] = 0;
+		}
+		$this->eliteRoundShots[$login]++;
+	}
+
+	/**
+	 * Track a miss during an active Elite round.
+	 *
+	 * @param string $login Already normalized login
+	 */
+	private function trackEliteRoundMiss($login) {
+		if (!$this->eliteRoundActive) {
+			return;
+		}
+
+		if (!isset($this->eliteRoundMisses[$login])) {
+			$this->eliteRoundMisses[$login] = 0;
+		}
+		$this->eliteRoundMisses[$login]++;
+	}
+
+	/**
+	 * Track a kill during an active Elite round.
+	 *
+	 * @param string $login Already normalized login (killer)
+	 */
+	private function trackEliteRoundKill($login) {
+		if (!$this->eliteRoundActive) {
+			return;
+		}
+
+		if (!isset($this->eliteRoundKills[$login])) {
+			$this->eliteRoundKills[$login] = 0;
+		}
+		$this->eliteRoundKills[$login]++;
 	}
 
 	/**

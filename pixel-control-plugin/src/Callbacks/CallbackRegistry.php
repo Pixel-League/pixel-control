@@ -68,16 +68,6 @@ class CallbackRegistry {
 			Callbacks::SM_ELITE_STARTTURN,
 			Callbacks::SM_ELITE_ENDTURN,
 		),
-		'joust' => array(
-			Callbacks::SM_JOUST_ONRELOAD,
-			Callbacks::SM_JOUST_SELECTEDPLAYERS,
-			Callbacks::SM_JOUST_ROUNDRESULT,
-		),
-		'royal' => array(
-			Callbacks::SM_ROYAL_POINTS,
-			Callbacks::SM_ROYAL_PLAYERSPAWN,
-			Callbacks::SM_ROYAL_ROUNDWINNER,
-		),
 	);
 
 	public function register(ManiaControl $maniaControl, CallbackListener $listener) {

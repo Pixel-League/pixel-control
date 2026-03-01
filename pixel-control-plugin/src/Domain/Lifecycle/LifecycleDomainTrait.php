@@ -10,10 +10,7 @@ trait LifecycleDomainTrait {
 		$variant = $this->resolveLifecycleVariant($sourceCallback, $callbackArguments);
 		$variantParts = explode('.', $variant, 2);
 		$isScriptLifecycle = $this->isScriptLifecycleCallback($sourceCallback);
-		$this->observePauseStateFromLifecycle($variant, $callbackArguments);
-
 		if ($variant === 'match.begin') {
-			$this->resetVetoDraftActions();
 		}
 
 		$payload = array(
@@ -33,8 +30,6 @@ trait LifecycleDomainTrait {
 		if ($adminAction !== null) {
 			$payload['admin_action'] = $adminAction;
 		}
-
-		$this->recordVetoDraftActionFromLifecycle($variant, $sourceCallback, $callbackArguments, $adminAction);
 
 		$aggregateStats = $this->buildLifecycleAggregateTelemetry($variant, $sourceCallback);
 		if ($aggregateStats !== null) {
@@ -450,64 +445,6 @@ trait LifecycleDomainTrait {
 		}
 
 		return '';
-	}
-
-	private function trackRecentAdminActionContext($sourceCallback, array $payload, $enqueuedEnvelope = null) {
-		if (!isset($payload['admin_action']) || !is_array($payload['admin_action'])) {
-			return;
-		}
-
-		$adminAction = $payload['admin_action'];
-		$envelopeArray = ($enqueuedEnvelope instanceof EventEnvelope) ? $enqueuedEnvelope->toArray() : array();
-		$actorLogin = '';
-		if (isset($adminAction['actor']) && is_array($adminAction['actor']) && isset($adminAction['actor']['login'])) {
-			$actorLogin = trim((string) $adminAction['actor']['login']);
-		}
-
-		$this->recentAdminActionContexts[] = array(
-			'event_id' => isset($envelopeArray['event_id']) ? (string) $envelopeArray['event_id'] : '',
-			'event_name' => isset($envelopeArray['event_name']) ? (string) $envelopeArray['event_name'] : $this->buildEventName('lifecycle', $sourceCallback),
-			'source_sequence' => isset($envelopeArray['source_sequence']) ? (int) $envelopeArray['source_sequence'] : 0,
-			'source_time' => isset($envelopeArray['source_time']) ? (int) $envelopeArray['source_time'] : time(),
-			'source_callback' => $sourceCallback,
-			'action_name' => isset($adminAction['action_name']) ? (string) $adminAction['action_name'] : 'unknown',
-			'action_type' => isset($adminAction['action_type']) ? (string) $adminAction['action_type'] : 'unknown',
-			'action_phase' => isset($adminAction['action_phase']) ? (string) $adminAction['action_phase'] : 'unknown',
-			'target_scope' => isset($adminAction['target_scope']) ? (string) $adminAction['target_scope'] : 'unknown',
-			'target_id' => isset($adminAction['target_id']) ? (string) $adminAction['target_id'] : 'unknown',
-			'initiator_kind' => isset($adminAction['initiator_kind']) ? (string) $adminAction['initiator_kind'] : 'unknown',
-			'actor_login' => $actorLogin,
-			'observed_at' => time(),
-		);
-
-		if (count($this->recentAdminActionContexts) > $this->adminCorrelationHistoryLimit) {
-			$this->recentAdminActionContexts = array_slice($this->recentAdminActionContexts, -1 * $this->adminCorrelationHistoryLimit);
-		}
-
-		$this->pruneRecentAdminActionContexts();
-	}
-
-	private function pruneRecentAdminActionContexts() {
-		if (empty($this->recentAdminActionContexts)) {
-			return;
-		}
-
-		$minimumObservedAt = time() - ($this->adminCorrelationWindowSeconds * 3);
-		$retainedContexts = array();
-
-		foreach ($this->recentAdminActionContexts as $adminContext) {
-			if (!is_array($adminContext) || !isset($adminContext['observed_at'])) {
-				continue;
-			}
-
-			if ((int) $adminContext['observed_at'] < $minimumObservedAt) {
-				continue;
-			}
-
-			$retainedContexts[] = $adminContext;
-		}
-
-		$this->recentAdminActionContexts = $retainedContexts;
 	}
 
 	private function extractScriptLifecycleSnapshot(array $callbackArguments) {

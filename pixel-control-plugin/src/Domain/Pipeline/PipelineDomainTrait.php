@@ -17,11 +17,7 @@ trait PipelineDomainTrait {
 		$payload = $this->buildCallbackPayload($eventCategory, $sourceCallback, $callbackArguments);
 		$metadata = $this->buildEnvelopeMetadata($eventCategory, $sourceCallback, $payload);
 
-		$enqueuedEnvelope = $this->enqueueEnvelope($eventCategory, $sourceCallback, $payload, $metadata);
-		if ($eventCategory === 'lifecycle') {
-			$this->trackRecentAdminActionContext($sourceCallback, $payload, $enqueuedEnvelope);
-		}
-
+		$this->enqueueEnvelope($eventCategory, $sourceCallback, $payload, $metadata);
 		$this->dispatchQueuedEvents();
 	}
 
@@ -168,6 +164,12 @@ trait PipelineDomainTrait {
 
 		if ($eventCategory === 'combat') {
 			$metadata['stats_snapshot'] = 'player_combat_runtime';
+
+			if (isset($payload['elite_context']) && is_array($payload['elite_context'])) {
+				$metadata['elite_turn_number'] = $payload['elite_context']['turn_number'];
+				$metadata['elite_attacker_login'] = $payload['elite_context']['attacker_login'];
+				$metadata['elite_attacker_team_id'] = $payload['elite_context']['attacker_team_id'];
+			}
 		}
 
 		return $metadata;

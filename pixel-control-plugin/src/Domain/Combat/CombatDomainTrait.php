@@ -65,7 +65,54 @@ trait CombatDomainTrait {
 			$payload['scores_result'] = $this->buildWinContextSnapshot('score_update');
 		}
 
+		$payload['elite_context'] = $this->buildEliteContext($dimensions);
+
 		return $payload;
+	}
+
+	private function buildEliteContext(array $dimensions) {
+		if (!$this->playerCombatStatsStore) {
+			return null;
+		}
+
+		if (!$this->playerCombatStatsStore->isEliteRoundActive()) {
+			return null;
+		}
+
+		return array(
+			'turn_number' => $this->playerCombatStatsStore->getEliteTurnNumber(),
+			'attacker_login' => $this->playerCombatStatsStore->getEliteAttackerLogin(),
+			'defender_logins' => $this->playerCombatStatsStore->getEliteDefenderLogins(),
+			'attacker_team_id' => $this->playerCombatStatsStore->getEliteAttackerTeamId(),
+			'phase' => $this->resolveElitePhase($dimensions),
+		);
+	}
+
+	private function resolveElitePhase(array $dimensions) {
+		if (!$this->playerCombatStatsStore) {
+			return null;
+		}
+
+		$attackerLogin = $this->playerCombatStatsStore->getEliteAttackerLogin();
+		if ($attackerLogin === null) {
+			return null;
+		}
+
+		$shooterLogin = '';
+		if (isset($dimensions['shooter']) && is_array($dimensions['shooter']) && isset($dimensions['shooter']['login'])) {
+			$shooterLogin = (string) $dimensions['shooter']['login'];
+		}
+
+		// For onarmorempty and scores/oncapture, phase is ambiguous
+		if ($shooterLogin === '') {
+			return null;
+		}
+
+		if ($shooterLogin === $attackerLogin) {
+			return 'attack';
+		}
+
+		return 'defense';
 	}
 
 	private function extractCombatDimensions(array $callbackArguments) {
