@@ -92,7 +92,7 @@ docker compose --env-file .env -f docker-compose.yml up -d --build
 - Automatic runtime bootstrap (config rendering, mode/matchsettings resolution, plugin sync)
 - ManiaControl startup with Pixel Control plugin auto-sync from source
 - Healthcheck that validates DB access, plugin load marker, and XML-RPC readiness
-- Validation helpers for launch and multi-mode checks (Elite, Siege, Battle, Joust, Custom)
+- Validation helpers for Elite mode launch
 
 ## Repository layout
 
@@ -103,9 +103,7 @@ docker compose --env-file .env -f docker-compose.yml up -d --build
 - `scripts/bootstrap.sh`: runtime startup orchestration
 - `scripts/healthcheck.sh`: readiness probe used by Compose
 - `scripts/dev-plugin-sync.sh`: fast plugin iteration workflow
-- `scripts/dev-mode-compose.sh`: mode profile launcher/relauncher (`.env.<mode>` -> `.env`)
 - `scripts/validate-dev-stack-launch.sh`: single launch validation
-- `scripts/validate-mode-launch-matrix.sh`: Elite/Siege/Battle/Joust/Custom mode launch matrix
 - `scripts/replay-core-telemetry-wave3.sh`: deterministic admin/player/aggregate/map telemetry replay with local ACK capture
 - `scripts/replay-extended-telemetry-wave4.sh`: deterministic reconnect/side/team/veto telemetry replay with marker validation
 - `scripts/simulate-admin-control-payloads.sh`: simulate server-side admin payloads against `PixelControl.Admin.*` communication methods
@@ -144,19 +142,13 @@ cp .env.example .env
 bash scripts/import-reference-runtime.sh
 ```
 
-3) (Recommended once) provision Battle title pack if you plan to run Battle mode:
-
-```bash
-bash scripts/fetch-titlepack.sh SMStormBattle@nadeolabs
-```
-
-4) Start the stack:
+3) Start the stack:
 
 ```bash
 docker compose up -d --build
 ```
 
-5) Verify services and health:
+4) Verify services and health:
 
 ```bash
 docker compose ps
@@ -170,7 +162,7 @@ Look for:
 - `Listening for xml-rpc commands on port ...`
 - `[PixelControl] Plugin loaded.` in `runtime/server/ManiaControl/ManiaControl.log`
 
-6) Stop the stack:
+5) Stop the stack:
 
 ```bash
 docker compose down
@@ -196,34 +188,12 @@ bash scripts/dev-plugin-hot-sync.sh
 
 This syncs plugin files into the running container and restarts only ManiaControl (dedicated server PID should stay unchanged).
 
-### Mode profile launch/relaunch
-
-If you keep one env profile per mode (`.env.elite`, `.env.joust`, ...), use:
-
-```bash
-bash scripts/dev-mode-compose.sh elite
-bash scripts/dev-mode-compose.sh joust relaunch
-```
-
-Behavior:
-
-- Reads `.env.<mode>` and copies it into `.env`
-- Launches/relaunches `mysql` + `shootmania` via `docker-compose.yml`
-- Supports compose-file override via `PIXEL_SM_DEV_COMPOSE_FILES`
-- Supports optional image rebuild via `PIXEL_SM_DEV_MODE_BUILD_IMAGES=1`
-
 ### Validation flows
 
 Single launch validation:
 
 ```bash
 bash scripts/validate-dev-stack-launch.sh
-```
-
-Mode launch matrix validation (Elite, Siege, Battle, Joust, Custom):
-
-```bash
-bash scripts/validate-mode-launch-matrix.sh
 ```
 
 Wave-3 telemetry replay (admin/player correlation + round/map aggregates + map rotation markers):
@@ -255,19 +225,12 @@ bash scripts/test-automated-suite.sh
 
 Default behavior:
 
-- Covers `elite,joust` mode profiles.
-- Runs launch validation + wave-4 plugin-only replay per mode.
+- Covers `elite` mode (Elite-only stack).
+- Runs launch validation + wave-4 plugin-only replay.
 - Runs strict wave-3 and wave-4 replay gate in `elite`.
 - Runs admin response assertions, admin link-auth matrix checks (`missing|invalid|mismatch|valid`), admin payload capture assertions, and response/payload correlation checks.
 - Exits non-zero when a required check fails.
 - Keeps real-client combat callbacks out of automated pass/fail: `OnShoot`, `OnHit`, `OnNearMiss`, `OnArmorEmpty`, `OnCapture`.
-
-Useful variants:
-
-```bash
-bash scripts/test-automated-suite.sh --modes elite
-bash scripts/test-automated-suite.sh --modes elite,joust --with-mode-matrix-validation
-```
 
 Run artifacts are written under:
 
@@ -399,39 +362,22 @@ Most users only need to adjust these variables in `.env` (developer path) or `.e
 
 All available variables and defaults are documented in `.env.example` and `.env.production.example`.
 
-## Mode presets and title packs
+## Mode and title pack
 
-Preset resolution order:
+This is an Elite-only stack using `SMStormElite@nadeolabs`.
+
+Matchsettings resolution order:
 
 1. `PIXEL_SM_MATCHSETTINGS` explicit override (if non-empty)
-2. `<PIXEL_SM_MODE>.txt` preset template fallback (`elite`, `siege`, `battle`, `joust`, `custom`)
+2. `elite.txt` preset template fallback (default)
 
-Title-pack reference list (common ShootMania runtime names):
+Title-pack guidance:
 
-| Preset | Default matchsettings | Recommended title pack | Notes |
-| --- | --- | --- | --- |
-| `elite` | `elite.txt` | `SMStormElite@nadeolabs` | Auto-injection can fill maps when playlist is empty. |
-| `siege` | `siege.txt` | `SMStorm@nadeo` | Requires explicit Siege-compatible map entries. |
-| `battle` | `battle.txt` | `SMStormBattle@nadeolabs` | Requires local `SMStormBattle@nadeolabs.Title.Pack.gbx`. |
-| `joust` | `joust.txt` | `SMStorm@nadeo` | Requires explicit Joust-compatible map entries and runtime script availability. |
-| `royal` | use `custom.txt` | runtime Royal pack (commonly `SMRoyal@nadeolabs`) | No first-party `royal.txt` preset yet; run Royal via `PIXEL_SM_MODE=custom` with explicit script/maps. |
-| `custom` | `custom.txt` | user-defined | Template is intentionally editable; set script/title/maps for your scenario. |
-
-Mounted title-pack guidance:
-
-- Place `.Title.Pack.gbx` assets under `PIXEL_SM_TITLEPACKS_SOURCE` (default `./TitlePacks`).
+- Place `SMStormElite@nadeolabs.Title.Pack.gbx` under `PIXEL_SM_TITLEPACKS_SOURCE` (default `./TitlePacks`).
 - Bootstrap copies mounted packs into runtime `runtime/server/Packs/` and validates the selected `PIXEL_SM_TITLE_PACK`.
-- For modes without a dedicated preset template (currently Royal), use `custom.txt` + explicit script and map pool entries.
-
-Title-pack asset note:
-
 - Bootstrap validates `PIXEL_SM_TITLE_PACK` against runtime pack assets in `runtime/server/Packs/`.
 - If a required pack is missing, startup fails fast with available pack names.
-- Battle helper download:
-
-```bash
-bash scripts/fetch-titlepack.sh SMStormBattle@nadeolabs
-```
+- Auto-injection fills map playlist entries from mounted runtime maps when `elite.txt` has no playable map paths on disk.
 
 ## Networking profiles
 
@@ -455,7 +401,6 @@ Use host mode only if you need parity with host-network setups and understand it
 ## Troubleshooting
 
 - Port already in use: change `PIXEL_SM_XMLRPC_PORT`, `PIXEL_SM_GAME_PORT`, `PIXEL_SM_P2P_PORT`
-- Battle mode fails: ensure `SMStormBattle@nadeolabs.Title.Pack.gbx` exists in `TitlePacks/`
 - Plugin marker missing: check `runtime/server/ManiaControl/ManiaControl.log`
 - Container unhealthy: inspect `docker compose logs shootmania` and verify runtime paths in `.env`
 

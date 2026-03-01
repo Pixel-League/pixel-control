@@ -23,13 +23,12 @@ Resultat attendu:
 
 ```bash
 bash scripts/validate-dev-stack-launch.sh
-bash scripts/validate-mode-launch-matrix.sh
 bash scripts/simulate-admin-control-payloads.sh matrix
 bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=missing
 bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=invalid link_server_login=<SERVER_LOGIN> link_token=invalid-token
 bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=mismatch link_server_login=<SERVER_LOGIN> link_token=<VALID_LINK_TOKEN>
 bash scripts/simulate-admin-control-payloads.sh matrix link_auth_case=valid link_server_login=<SERVER_LOGIN> link_token=<VALID_LINK_TOKEN>
-bash scripts/test-automated-suite.sh --modes elite,joust
+bash scripts/test-automated-suite.sh
 ```
 
 Resultat attendu:
@@ -72,10 +71,6 @@ bash scripts/simulate-admin-control-payloads.sh execute whitelist.add target_log
 ### T3 - Team lock en Elite
 1. Avec `<LOGIN_TEST>` assigne a `blue`, essaye de switch sur l'autre equipe.
 2. Attendu: correction automatique / switch bloque, le joueur reste sur l'equipe assignee.
-
-### T4 - Team lock sur un 2eme mode team
-1. Refaire T3 sur un autre mode team disponible (Joust, Siege ou Battle).
-2. Attendu: meme comportement de verrouillage d'equipe.
 
 ## 5) Collecte des preuves (recommande)
 

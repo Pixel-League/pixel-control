@@ -26,7 +26,7 @@ pixel-control-server/   # NestJS API (TypeScript)
   docker-compose.yml    # postgres:5433 + api:3000
   vitest.config.ts
 
-pixel-sm-server/        # Dockerized ShootMania dev stack
+pixel-sm-server/        # Dockerized ShootMania Elite-only dev stack
   docker-compose.yml            # bridge networking (default)
   docker-compose.production.yml # production overrides
   docker-compose.host.yml       # host-network variant
@@ -77,13 +77,9 @@ bash scripts/dev-plugin-hot-sync.sh         # restart ManiaControl only
 
 # QA / validation
 bash scripts/validate-dev-stack-launch.sh
-bash scripts/test-automated-suite.sh        # full automatable suite
+bash scripts/test-automated-suite.sh        # full automatable suite (Elite-only)
 bash scripts/replay-core-telemetry-wave3.sh
 bash scripts/replay-extended-telemetry-wave4.sh
-
-# Mode switching
-bash scripts/dev-mode-compose.sh elite
-bash scripts/dev-mode-compose.sh joust relaunch
 ```
 
 ## Conventions
@@ -109,7 +105,6 @@ bash scripts/dev-mode-compose.sh joust relaunch
 ## Gotchas
 - **Apple Silicon**: set `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64` — game binaries are x86.
 - `pixel-sm-server/runtime/server/` must be manually provisioned (game binaries + ManiaControl); not in git.
-- **Battle mode** needs `SMStormBattle@nadeolabs.Title.Pack.gbx` downloaded manually via `bash scripts/fetch-titlepack.sh SMStormBattle@nadeolabs`.
 - Server API runs on **port 3000**; PostgreSQL exposed locally on **port 5433** (Docker: 5433→5432).
 - Plugin check-quality uses PHP CLI syntax-lint (`php -l`) — requires PHP in PATH.
 - Keep control-surface names stable: `PixelControl.Admin.*`, `PixelControl.VetoDraft.*`, `//pcadmin`, `/pcveto`.

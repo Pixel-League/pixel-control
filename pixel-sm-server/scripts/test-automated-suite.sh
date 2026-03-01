@@ -9,9 +9,7 @@ ADMIN_ACTION_SPECS_DIR="${AUTOMATED_SUITE_DIR}/admin-actions"
 ADMIN_LINK_AUTH_CASE_SPECS_DIR="${AUTOMATED_SUITE_DIR}/admin-link-auth-cases"
 VETO_CHECK_SPECS_DIR="${AUTOMATED_SUITE_DIR}/veto-checks"
 
-DEV_MODE_SCRIPT="${PROJECT_DIR}/scripts/dev-mode-compose.sh"
 LAUNCH_VALIDATION_SCRIPT="${PROJECT_DIR}/scripts/validate-dev-stack-launch.sh"
-MODE_MATRIX_VALIDATION_SCRIPT="${PROJECT_DIR}/scripts/validate-mode-launch-matrix.sh"
 WAVE3_REPLAY_SCRIPT="${PROJECT_DIR}/scripts/replay-core-telemetry-wave3.sh"
 WAVE4_REPLAY_SCRIPT="${PROJECT_DIR}/scripts/replay-extended-telemetry-wave4.sh"
 ADMIN_SIMULATION_SCRIPT="${PROJECT_DIR}/scripts/simulate-admin-control-payloads.sh"
@@ -31,9 +29,8 @@ AUTOMATED_LINK_SERVER_URL="${PIXEL_SM_AUTOMATED_SUITE_LINK_SERVER_URL:-http://12
 AUTOMATED_LINK_TOKEN="${PIXEL_SM_AUTOMATED_SUITE_LINK_TOKEN:-automated-suite-link-token}"
 AUTOMATED_LINK_SERVER_LOGIN="${PIXEL_SM_AUTOMATED_SUITE_LINK_SERVER_LOGIN:-}"
 
-DEFAULT_MODES_CSV="elite,joust"
+DEFAULT_MODES_CSV="elite"
 REQUESTED_MODES_CSV="$DEFAULT_MODES_CSV"
-WITH_MODE_MATRIX_VALIDATION=0
 
 RUN_TIMESTAMP=""
 RUN_DIR=""
@@ -65,15 +62,14 @@ CURL_VERSION_LINE=""
 usage() {
   cat <<'USAGE'
 Usage:
-  bash scripts/test-automated-suite.sh [--modes elite,joust] [--with-mode-matrix-validation]
+  bash scripts/test-automated-suite.sh [--modes elite]
 
 Options:
-  --modes <csv>                       Comma-separated mode list (default: elite,joust)
-  --with-mode-matrix-validation      Run validate-mode-launch-matrix.sh as optional deep validation coverage
-  --with-mode-smoke                  Deprecated alias of --with-mode-matrix-validation
-  -h, --help                         Show this help message
+  --modes <csv>   Comma-separated mode list (default: elite)
+  -h, --help      Show this help message
 
 Notes:
+  - This is an Elite-only stack. Only the 'elite' mode is supported.
   - Required checks fail the suite with non-zero exit.
   - Manual-only combat validation remains outside automated pass criteria:
     OnShoot, OnHit, OnNearMiss, OnArmorEmpty, OnCapture.
@@ -341,7 +337,7 @@ run_logged_command_with_mode_recovery() {
       esac
     done
 
-    env PIXEL_SM_DEV_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" bash "$DEV_MODE_SCRIPT" "$mode" relaunch >>"$log_file" 2>&1 || true
+    docker compose -f "$AUTOMATED_COMPOSE_FILES" up -d --wait shootmania >>"$log_file" 2>&1 || true
     wait_for_comm_socket_after_recovery "$COMM_SOCKET_HOST" "$COMM_SOCKET_PORT" "$COMM_SOCKET_WAIT_ATTEMPTS" "$log_file" || true
 
     attempt=$((attempt + 1))
@@ -351,9 +347,7 @@ run_logged_command_with_mode_recovery() {
 }
 
 ensure_required_scripts() {
-  [ -f "$DEV_MODE_SCRIPT" ] || fail "Missing script: ${DEV_MODE_SCRIPT}"
   [ -f "$LAUNCH_VALIDATION_SCRIPT" ] || fail "Missing script: ${LAUNCH_VALIDATION_SCRIPT}"
-  [ -f "$MODE_MATRIX_VALIDATION_SCRIPT" ] || fail "Missing script: ${MODE_MATRIX_VALIDATION_SCRIPT}"
   [ -f "$WAVE3_REPLAY_SCRIPT" ] || fail "Missing script: ${WAVE3_REPLAY_SCRIPT}"
   [ -f "$WAVE4_REPLAY_SCRIPT" ] || fail "Missing script: ${WAVE4_REPLAY_SCRIPT}"
   [ -f "$ADMIN_SIMULATION_SCRIPT" ] || fail "Missing script: ${ADMIN_SIMULATION_SCRIPT}"
@@ -389,22 +383,6 @@ ensure_required_scripts() {
   [ "$admin_spec_count" -gt 0 ] || fail "No admin action spec scripts found in ${ADMIN_ACTION_SPECS_DIR}"
   [ "$admin_link_auth_case_spec_count" -gt 0 ] || fail "No admin link-auth case spec scripts found in ${ADMIN_LINK_AUTH_CASE_SPECS_DIR}"
   [ "$veto_spec_count" -gt 0 ] || fail "No veto check spec scripts found in ${VETO_CHECK_SPECS_DIR}"
-}
-
-run_mode_profile_apply() {
-  local mode="$1"
-  local mode_dir="${RUN_DIR}/modes/${mode}"
-  local log_file="${mode_dir}/mode-apply.log"
-
-  mkdir -p "$mode_dir"
-
-  run_check_command \
-    "mode.${mode}.profile_apply" \
-    "1" \
-    "Apply mode profile via dev-mode-compose.sh" \
-    "$log_file" \
-    run_logged_command_with_mode_recovery "$mode" "$log_file" \
-      env PIXEL_SM_DEV_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" bash "$DEV_MODE_SCRIPT" "$mode" relaunch
 }
 
 run_mode_launch_validation() {
@@ -595,14 +573,6 @@ run_elite_strict_gate() {
   mkdir -p "$wave3_dir" "$wave4_dir"
 
   run_check_command \
-    "strict.elite.profile_apply" \
-    "1" \
-    "Apply elite mode profile before strict gate" \
-    "$strict_dir" \
-    run_logged_command_with_mode_recovery elite "${strict_dir}/mode-apply.log" \
-      env PIXEL_SM_DEV_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" bash "$DEV_MODE_SCRIPT" elite relaunch
-
-  run_check_command \
     "strict.elite.wave3.replay" \
     "1" \
     "Run strict wave-3 telemetry replay in elite" \
@@ -650,25 +620,6 @@ run_elite_strict_gate() {
       "$markers_file" \
       validate_wave4_strict_markers_file "$markers_file"
   fi
-}
-
-run_optional_mode_matrix_validation() {
-  local mode_validation_dir="${RUN_DIR}/optional/mode-validation"
-  local log_file="${mode_validation_dir}/mode-validation.log"
-
-  mkdir -p "$mode_validation_dir"
-
-  run_check_command_logged \
-    "optional.mode_validation.matrix" \
-    "0" \
-    "Run optional validate-mode-launch-matrix.sh" \
-    "$mode_validation_dir" \
-    "$log_file" \
-    env \
-      PIXEL_SM_QA_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" \
-      PIXEL_SM_QA_ARTIFACT_DIR="$mode_validation_dir" \
-      PIXEL_SM_QA_MODE_BUILD_FIRST="0" \
-      bash "$MODE_MATRIX_VALIDATION_SCRIPT"
 }
 
 wait_for_http_health() {
@@ -1248,17 +1199,7 @@ run_mode_veto_response_assertions() {
 
   mkdir -p "$veto_dir"
 
-  if [ "$mode" = "elite" ]; then
-    tournament_best_of="3"
-  fi
-
-  run_check_command \
-    "mode.${mode}.veto.profile_apply" \
-    "1" \
-    "Re-apply mode profile before veto matrix" \
-    "$veto_dir" \
-    run_logged_command_with_mode_recovery "$mode" "${veto_dir}/mode-apply.log" \
-      env PIXEL_SM_DEV_COMPOSE_FILES="$AUTOMATED_COMPOSE_FILES" bash "$DEV_MODE_SCRIPT" "$mode" relaunch
+  tournament_best_of="3"
 
   run_check_command \
     "mode.${mode}.veto.matrix" \
@@ -1661,15 +1602,6 @@ parse_args() {
         REQUESTED_MODES_CSV="$2"
         shift 2
         ;;
-      --with-mode-matrix-validation)
-        WITH_MODE_MATRIX_VALIDATION=1
-        shift
-        ;;
-      --with-mode-smoke)
-        log "Deprecated option --with-mode-smoke detected; using --with-mode-matrix-validation behavior."
-        WITH_MODE_MATRIX_VALIDATION=1
-        shift
-        ;;
       -h|--help)
         usage
         exit 0
@@ -1732,7 +1664,7 @@ emit_run_manifest() {
   local manifest_file="$1"
   shift
 
-  python3 - "$manifest_file" "$RUN_TIMESTAMP" "$RUN_DIR" "$PROJECT_DIR" "$DEFAULT_MODES_CSV" "$REQUESTED_MODES_CSV" "$WITH_MODE_MATRIX_VALIDATION" "$DOCKER_VERSION" "$BASH_VERSION_LINE" "$PYTHON3_VERSION" "$PHP_VERSION_LINE" "$CURL_VERSION_LINE" "$@" <<'PY'
+  python3 - "$manifest_file" "$RUN_TIMESTAMP" "$RUN_DIR" "$PROJECT_DIR" "$DEFAULT_MODES_CSV" "$REQUESTED_MODES_CSV" "$DOCKER_VERSION" "$BASH_VERSION_LINE" "$PYTHON3_VERSION" "$PHP_VERSION_LINE" "$CURL_VERSION_LINE" "$@" <<'PY'
 import json
 import sys
 import time
@@ -1743,13 +1675,12 @@ run_dir = sys.argv[3]
 project_dir = sys.argv[4]
 default_modes_csv = sys.argv[5]
 requested_modes_csv = sys.argv[6]
-with_mode_matrix_validation = sys.argv[7] == "1"
-docker_version = sys.argv[8]
-bash_version_line = sys.argv[9]
-python3_version = sys.argv[10]
-php_version_line = sys.argv[11]
-curl_version_line = sys.argv[12]
-requested_modes = sys.argv[13:]
+docker_version = sys.argv[7]
+bash_version_line = sys.argv[8]
+python3_version = sys.argv[9]
+php_version_line = sys.argv[10]
+curl_version_line = sys.argv[11]
+requested_modes = sys.argv[12:]
 
 payload = {
     "schema": "pixel-sm-automated-suite-run-manifest.v1",
@@ -1760,7 +1691,6 @@ payload = {
         "default_modes_csv": default_modes_csv,
         "requested_modes_csv": requested_modes_csv,
         "requested_modes": requested_modes,
-        "with_mode_matrix_validation": with_mode_matrix_validation,
     },
     "environment": {
         "project_dir": project_dir,
@@ -1847,7 +1777,7 @@ emit_suite_reports() {
   local modes_csv=""
   modes_csv="$(IFS=,; printf '%s' "${REQUESTED_MODES[*]}")"
 
-  python3 - "$CHECK_RESULTS_FILE" "$SUITE_SUMMARY_JSON_FILE" "$SUITE_SUMMARY_MD_FILE" "$MANUAL_HANDOFF_FILE" "$RUN_DIR" "$modes_csv" "$WITH_MODE_MATRIX_VALIDATION" <<'PY'
+  python3 - "$CHECK_RESULTS_FILE" "$SUITE_SUMMARY_JSON_FILE" "$SUITE_SUMMARY_MD_FILE" "$MANUAL_HANDOFF_FILE" "$RUN_DIR" "$modes_csv" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -1858,7 +1788,6 @@ suite_summary_md_file = Path(sys.argv[3])
 manual_handoff_file = Path(sys.argv[4])
 run_dir = sys.argv[5]
 modes_csv = sys.argv[6]
-with_mode_matrix_validation = sys.argv[7] == "1"
 
 checks = []
 if check_results_file.exists():
@@ -1883,7 +1812,6 @@ summary = {
     "run_directory": run_dir,
     "requested_modes_csv": modes_csv,
     "requested_modes": [mode for mode in modes_csv.split(",") if mode],
-    "with_mode_matrix_validation": with_mode_matrix_validation,
     "overall_status": overall_status,
     "counts": {
         "total_checks": total_checks,
@@ -1919,7 +1847,6 @@ lines.append(f"# Automated suite summary ({overall_status})")
 lines.append("")
 lines.append(f"- Run directory: `{run_dir}`")
 lines.append(f"- Requested modes: `{modes_csv}`")
-lines.append(f"- Optional mode matrix validation: `{with_mode_matrix_validation}`")
 lines.append(f"- Total checks: `{total_checks}`")
 lines.append(f"- Passed checks: `{passed_checks}`")
 lines.append(f"- Failed checks: `{len(failed_checks)}`")
@@ -2032,7 +1959,6 @@ main() {
   init_run_context
 
   log "Requested modes CSV: ${REQUESTED_MODES_CSV}"
-  log "Optional mode matrix validation: ${WITH_MODE_MATRIX_VALIDATION}"
   log "Compose files: ${AUTOMATED_COMPOSE_FILES}"
   log "Admin link server url: ${AUTOMATED_LINK_SERVER_URL}"
   log "Admin link token status: $( [ -n "$AUTOMATED_LINK_TOKEN" ] && printf '%s' "set(length=${#AUTOMATED_LINK_TOKEN})" || printf '%s' 'unset' )"
@@ -2043,7 +1969,6 @@ main() {
   mode_index=0
   for mode in "${REQUESTED_MODES[@]}"; do
     mode_index=$((mode_index + 1))
-    run_mode_profile_apply "$mode"
     run_mode_launch_validation "$mode"
     run_mode_wave4_plugin_only "$mode"
     run_mode_admin_response_assertions "$mode"
@@ -2054,10 +1979,6 @@ main() {
   done
 
   run_elite_strict_gate
-
-  if [ "$WITH_MODE_MATRIX_VALIDATION" = "1" ]; then
-    run_optional_mode_matrix_validation
-  fi
 
   finalize_suite_exit
 }

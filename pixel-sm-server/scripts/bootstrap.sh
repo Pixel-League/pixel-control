@@ -21,7 +21,7 @@ resolve_matchsettings_file() {
     return
   fi
 
-  preset_name="$(resolve_mode_preset_name "${PIXEL_SM_MODE:-custom}")"
+  preset_name="$(resolve_mode_preset_name "${PIXEL_SM_MODE:-elite}")"
   printf '%s' "${preset_name}.txt"
 }
 
@@ -29,11 +29,12 @@ resolve_mode_preset_name() {
   normalized_mode="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
 
   case "$normalized_mode" in
-    elite|siege|battle|joust|custom)
+    elite)
       printf '%s' "$normalized_mode"
       ;;
     *)
-      printf '%s' "custom"
+      log "Unrecognized mode '${1}'; defaulting to elite."
+      printf '%s' "elite"
       ;;
   esac
 }
@@ -44,15 +45,6 @@ resolve_expected_title_pack_for_preset() {
   case "$preset_name" in
     elite)
       printf '%s' "SMStormElite@nadeolabs"
-      ;;
-    siege|joust)
-      printf '%s' "SMStorm@nadeo"
-      ;;
-    battle)
-      printf '%s' "SMStormBattle@nadeolabs"
-      ;;
-    custom)
-      printf '%s' ""
       ;;
     *)
       printf '%s' ""
@@ -67,18 +59,6 @@ resolve_expected_script_for_preset() {
     elite)
       printf '%s' "ShootMania\\Elite\\ElitePro.Script.txt"
       ;;
-    siege)
-      printf '%s' "ShootMania\\SiegeV1.Script.txt"
-      ;;
-    battle)
-      printf '%s' "Battle\\BattlePro.Script.txt"
-      ;;
-    joust)
-      printf '%s' "ShootMania\\Joust\\JoustBase.Script.txt"
-      ;;
-    custom)
-      printf '%s' ""
-      ;;
     *)
       printf '%s' ""
       ;;
@@ -87,7 +67,7 @@ resolve_expected_script_for_preset() {
 
 validate_mode_preset_expectations() {
   matchsettings_file="$1"
-  preset_name="$(resolve_mode_preset_name "${PIXEL_SM_MODE:-custom}")"
+  preset_name="$(resolve_mode_preset_name "${PIXEL_SM_MODE:-elite}")"
 
   if [ -n "${PIXEL_SM_MATCHSETTINGS:-}" ]; then
     log "Using explicit matchsettings override (${PIXEL_SM_MATCHSETTINGS}); mode preset defaults are bypassed."
@@ -198,25 +178,7 @@ resolve_matchsettings_script_name() {
 }
 
 auto_injection_supported_for_matchsettings() {
-  matchsettings_file="$1"
-  normalized_mode="$(printf '%s' "${PIXEL_SM_MODE:-}" | tr '[:upper:]' '[:lower:]')"
-  normalized_script_name="$(resolve_matchsettings_script_name "$matchsettings_file" | tr '[:upper:]' '[:lower:]')"
-
-  case "$normalized_mode" in
-    siege|battle|joust|royal)
-      return 1
-      ;;
-    elite)
-      return 0
-      ;;
-  esac
-
-  case "$normalized_script_name" in
-    *siege*|*battle*|*joust*|*royal*)
-      return 1
-      ;;
-  esac
-
+  # Elite always supports auto-injection of runtime maps when playlist entries are absent.
   return 0
 }
 
@@ -243,23 +205,6 @@ validate_matchsettings_mode_script() {
     log "Mode script confirmed in runtime: ${script_name}"
     return
   fi
-
-  normalized_title_pack="$(printf '%s' "${PIXEL_SM_TITLE_PACK}" | tr '[:upper:]' '[:lower:]')"
-  normalized_script_name="$(printf '%s' "${script_name}" | tr '[:upper:]' '[:lower:]')"
-  case "${normalized_script_name}|${normalized_title_pack}" in
-    shootmania\\battle\\mode.script.txt\|smstormbattle*|shootmania\\battle.script.txt\|smstormbattle*|battle\\*.script.txt\|smstormbattle*|shootmania\\battle\\*.script.txt\|smstormbattle*)
-      log "Mode script confirmed in runtime: ${script_name} (provided by title pack ${PIXEL_SM_TITLE_PACK})."
-      return
-      ;;
-    shootmania\\siegev1.script.txt\|smstormsiege*|shootmania\\siegev1\\*.script.txt\|smstormsiege*|shootmania\\siege\\*.script.txt\|smstormsiege*|siege\\*.script.txt\|smstormsiege*|siegev1\\*.script.txt\|smstormsiege*)
-      log "Mode script confirmed in runtime: ${script_name} (provided by title pack ${PIXEL_SM_TITLE_PACK})."
-      return
-      ;;
-    shootmania\\joust\\joust.script.txt\|smstormjoust*|joust\\*.script.txt\|smstormjoust*|shootmania\\joust\\*.script.txt\|smstormjoust*)
-      log "Mode script confirmed in runtime: ${script_name} (provided by title pack ${PIXEL_SM_TITLE_PACK})."
-      return
-      ;;
-  esac
 
   log "Mode script not available in runtime: ${script_name}"
   log "Expected one of: ${mode_script_path} or ${user_mode_script_path}"
@@ -366,16 +311,6 @@ ensure_matchsettings_has_playable_maps() {
     return
   fi
 
-  if ! auto_injection_supported_for_matchsettings "$matchsettings_file"; then
-    script_name="$(resolve_matchsettings_script_name "$matchsettings_file")"
-    preset_name="$(resolve_mode_preset_name "${PIXEL_SM_MODE:-custom}")"
-    log "Match map auto-injection is disabled for non-Elite mode/script (mode='${PIXEL_SM_MODE:-unset}', script='${script_name}')."
-    log "Preset '${preset_name}' requires explicit mode-compatible <map> entries that exist in ${maps_root}."
-    log "Use PIXEL_SM_MAPS_SOURCE to mount preset maps (for example pixel-sm-server/maps/) before launch."
-    log "Provide explicit mode-compatible <map> entries in ${matchsettings_file} before launch."
-    exit 1
-  fi
-
   mapfile -t runtime_maps < <(list_runtime_maps)
   if [ "${#runtime_maps[@]}" -eq 0 ]; then
     log "No playable maps found under ${maps_root}. Add at least one .Map.Gbx file."
@@ -473,7 +408,7 @@ render_runtime_files() {
     > "${PIXEL_SM_SERVER_ROOT}/UserData/Config/dedicated_cfg.txt"
 
   selected_matchsettings="$(resolve_matchsettings_file)"
-  preset_name="$(resolve_mode_preset_name "${PIXEL_SM_MODE:-custom}")"
+  preset_name="$(resolve_mode_preset_name "${PIXEL_SM_MODE:-elite}")"
 
   if [ -n "${PIXEL_SM_MATCHSETTINGS:-}" ]; then
     log "Matchsettings resolution: override '${PIXEL_SM_MATCHSETTINGS}' (preset='${preset_name}')."
