@@ -21,26 +21,36 @@
   - [x] Implémenter les P1 — endpoint unique POST /v1/plugin/events pour toutes les catégories + GET status/health
   - [x] Implémenter les P2 (read API — 12 endpoints GET : players, combat stats, scores, lifecycle, maps, mode, capabilities)
   - [x] Implémenter les P2.5 (stats combat par map et par série — 4 endpoints GET supplémentaires)
-  - [ ] **Vérifier les P2 et P2.5 avec le serveur SM réel** — lancer une session de jeu, générer des events live, et valider que tous les endpoints retournent des données cohérentes (pas juste des fixtures injectées via curl)
+  - [x] Implémenter les P2.6 (historique combat joueur par map + stats dérivées : kd_ratio, win_rate, rocket/laser accuracy)
+  - [ ] **Vérifier les P2, P2.5 et P2.6 avec le serveur SM réel** :
+    - [ ] Lancer le serveur SM en mode Elite, jouer quelques rounds, changer de map, finir un match
+    - [ ] Vérifier que `GET .../stats/combat/players/:login` retourne `kd_ratio`, `hits_rocket`, `hits_laser`, `rocket_accuracy`, `laser_accuracy`
+    - [ ] Vérifier que `GET .../stats/combat/players/:login/maps` retourne l'historique par map avec `won`, `win_rate`, `maps_won`
+    - [ ] Vérifier que `GET .../stats/combat/maps` retourne les stats par map avec les nouveaux compteurs
+    - [ ] Vérifier que `GET .../stats/combat/series` retourne un BO complet avec breakdown par map
+    - [ ] Vérifier que les champs `hits_rocket`/`hits_laser` sont bien remplis (pas null) après mise à jour du plugin
+    - [ ] Vérifier les endpoints P2 de base (players, lifecycle, mode, scores, capabilities) avec des données réelles
   - [ ] Implémenter les P3 (admin essentiel — map management, warmup/pause, match/series config via proxy socket plugin)
   - [ ] Implémenter les P4 (contrôle étendu — veto/draft, force-team/play/spec, team policy & roster)
   - [ ] Implémenter les P5 (low priority — whitelist, vote policy, auth grant/revoke, player history)
   - [ ] Ajouter système de CORS pour qu'uniquement certaines URL puisse utiliser l'API et pas d'autres.
 
-## État actuel (2026-02-28)
+## État actuel (2026-03-01)
 
 ### Ce qui fonctionne
-- API NestJS (P0 + P1 + P2 + P2.5) : 22 endpoints au total
+- API NestJS (P0 + P1 + P2 + P2.5 + P2.6) : 23 endpoints au total
 - Ingestion unifiée `POST /v1/plugin/events` (connectivity, lifecycle, combat, player, mode, batch)
 - Read API P2 : players, combat stats, scores, lifecycle, map-rotation, aggregate-stats, capabilities, maps, mode
-- Read API P2.5 : stats combat par map (`/stats/combat/maps`, `/maps/:mapUid`, `/maps/:mapUid/players/:login`) + par série (`/stats/combat/series`)
-- 199 tests unitaires + 4 smoke test scripts (P0: 43, P1: 35, P2: 94, P2.5: 59 assertions)
+- Read API P2.5 : stats combat par map + par série
+- Read API P2.6 : historique combat joueur par map + stats dérivées (kd_ratio, win_rate, rocket/laser accuracy)
+- Plugin PHP mis à jour : tracking `hits_rocket`/`hits_laser` par arme
+- 228 tests unitaires + 5 smoke test scripts (P0: 43, P1: 35, P2: 94, P2.5: 59, P2.6: 29 assertions)
 - Docker: auto-migration Prisma, plugin baked into SM image, bind-mount volumes dans `data/`
 
 ### Points d'attention pour reprendre
-- **Branche `feat/p2-read-api`** contient les P2 + P2.5 (pas encore mergé dans `main`)
-- **Les P2/P2.5 ont été testés uniquement avec des fixtures curl** — il faut valider avec des events réels venant du plugin SM en jeu (combats Elite, changements de map, fin de match)
-- **Les fichiers `.env.{mode}`** (`.env.elite`, `.env.joust`) sont corrigés avec la bonne URL API
-- **ManiaControl persiste les settings dans MySQL** — si on change une env var, wiper MySQL (`rm -rf pixel-sm-server/data/mysql`) + recreate
-- **`auth_mode=bearer`** s'activate dès que MySQL a une ancienne config. Sur env frais, c'est `auth_mode=none` (correct pour dev)
-- **Prochaine étape** : Valider les P2/P2.5 avec le serveur SM réel, puis passer aux P3 (admin essentiel)
+- **Branche `feat/p2-read-api`** contient P2 + P2.5 + P2.6 (pas encore mergé dans `main`)
+- **Tests uniquement avec fixtures curl** — validation avec le serveur SM réel requise (voir checklist ci-dessus)
+- **Plugin PHP modifié** — le serveur SM doit être rebuild (`docker compose up -d --build`) pour prendre en compte `hits_rocket`/`hits_laser`
+- **Les fichiers `.env.{mode}`** sont corrigés avec la bonne URL API
+- **ManiaControl persiste les settings dans MySQL** — wiper MySQL si changement d'env var
+- **Prochaine étape** : Validation réelle P2/P2.5/P2.6 avec le serveur SM, puis P3 (admin essentiel)

@@ -165,7 +165,7 @@ trait CombatDomainTrait {
 				$this->playerCombatStatsStore->recordShot($shooterLogin, $weaponId);
 				break;
 			case 'shootmania_event_onhit':
-				$this->playerCombatStatsStore->recordHit($shooterLogin);
+				$this->playerCombatStatsStore->recordHit($shooterLogin, $weaponId);
 				break;
 			case 'shootmania_event_onnearmiss':
 				$this->playerCombatStatsStore->recordMiss($shooterLogin);

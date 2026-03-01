@@ -8,11 +8,31 @@ const makeMapEntry = (uid = 'uid-alpha') => ({
   map_name: `Map ${uid}`,
   played_at: '2026-02-28T10:00:00.000Z',
   duration_seconds: 120,
-  player_stats: { player1: { kills: 5, deaths: 2, hits: 20, shots: 40, misses: 20, rockets: 10, lasers: 10, accuracy: 0.5 } },
+  player_stats: { player1: { kills: 5, deaths: 2, hits: 20, shots: 40, misses: 20, rockets: 10, lasers: 10, accuracy: 0.5, kd_ratio: 2.5, hits_rocket: null, hits_laser: null, rocket_accuracy: null, laser_accuracy: null } },
   team_stats: [],
   totals: { kills: 5 },
   win_context: {},
   event_id: 'pc-evt-lc-1',
+});
+
+const makePlayerMapHistoryResponse = () => ({
+  server_login: 'test-server',
+  player_login: 'player1',
+  maps_played: 3,
+  maps_won: 2,
+  win_rate: 0.6667,
+  maps: [
+    {
+      map_uid: 'uid-alpha',
+      map_name: 'Alpha',
+      played_at: '2026-02-28T10:00:00.000Z',
+      duration_seconds: 120,
+      counters: { kills: 5, deaths: 2, hits: 20, shots: 40, misses: 20, rockets: 10, lasers: 10, accuracy: 0.5, kd_ratio: 2.5, hits_rocket: null, hits_laser: null, rocket_accuracy: null, laser_accuracy: null },
+      win_context: { winner_team_id: 0 },
+      won: true,
+    },
+  ],
+  pagination: { total: 3, limit: 10, offset: 0 },
 });
 
 const makeServiceStub = () => ({
@@ -27,7 +47,7 @@ const makeServiceStub = () => ({
   }),
   getPlayerCombatCounters: vi.fn().mockResolvedValue({
     login: 'player1',
-    counters: { kills: 10 },
+    counters: { kills: 10, kd_ratio: 2, hits_rocket: null, hits_laser: null, rocket_accuracy: null, laser_accuracy: null },
     recent_events_count: 5,
     last_updated: '2026-02-28T10:00:00.000Z',
   }),
@@ -50,7 +70,7 @@ const makeServiceStub = () => ({
     map_uid: 'uid-alpha',
     map_name: 'Map uid-alpha',
     player_login: 'player1',
-    counters: { kills: 5, deaths: 2, hits: 20, shots: 40, misses: 20, rockets: 10, lasers: 10, accuracy: 0.5 },
+    counters: { kills: 5, deaths: 2, hits: 20, shots: 40, misses: 20, rockets: 10, lasers: 10, accuracy: 0.5, kd_ratio: 2.5, hits_rocket: null, hits_laser: null, rocket_accuracy: null, laser_accuracy: null },
     played_at: '2026-02-28T10:00:00.000Z',
   }),
   getSeriesCombatStatsList: vi.fn().mockResolvedValue({
@@ -58,6 +78,7 @@ const makeServiceStub = () => ({
     series: [],
     pagination: { total: 0, limit: 50, offset: 0 },
   }),
+  getPlayerCombatMapHistory: vi.fn().mockResolvedValue(makePlayerMapHistoryResponse()),
 });
 
 describe('StatsReadController', () => {
@@ -249,6 +270,54 @@ describe('StatsReadController', () => {
         '2026-02-28T09:00:00Z',
         '2026-02-28T10:00:00Z',
       );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // P2.6 - Player combat map history controller tests
+  // -------------------------------------------------------------------------
+
+  describe('getPlayerCombatMapHistory', () => {
+    it('calls service with default pagination (limit=10, offset=0)', async () => {
+      const result = await controller.getPlayerCombatMapHistory('test-server', 'player1', {});
+
+      expect(service.getPlayerCombatMapHistory).toHaveBeenCalledWith(
+        'test-server',
+        'player1',
+        10,
+        0,
+        undefined,
+        undefined,
+      );
+      expect(result.player_login).toBe('player1');
+      expect(result.server_login).toBe('test-server');
+    });
+
+    it('passes custom limit, offset, since, until to service', async () => {
+      await controller.getPlayerCombatMapHistory('test-server', 'player1', {
+        limit: 5,
+        offset: 2,
+        since: '2026-02-28T09:00:00Z',
+        until: '2026-02-28T10:00:00Z',
+      });
+
+      expect(service.getPlayerCombatMapHistory).toHaveBeenCalledWith(
+        'test-server',
+        'player1',
+        5,
+        2,
+        '2026-02-28T09:00:00Z',
+        '2026-02-28T10:00:00Z',
+      );
+    });
+
+    it('returns service response directly without transformation', async () => {
+      const expected = makePlayerMapHistoryResponse();
+      service.getPlayerCombatMapHistory.mockResolvedValue(expected);
+
+      const result = await controller.getPlayerCombatMapHistory('test-server', 'player1', {});
+
+      expect(result).toEqual(expected);
     });
   });
 });

@@ -19,8 +19,13 @@ const makeLifecycleEvent = (overrides: {
     player_counters_delta?: Record<string, {
       kills?: number; deaths?: number; hits?: number; shots?: number;
       misses?: number; rockets?: number; lasers?: number; accuracy?: number;
+      hits_rocket?: number; hits_laser?: number;
     }>;
-    team_counters_delta?: unknown[];
+    team_counters_delta?: Array<{
+      team_id?: number | null;
+      player_logins?: string[];
+      [key: string]: unknown;
+    }>;
     totals?: Record<string, number>;
     win_context?: Record<string, unknown>;
     window?: { duration_seconds?: number; started_at?: number; ended_at?: number };
@@ -69,6 +74,7 @@ const makeCombatEvent = (overrides: {
   playerCounters?: Record<string, {
     kills?: number; deaths?: number; hits?: number; shots?: number;
     misses?: number; rockets?: number; lasers?: number;
+    hits_rocket?: number; hits_laser?: number;
   }>;
   scoresSection?: string;
   scoresSnapshot?: Record<string, unknown>;
@@ -206,6 +212,45 @@ describe('StatsReadService', () => {
       expect(result.data).toHaveLength(1);
       expect(result.pagination.total).toBe(2);
     });
+
+    it('includes kd_ratio in player counters', async () => {
+      prisma.event.findFirst.mockResolvedValue(makeCombatEvent({}));
+
+      const result = await service.getCombatPlayersCounters('test-server', 50, 0);
+
+      const p1 = result.data.find((p) => p.login === 'player1');
+      expect(p1!.kd_ratio).toBe(2); // kills=10, deaths=5 => 10/5=2
+    });
+
+    it('returns null for hits_rocket/hits_laser when not present in event', async () => {
+      prisma.event.findFirst.mockResolvedValue(makeCombatEvent({}));
+
+      const result = await service.getCombatPlayersCounters('test-server', 50, 0);
+
+      const p1 = result.data.find((p) => p.login === 'player1');
+      expect(p1!.hits_rocket).toBeNull();
+      expect(p1!.hits_laser).toBeNull();
+      expect(p1!.rocket_accuracy).toBeNull();
+      expect(p1!.laser_accuracy).toBeNull();
+    });
+
+    it('returns numeric hits_rocket/hits_laser when present in event', async () => {
+      prisma.event.findFirst.mockResolvedValue(
+        makeCombatEvent({
+          playerCounters: {
+            player1: { kills: 5, deaths: 2, hits: 18, shots: 25, misses: 7, rockets: 8, lasers: 3, hits_rocket: 6, hits_laser: 2 },
+          },
+        }),
+      );
+
+      const result = await service.getCombatPlayersCounters('test-server', 50, 0);
+
+      const p1 = result.data[0];
+      expect(p1.hits_rocket).toBe(6);
+      expect(p1.hits_laser).toBe(2);
+      expect(p1.rocket_accuracy).toBeCloseTo(0.75); // 6/8
+      expect(p1.laser_accuracy).toBeCloseTo(0.6667); // 2/3
+    });
   });
 
   describe('getPlayerCombatCounters', () => {
@@ -237,6 +282,62 @@ describe('StatsReadService', () => {
 
       expect(result.counters.kills).toBe(0);
       expect(result.counters.accuracy).toBe(0);
+    });
+
+    it('includes kd_ratio in counters', async () => {
+      prisma.event.findMany.mockResolvedValue([makeCombatEvent({})]);
+
+      const result = await service.getPlayerCombatCounters('test-server', 'player1');
+
+      expect(result.counters.kd_ratio).toBe(2); // 10/5
+    });
+
+    it('returns kd_ratio=kills when deaths=0', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeCombatEvent({ playerCounters: { hero: { kills: 7, deaths: 0 } } }),
+      ]);
+
+      const result = await service.getPlayerCombatCounters('test-server', 'hero');
+
+      expect(result.counters.kd_ratio).toBe(7);
+    });
+
+    it('returns kd_ratio=0 when kills=0 and deaths=0', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeCombatEvent({ playerCounters: { fresh: { kills: 0, deaths: 0 } } }),
+      ]);
+
+      const result = await service.getPlayerCombatCounters('test-server', 'fresh');
+
+      expect(result.counters.kd_ratio).toBe(0);
+    });
+
+    it('returns null for hits_rocket/hits_laser when not in event', async () => {
+      prisma.event.findMany.mockResolvedValue([makeCombatEvent({})]);
+
+      const result = await service.getPlayerCombatCounters('test-server', 'player1');
+
+      expect(result.counters.hits_rocket).toBeNull();
+      expect(result.counters.hits_laser).toBeNull();
+      expect(result.counters.rocket_accuracy).toBeNull();
+      expect(result.counters.laser_accuracy).toBeNull();
+    });
+
+    it('returns weapon stats when present in event', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeCombatEvent({
+          playerCounters: {
+            player1: { kills: 5, deaths: 2, hits: 18, shots: 25, rockets: 8, lasers: 3, hits_rocket: 6, hits_laser: 2 },
+          },
+        }),
+      ]);
+
+      const result = await service.getPlayerCombatCounters('test-server', 'player1');
+
+      expect(result.counters.hits_rocket).toBe(6);
+      expect(result.counters.hits_laser).toBe(2);
+      expect(result.counters.rocket_accuracy).toBeCloseTo(0.75);
+      expect(result.counters.laser_accuracy).toBeCloseTo(0.6667);
     });
   });
 
@@ -282,9 +383,11 @@ describe('StatsReadService', () => {
     playerCounters: Record<string, {
       kills?: number; deaths?: number; hits?: number; shots?: number;
       misses?: number; rockets?: number; lasers?: number; accuracy?: number;
+      hits_rocket?: number; hits_laser?: number;
     }> = {},
     totals: Record<string, number> = {},
     winContext: Record<string, unknown> = {},
+    teamCountersDelta: Array<{ team_id?: number | null; player_logins?: string[]; [key: string]: unknown }> = [],
   ) =>
     makeLifecycleEvent({
       variant: 'map.end',
@@ -294,7 +397,7 @@ describe('StatsReadService', () => {
       aggregateStats: {
         scope: 'map',
         player_counters_delta: playerCounters,
-        team_counters_delta: [],
+        team_counters_delta: teamCountersDelta,
         totals,
         win_context: winContext,
         window: { duration_seconds: 120 },
@@ -402,6 +505,45 @@ describe('StatsReadService', () => {
 
       expect(result.maps[0].win_context).toEqual({ winner_team_id: 0 });
       expect(result.maps[0].duration_seconds).toBe(120);
+    });
+
+    it('includes kd_ratio in player_stats entries', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), { p1: { kills: 6, deaths: 2 } }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      expect(result.maps[0].player_stats['p1'].kd_ratio).toBe(3); // 6/2
+    });
+
+    it('includes null hits_rocket/hits_laser when not present', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), { p1: { kills: 5 } }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      expect(result.maps[0].player_stats['p1'].hits_rocket).toBeNull();
+      expect(result.maps[0].player_stats['p1'].hits_laser).toBeNull();
+      expect(result.maps[0].player_stats['p1'].rocket_accuracy).toBeNull();
+      expect(result.maps[0].player_stats['p1'].laser_accuracy).toBeNull();
+    });
+
+    it('includes hits_rocket/hits_laser when present in event', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), {
+          p1: { kills: 5, rockets: 8, lasers: 3, hits_rocket: 6, hits_laser: 2 },
+        }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      const p1 = result.maps[0].player_stats['p1'];
+      expect(p1.hits_rocket).toBe(6);
+      expect(p1.hits_laser).toBe(2);
+      expect(p1.rocket_accuracy).toBeCloseTo(0.75);
+      expect(p1.laser_accuracy).toBeCloseTo(0.6667);
     });
   });
 
@@ -568,6 +710,245 @@ describe('StatsReadService', () => {
 
       expect(result.series).toHaveLength(1);
       expect(result.pagination.total).toBe(2);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // P2.6 - Player combat map history
+  // -------------------------------------------------------------------------
+
+  describe('getPlayerCombatMapHistory', () => {
+    beforeEach(() => { lifecycleSeq = 0; });
+
+    it('returns empty maps array when no lifecycle events exist', async () => {
+      prisma.event.findMany.mockResolvedValue([]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps).toHaveLength(0);
+      expect(result.pagination.total).toBe(0);
+      expect(result.player_login).toBe('player1');
+      expect(result.server_login).toBe('test-server');
+    });
+
+    it('returns only maps where the target player participated', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-a', 'Map A', BigInt(3_000_000), { player1: { kills: 5 }, player2: { kills: 2 } }),
+        makeMapEndEvent('uid-b', 'Map B', BigInt(2_000_000), { player2: { kills: 3 } }), // player1 absent
+        makeMapEndEvent('uid-c', 'Map C', BigInt(1_000_000), { player1: { kills: 1 }, player2: { kills: 4 } }),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps).toHaveLength(2);
+      expect(result.maps[0].map_uid).toBe('uid-a');
+      expect(result.maps[1].map_uid).toBe('uid-c');
+    });
+
+    it('returns correct counters for the player on each map', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), {
+          player1: { kills: 7, deaths: 2, hits: 40, shots: 80, misses: 40, rockets: 30, lasers: 10, accuracy: 0.5 },
+        }),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      const map = result.maps[0];
+      expect(map.counters.kills).toBe(7);
+      expect(map.counters.deaths).toBe(2);
+      expect(map.counters.hits).toBe(40);
+      expect(map.counters.shots).toBe(80);
+      expect(map.counters.accuracy).toBe(0.5);
+    });
+
+    it('returns maps ordered most-recent first', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        // findMany returns desc order from DB
+        makeMapEndEvent('uid-newest', 'Newest', BigInt(3_000_000), { player1: { kills: 3 } }),
+        makeMapEndEvent('uid-middle', 'Middle', BigInt(2_000_000), { player1: { kills: 2 } }),
+        makeMapEndEvent('uid-oldest', 'Oldest', BigInt(1_000_000), { player1: { kills: 1 } }),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps[0].map_uid).toBe('uid-newest');
+      expect(result.maps[1].map_uid).toBe('uid-middle');
+      expect(result.maps[2].map_uid).toBe('uid-oldest');
+    });
+
+    it('applies pagination with limit', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-a', 'Map A', BigInt(3_000_000), { player1: { kills: 3 } }),
+        makeMapEndEvent('uid-b', 'Map B', BigInt(2_000_000), { player1: { kills: 2 } }),
+        makeMapEndEvent('uid-c', 'Map C', BigInt(1_000_000), { player1: { kills: 1 } }),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 1, 0);
+
+      expect(result.maps).toHaveLength(1);
+      expect(result.pagination.total).toBe(3);
+      expect(result.maps[0].map_uid).toBe('uid-a');
+    });
+
+    it('applies pagination with offset', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-a', 'Map A', BigInt(3_000_000), { player1: { kills: 3 } }),
+        makeMapEndEvent('uid-b', 'Map B', BigInt(2_000_000), { player1: { kills: 2 } }),
+        makeMapEndEvent('uid-c', 'Map C', BigInt(1_000_000), { player1: { kills: 1 } }),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 1);
+
+      expect(result.maps).toHaveLength(2);
+      expect(result.maps[0].map_uid).toBe('uid-b');
+    });
+
+    it('includes win_context and duration_seconds in each map entry', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent(
+          'uid-x', 'X Map', BigInt(1_000_000),
+          { player1: { kills: 1 } },
+          {},
+          { winner_team_id: 0 },
+        ),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps[0].win_context).toEqual({ winner_team_id: 0 });
+      expect(result.maps[0].duration_seconds).toBe(120);
+    });
+
+    it('includes kd_ratio in each map counters', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), { player1: { kills: 6, deaths: 2 } }),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps[0].counters.kd_ratio).toBe(3); // 6/2
+    });
+
+    it('returns null for hits_rocket/hits_laser in map counters when not present', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-alpha', 'Alpha', BigInt(1_000_000), { player1: { kills: 5 } }),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps[0].counters.hits_rocket).toBeNull();
+      expect(result.maps[0].counters.hits_laser).toBeNull();
+    });
+
+    // -------------------------------------------------------------------------
+    // Win rate tests
+    // -------------------------------------------------------------------------
+
+    it('correctly determines won=true when player team matches winner_team_id', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent(
+          'uid-a', 'Map A', BigInt(1_000_000),
+          { player1: { kills: 5 } },
+          {},
+          { winner_team_id: 0 },
+          [{ team_id: 0, player_logins: ['player1', 'player3'] }, { team_id: 1, player_logins: ['player2'] }],
+        ),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps[0].won).toBe(true);
+    });
+
+    it('correctly determines won=false when player team does not match winner_team_id', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent(
+          'uid-a', 'Map A', BigInt(1_000_000),
+          { player1: { kills: 2 } },
+          {},
+          { winner_team_id: 0 },
+          [{ team_id: 0, player_logins: ['player2'] }, { team_id: 1, player_logins: ['player1'] }],
+        ),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps[0].won).toBe(false);
+    });
+
+    it('returns won=null when team_counters_delta is empty', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent(
+          'uid-a', 'Map A', BigInt(1_000_000),
+          { player1: { kills: 2 } },
+          {},
+          { winner_team_id: 0 },
+          [], // empty teams
+        ),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps[0].won).toBeNull();
+    });
+
+    it('returns won=null when win_context has no winner_team_id', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent(
+          'uid-a', 'Map A', BigInt(1_000_000),
+          { player1: { kills: 2 } },
+          {},
+          {}, // no winner_team_id
+          [{ team_id: 0, player_logins: ['player1'] }],
+        ),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps[0].won).toBeNull();
+    });
+
+    it('computes maps_won and win_rate correctly across multiple maps', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent(
+          'uid-a', 'Map A', BigInt(3_000_000),
+          { player1: { kills: 5 } },
+          {},
+          { winner_team_id: 0 },
+          [{ team_id: 0, player_logins: ['player1'] }],
+        ),
+        makeMapEndEvent(
+          'uid-b', 'Map B', BigInt(2_000_000),
+          { player1: { kills: 2 } },
+          {},
+          { winner_team_id: 0 },
+          [{ team_id: 0, player_logins: ['player1'] }],
+        ),
+        makeMapEndEvent(
+          'uid-c', 'Map C', BigInt(1_000_000),
+          { player1: { kills: 1 } },
+          {},
+          { winner_team_id: 1 }, // player1 is on team 0 => lost
+          [{ team_id: 0, player_logins: ['player1'] }, { team_id: 1, player_logins: ['player2'] }],
+        ),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps_played).toBe(3);
+      expect(result.maps_won).toBe(2);
+      expect(result.win_rate).toBeCloseTo(0.6667);
+    });
+
+    it('returns maps_played=0, maps_won=0, win_rate=0 when no history', async () => {
+      prisma.event.findMany.mockResolvedValue([]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      expect(result.maps_played).toBe(0);
+      expect(result.maps_won).toBe(0);
+      expect(result.win_rate).toBe(0);
     });
   });
 });

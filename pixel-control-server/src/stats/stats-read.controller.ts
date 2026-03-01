@@ -18,6 +18,7 @@ import {
   MapCombatStatsEntry,
   MapCombatStatsListResponse,
   MapPlayerCombatStatsResponse,
+  PlayerCombatMapHistoryResponse,
   SeriesCombatListResponse,
   StatsReadService,
 } from './stats-read.service';
@@ -63,7 +64,10 @@ export class StatsReadController {
     description:
       'Returns per-player combat counters from the latest combat event for this server. ' +
       'The counters reflect cumulative runtime session totals (kills, deaths, hits, shots, misses, ' +
-      'rockets, lasers, accuracy). Supports pagination and optional time-range filtering.',
+      'rockets, lasers, accuracy, kd_ratio). Also includes weapon-specific hit fields: ' +
+      'hits_rocket and hits_laser (null for events predating plugin v2), and derived accuracies: ' +
+      'rocket_accuracy and laser_accuracy (null when hits_rocket/hits_laser are null). ' +
+      'Supports pagination and optional time-range filtering.',
   })
   @ApiParam({
     name: 'serverLogin',
@@ -77,8 +81,8 @@ export class StatsReadController {
   @ApiResponse({
     status: 200,
     description:
-      'Per-player counters returned. Fields: data (array of { login, kills, deaths, hits, shots, misses, rockets, lasers, accuracy }), ' +
-      'pagination { total, limit, offset }.',
+      'Per-player counters returned. Fields: data (array of { login, kills, deaths, hits, shots, misses, rockets, lasers, accuracy, ' +
+      'kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy }), pagination { total, limit, offset }.',
   })
   @ApiResponse({ status: 404, description: 'Server not found.' })
   @Get(':serverLogin/stats/combat/players')
@@ -95,12 +99,67 @@ export class StatsReadController {
     );
   }
 
+  // IMPORTANT: This route MUST be defined BEFORE `players/:login` to avoid NestJS
+  // matching the literal string "maps" as the :login parameter.
+  @ApiOperation({
+    summary: 'Get player combat stats across recent maps',
+    description:
+      'Returns a per-map combat history for a single player, ordered most-recent first. ' +
+      'Each map entry is extracted from a lifecycle map.end event that carries aggregate_stats with scope="map". ' +
+      'Includes per-map counters (kills, deaths, hits, shots, accuracy, kd_ratio, hits_rocket, hits_laser, ' +
+      'rocket_accuracy, laser_accuracy), map metadata (uid, name, played_at, duration_seconds), win_context, ' +
+      'and a won boolean (null when team assignment data is unavailable). ' +
+      'Top-level response includes maps_played, maps_won, and win_rate computed across all maps (before pagination). ' +
+      'Returns empty maps: [] (not 404) when the player has no map history. ' +
+      'Supports pagination (default limit 10) and ISO8601 time-range filtering.',
+  })
+  @ApiParam({
+    name: 'serverLogin',
+    description: 'The dedicated server login (unique identifier)',
+    example: 'pixel-elite-1.server.local',
+  })
+  @ApiParam({
+    name: 'login',
+    description: 'The player login (unique ManiaPlanet account identifier)',
+    example: 'player1',
+  })
+  @ApiQuery({ name: 'limit', required: false, description: 'Max maps to return (1–200, default 10)', example: 10 })
+  @ApiQuery({ name: 'offset', required: false, description: 'Maps to skip (default 0)', example: 0 })
+  @ApiQuery({ name: 'since', required: false, description: 'Return maps played after this ISO8601 timestamp', example: '2026-02-28T09:00:00Z' })
+  @ApiQuery({ name: 'until', required: false, description: 'Return maps played before this ISO8601 timestamp', example: '2026-02-28T10:00:00Z' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Player map history returned. Fields: server_login, player_login, maps_played, maps_won, win_rate, ' +
+      'maps (array of { map_uid, map_name, played_at, duration_seconds, counters: PlayerCountersDelta, win_context, won }), ' +
+      'pagination { total, limit, offset }. ' +
+      'PlayerCountersDelta includes kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy ' +
+      '(rocket/laser fields are null for events predating plugin v2).',
+  })
+  @ApiResponse({ status: 404, description: 'Server not found.' })
+  @Get(':serverLogin/stats/combat/players/:login/maps')
+  async getPlayerCombatMapHistory(
+    @Param('serverLogin') serverLogin: string,
+    @Param('login') login: string,
+    @Query() query: PaginatedTimeRangeQueryDto,
+  ): Promise<PlayerCombatMapHistoryResponse> {
+    return this.statsService.getPlayerCombatMapHistory(
+      serverLogin,
+      login,
+      query.limit ?? 10,
+      query.offset ?? 0,
+      query.since,
+      query.until,
+    );
+  }
+
   @ApiOperation({
     summary: 'Get single player combat counters',
     description:
       'Returns combat counters for a specific player login, from the most recent combat event ' +
       'containing that player\'s data. Also includes the total count of combat events for context ' +
-      'and the timestamp of the last update.',
+      'and the timestamp of the last update. Counters include kd_ratio, hits_rocket, hits_laser, ' +
+      'rocket_accuracy, and laser_accuracy (null for events predating plugin v2).',
   })
   @ApiParam({
     name: 'serverLogin',
@@ -115,7 +174,8 @@ export class StatsReadController {
   @ApiResponse({
     status: 200,
     description:
-      'Player combat counters returned. Fields: login, counters { kills, deaths, hits, shots, misses, rockets, lasers, accuracy }, ' +
+      'Player combat counters returned. Fields: login, counters { kills, deaths, hits, shots, misses, rockets, lasers, accuracy, ' +
+      'kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy }, ' +
       'recent_events_count, last_updated (ISO8601).',
   })
   @ApiResponse({ status: 404, description: 'Server not found or no combat data for this player.' })
@@ -143,8 +203,10 @@ export class StatsReadController {
     description:
       'Returns combat statistics broken down by completed map, ordered most-recent first. ' +
       'Each entry is extracted from a lifecycle map.end event that carries aggregate_stats with scope="map". ' +
-      'Includes per-player counters (kills, deaths, hits, shots, accuracy...), team stats, totals, ' +
-      'win context, and map metadata (uid, name). Supports pagination and ISO8601 time-range filtering.',
+      'Includes per-player counters (kills, deaths, hits, shots, accuracy, kd_ratio, hits_rocket, hits_laser, ' +
+      'rocket_accuracy, laser_accuracy), team stats, totals, win context, and map metadata (uid, name). ' +
+      'hits_rocket/hits_laser/rocket_accuracy/laser_accuracy are null for events predating plugin v2. ' +
+      'Supports pagination and ISO8601 time-range filtering.',
   })
   @ApiParam({
     name: 'serverLogin',
@@ -181,7 +243,9 @@ export class StatsReadController {
     description:
       'Returns the latest combat statistics entry for the given map UID. ' +
       'Data is sourced from the most recent lifecycle map.end event whose map_rotation.current_map.uid ' +
-      'matches the requested UID. Returns 404 if no map.end event has been stored for this UID.',
+      'matches the requested UID. Returns 404 if no map.end event has been stored for this UID. ' +
+      'Per-player entries include kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy ' +
+      '(null for events predating plugin v2).',
   })
   @ApiParam({
     name: 'serverLogin',
@@ -197,7 +261,7 @@ export class StatsReadController {
     status: 200,
     description:
       'Map combat stats returned. Fields: map_uid, map_name, played_at, duration_seconds, ' +
-      'player_stats (Record<login, counters>), team_stats, totals, win_context, event_id.',
+      'player_stats (Record<login, PlayerCountersDelta>), team_stats, totals, win_context, event_id.',
   })
   @ApiResponse({ status: 404, description: 'Server not found or no data for this map UID.' })
   @Get(':serverLogin/stats/combat/maps/:mapUid')
@@ -220,7 +284,9 @@ export class StatsReadController {
     description:
       'Returns the combat counters for a single player on a specific map UID. ' +
       'Data is extracted from the player_counters_delta of the most recent lifecycle map.end event ' +
-      'for that map. Returns 404 if the map or player is not found.',
+      'for that map. Returns 404 if the map or player is not found. ' +
+      'Counters include kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy ' +
+      '(null for events predating plugin v2).',
   })
   @ApiParam({
     name: 'serverLogin',
@@ -241,7 +307,8 @@ export class StatsReadController {
     status: 200,
     description:
       'Player map stats returned. Fields: server_login, map_uid, map_name, player_login, ' +
-      'counters { kills, deaths, hits, shots, misses, rockets, lasers, accuracy }, played_at.',
+      'counters { kills, deaths, hits, shots, misses, rockets, lasers, accuracy, kd_ratio, ' +
+      'hits_rocket, hits_laser, rocket_accuracy, laser_accuracy }, played_at.',
   })
   @ApiResponse({ status: 404, description: 'Server, map, or player not found.' })
   @Get(':serverLogin/stats/combat/maps/:mapUid/players/:login')
@@ -268,6 +335,8 @@ export class StatsReadController {
       'within that series window (extracted from map.end events), per-map player/team stats, ' +
       'aggregated series_totals (sum of all map totals), and the series win context. ' +
       'Open series (match.begin without a matching match.end) are excluded. ' +
+      'Per-player entries within each map include kd_ratio, hits_rocket, hits_laser, rocket_accuracy, ' +
+      'laser_accuracy (null for events predating plugin v2). ' +
       'Results are ordered most-recent first. Supports pagination and ISO8601 time-range filtering.',
   })
   @ApiParam({

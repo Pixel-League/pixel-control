@@ -40,8 +40,9 @@ class PlayerCombatStatsStore {
 
 	/**
 	 * @param string $login
+	 * @param int|null $weaponId
 	 */
-	public function recordHit($login) {
+	public function recordHit($login, $weaponId = null) {
 		$normalizedLogin = $this->normalizeLogin($login);
 		if ($normalizedLogin === null) {
 			return;
@@ -49,6 +50,14 @@ class PlayerCombatStatsStore {
 
 		$this->ensurePlayer($normalizedLogin);
 		$this->playerCounters[$normalizedLogin]['hits']++;
+
+		if ($weaponId === self::WEAPON_LASER) {
+			$this->playerCounters[$normalizedLogin]['hits_laser']++;
+		}
+
+		if ($weaponId === self::WEAPON_ROCKET) {
+			$this->playerCounters[$normalizedLogin]['hits_rocket']++;
+		}
 	}
 
 	/**
@@ -149,6 +158,8 @@ class PlayerCombatStatsStore {
 			'misses' => 0,
 			'rockets' => 0,
 			'lasers' => 0,
+			'hits_rocket' => 0,
+			'hits_laser' => 0,
 		);
 	}
 
@@ -166,6 +177,14 @@ class PlayerCombatStatsStore {
 		}
 
 		$counters['accuracy'] = $accuracy;
+
+		$rockets = isset($counters['rockets']) ? (int) $counters['rockets'] : 0;
+		$hitsRocket = isset($counters['hits_rocket']) ? (int) $counters['hits_rocket'] : 0;
+		$counters['rocket_accuracy'] = ($rockets > 0) ? round($hitsRocket / $rockets, 4) : 0.0;
+
+		$lasers = isset($counters['lasers']) ? (int) $counters['lasers'] : 0;
+		$hitsLaser = isset($counters['hits_laser']) ? (int) $counters['hits_laser'] : 0;
+		$counters['laser_accuracy'] = ($lasers > 0) ? round($hitsLaser / $lasers, 4) : 0.0;
 
 		return $counters;
 	}

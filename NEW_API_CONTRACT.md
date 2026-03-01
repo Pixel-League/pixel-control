@@ -721,6 +721,7 @@ Weapon IDs: `1`=laser, `2`=rocket, `3`=nucleus, `4`=grenade, `5`=arrow, `6`=miss
 | `GET`  | `/v1/servers/:serverLogin/stats/combat/maps/:mapUid`                 | Combat stats for a specific map UID          | Done ✅    | P2.5.2   |
 | `GET`  | `/v1/servers/:serverLogin/stats/combat/maps/:mapUid/players/:login`  | Player combat stats on a specific map        | Done ✅    | P2.5.3   |
 | `GET`  | `/v1/servers/:serverLogin/stats/combat/series`                       | Per-series (Best-Of) combat stats (paginated)| Done ✅    | P2.5.4   |
+| `GET`  | `/v1/servers/:serverLogin/stats/combat/players/:login/maps`          | Player combat stats across recent maps       | Done ✅    | P2.6     |
 
 ### Per-Map / Per-Series Combat Stats (P2.5 additions)
 
@@ -745,6 +746,24 @@ Data source: lifecycle events (category `lifecycle`) stored in the `Event` table
 - Response: `{ server_login, series: SeriesCombatEntry[], pagination: { total, limit, offset } }`.
 - Only complete series (both `match.begin` and `match.end`) are returned. Series ordered most-recent first.
 
+**`PlayerCountersDelta` fields (applies to all endpoints returning player combat counters):**
+
+| Field            | Type           | Description |
+| ---------------- | -------------- | ----------- |
+| `kills`          | number         | Kill count for this scope |
+| `deaths`         | number         | Death count for this scope |
+| `hits`           | number         | Total hits (all weapons) |
+| `shots`          | number         | Total shots (all weapons) |
+| `misses`         | number         | Total misses |
+| `rockets`        | number         | Rocket shots fired |
+| `lasers`         | number         | Laser shots fired |
+| `accuracy`       | number         | `hits / shots`, rounded to 4 dp. 0 when shots=0 |
+| `kd_ratio`       | number         | `kills / deaths`, rounded to 4 dp. Returns `kills` when `deaths=0`; returns `0` when both are 0 |
+| `hits_rocket`    | number \| null | Rocket hits. `null` if event predates plugin v2 (hits_rocket tracking) |
+| `hits_laser`     | number \| null | Laser hits. `null` if event predates plugin v2 |
+| `rocket_accuracy`| number \| null | `hits_rocket / rockets`, rounded to 4 dp. `null` when `hits_rocket` is null |
+| `laser_accuracy` | number \| null | `hits_laser / lasers`, rounded to 4 dp. `null` when `hits_laser` is null |
+
 **`MapCombatStatsEntry` shape:**
 ```json
 {
@@ -753,7 +772,11 @@ Data source: lifecycle events (category `lifecycle`) stored in the `Event` table
   "played_at": "2026-02-28T10:00:00.000Z",
   "duration_seconds": 120,
   "player_stats": {
-    "player1": { "kills": 5, "deaths": 2, "hits": 20, "shots": 40, "misses": 20, "rockets": 10, "lasers": 10, "accuracy": 0.5 }
+    "player1": {
+      "kills": 5, "deaths": 2, "hits": 20, "shots": 40, "misses": 20, "rockets": 10, "lasers": 10,
+      "accuracy": 0.5, "kd_ratio": 2.5,
+      "hits_rocket": 6, "hits_laser": 2, "rocket_accuracy": 0.6, "laser_accuracy": 0.6667
+    }
   },
   "team_stats": [...],
   "totals": { "kills": 5, "deaths": 2 },
@@ -771,6 +794,46 @@ Data source: lifecycle events (category `lifecycle`) stored in the `Event` table
   "maps": [...],
   "series_totals": { "kills": 18, "deaths": 9 },
   "series_win_context": { "winner_team_id": 0 }
+}
+```
+
+### Player Combat Map History (P2.6)
+
+**`GET /v1/servers/:serverLogin/stats/combat/players/:login/maps`** (P2.6)
+- Returns a per-map combat history for a single player, ordered most-recent first.
+- IMPORTANT: This route is registered BEFORE `GET .../players/:login` in the controller so that the literal segment `maps` is not mistakenly matched as the `:login` parameter.
+- Query params: `limit` (default 10, max 200), `offset` (default 0), `since` (ISO8601), `until` (ISO8601).
+- Response: `{ server_login, player_login, maps_played, maps_won, win_rate, maps: PlayerCombatMapHistoryEntry[], pagination: { total, limit, offset } }`.
+- `maps_played`: total count of all maps (before pagination). `maps_won`: count of maps where `won === true`. `win_rate`: `maps_won / maps_played` rounded to 4 dp (0.0 when `maps_played === 0`).
+- Each entry: `{ map_uid, map_name, played_at, duration_seconds, counters: PlayerCountersDelta, win_context, won }`.
+- `won` (boolean | null): `true`/`false` determined by matching the player login against `team_counters_delta[].player_logins` and comparing that team's `team_id` to `win_context.winner_team_id`. Returns `null` when team assignment data is unavailable.
+- Data source: same lifecycle `map.end` events as P2.5 endpoints, filtered to maps where the player has `player_counters_delta` data.
+- Returns empty `maps: []` (not 404) if the player has no map history.
+
+**`PlayerCombatMapHistoryResponse` example:**
+```json
+{
+  "server_login": "pixel-elite-1.server.local",
+  "player_login": "player1",
+  "maps_played": 15,
+  "maps_won": 10,
+  "win_rate": 0.6667,
+  "maps": [
+    {
+      "map_uid": "uid-alpha",
+      "map_name": "Alpha Arena",
+      "played_at": "2026-02-28T12:00:00.000Z",
+      "duration_seconds": 1200,
+      "counters": {
+        "kills": 5, "deaths": 2, "hits": 18, "shots": 25, "misses": 7, "rockets": 8, "lasers": 3,
+        "accuracy": 0.72, "kd_ratio": 2.5,
+        "hits_rocket": 6, "hits_laser": 2, "rocket_accuracy": 0.75, "laser_accuracy": 0.6667
+      },
+      "win_context": { "winner_team_id": 0 },
+      "won": true
+    }
+  ],
+  "pagination": { "total": 15, "limit": 10, "offset": 0 }
 }
 ```
 
@@ -1128,6 +1191,7 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `GET`  | `.../stats/combat/maps/:mapUid`                 | lifecycle        | Combat stats for specific map         | Done ✅    | P2.5.2   |
 | `GET`  | `.../stats/combat/maps/:mapUid/players/:login`  | lifecycle        | Player combat stats on specific map   | Done ✅    | P2.5.3   |
 | `GET`  | `.../stats/combat/series`                       | lifecycle        | Per-series (BO) combat stats          | Done ✅    | P2.5.4   |
+| `GET`  | `.../stats/combat/players/:login/maps`          | lifecycle        | Player combat history per map         | Done ✅    | P2.6     |
 | `GET`  | `.../lifecycle`                             | lifecycle        | Current lifecycle state               | Done ✅    | P2.7     |
 | `GET`  | `.../lifecycle/map-rotation`                | lifecycle        | Map rotation + veto state             | Done ✅    | P2.8     |
 | `GET`  | `.../lifecycle/aggregate-stats`             | lifecycle        | Latest aggregate stats                | Done ✅    | P2.9     |

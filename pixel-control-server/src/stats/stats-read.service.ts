@@ -17,6 +17,11 @@ export interface PlayerCountersDelta {
   rockets: number;
   lasers: number;
   accuracy: number;
+  kd_ratio: number;
+  hits_rocket: number | null;
+  hits_laser: number | null;
+  rocket_accuracy: number | null;
+  laser_accuracy: number | null;
 }
 
 export interface MapCombatStatsEntry {
@@ -79,6 +84,11 @@ export interface PlayerCounters {
   rockets: number;
   lasers: number;
   accuracy: number;
+  kd_ratio: number;
+  hits_rocket: number | null;
+  hits_laser: number | null;
+  rocket_accuracy: number | null;
+  laser_accuracy: number | null;
 }
 
 export interface CombatSummaryResponse {
@@ -119,6 +129,34 @@ export interface ScoresResponse {
   no_scores_available?: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Player combat map history interfaces (P2.6)
+// ---------------------------------------------------------------------------
+
+export interface PlayerCombatMapHistoryEntry {
+  map_uid: string;
+  map_name: string;
+  played_at: string;
+  duration_seconds: number;
+  counters: PlayerCountersDelta;
+  win_context: Record<string, unknown>;
+  won: boolean | null;
+}
+
+export interface PlayerCombatMapHistoryResponse {
+  server_login: string;
+  player_login: string;
+  maps_played: number;
+  maps_won: number;
+  win_rate: number;
+  maps: PlayerCombatMapHistoryEntry[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
 interface RawLifecyclePayload {
   variant?: string;
   map_rotation?: {
@@ -140,8 +178,14 @@ interface RawLifecyclePayload {
       rockets?: number;
       lasers?: number;
       accuracy?: number;
+      hits_rocket?: number;
+      hits_laser?: number;
     }>;
-    team_counters_delta?: unknown[];
+    team_counters_delta?: Array<{
+      team_id?: number | null;
+      player_logins?: string[];
+      [key: string]: unknown;
+    }>;
     totals?: Record<string, number>;
     win_context?: Record<string, unknown>;
     window?: {
@@ -174,6 +218,8 @@ interface RawCombatPayload {
     rockets?: number;
     lasers?: number;
     accuracy?: number;
+    hits_rocket?: number;
+    hits_laser?: number;
   }>;
   scores_section?: string;
   scores_snapshot?: Record<string, unknown>;
@@ -188,6 +234,42 @@ export class StatsReadService {
     private readonly serverResolver: ServerResolverService,
     private readonly prisma: PrismaService,
   ) {}
+
+  // ---------------------------------------------------------------------------
+  // Private computation helpers
+  // ---------------------------------------------------------------------------
+
+  private computeKdRatio(kills: number, deaths: number): number {
+    if (deaths === 0) return kills > 0 ? kills : 0;
+    return Math.round((kills / deaths) * 10000) / 10000;
+  }
+
+  private computeWeaponAccuracy(hits: number | null, shots: number): number | null {
+    if (hits === null) return null;
+    return shots > 0 ? Math.round((hits / shots) * 10000) / 10000 : 0;
+  }
+
+  private determinePlayerWon(
+    teamStats: unknown[],
+    winContext: Record<string, unknown>,
+    playerLogin: string,
+  ): boolean | null {
+    const winnerTeamId = winContext['winner_team_id'];
+    if (winnerTeamId === undefined || winnerTeamId === null || typeof winnerTeamId !== 'number') {
+      return null;
+    }
+
+    for (const entry of teamStats) {
+      if (!entry || typeof entry !== 'object') continue;
+      const team = entry as { team_id?: number | null; player_logins?: string[] };
+      if (!Array.isArray(team.player_logins)) continue;
+      if (team.player_logins.includes(playerLogin)) {
+        return team.team_id === winnerTeamId;
+      }
+    }
+
+    return null;
+  }
 
   async getCombatStats(
     serverLogin: string,
@@ -306,17 +388,29 @@ export class StatsReadService {
     const counters = payload?.player_counters ?? {};
 
     const players: PlayerCounters[] = Object.entries(counters).map(
-      ([login, c]) => ({
-        login,
-        kills: c.kills ?? 0,
-        deaths: c.deaths ?? 0,
-        hits: c.hits ?? 0,
-        shots: c.shots ?? 0,
-        misses: c.misses ?? 0,
-        rockets: c.rockets ?? 0,
-        lasers: c.lasers ?? 0,
-        accuracy: c.accuracy ?? (c.shots ? (c.hits ?? 0) / c.shots : 0),
-      }),
+      ([login, c]) => {
+        const kills = c.kills ?? 0;
+        const deaths = c.deaths ?? 0;
+        const shots = c.shots ?? 0;
+        const hitsRocket = c.hits_rocket !== undefined ? c.hits_rocket : null;
+        const hitsLaser = c.hits_laser !== undefined ? c.hits_laser : null;
+        return {
+          login,
+          kills,
+          deaths,
+          hits: c.hits ?? 0,
+          shots,
+          misses: c.misses ?? 0,
+          rockets: c.rockets ?? 0,
+          lasers: c.lasers ?? 0,
+          accuracy: c.accuracy ?? (shots ? (c.hits ?? 0) / shots : 0),
+          kd_ratio: this.computeKdRatio(kills, deaths),
+          hits_rocket: hitsRocket,
+          hits_laser: hitsLaser,
+          rocket_accuracy: this.computeWeaponAccuracy(hitsRocket, c.rockets ?? 0),
+          laser_accuracy: this.computeWeaponAccuracy(hitsLaser, c.lasers ?? 0),
+        };
+      },
     );
 
     return paginate(players, limit, offset);
@@ -348,18 +442,28 @@ export class StatsReadService {
 
     const payload = matchingEvent.payload as RawCombatPayload;
     const c = payload.player_counters![playerLogin];
+    const kills = c.kills ?? 0;
+    const deaths = c.deaths ?? 0;
+    const shots = c.shots ?? 0;
+    const hitsRocket = c.hits_rocket !== undefined ? c.hits_rocket : null;
+    const hitsLaser = c.hits_laser !== undefined ? c.hits_laser : null;
 
     return {
       login: playerLogin,
       counters: {
-        kills: c.kills ?? 0,
-        deaths: c.deaths ?? 0,
+        kills,
+        deaths,
         hits: c.hits ?? 0,
-        shots: c.shots ?? 0,
+        shots,
         misses: c.misses ?? 0,
         rockets: c.rockets ?? 0,
         lasers: c.lasers ?? 0,
-        accuracy: c.accuracy ?? (c.shots ? (c.hits ?? 0) / c.shots : 0),
+        accuracy: c.accuracy ?? (shots ? (c.hits ?? 0) / shots : 0),
+        kd_ratio: this.computeKdRatio(kills, deaths),
+        hits_rocket: hitsRocket,
+        hits_laser: hitsLaser,
+        rocket_accuracy: this.computeWeaponAccuracy(hitsRocket, c.rockets ?? 0),
+        laser_accuracy: this.computeWeaponAccuracy(hitsLaser, c.lasers ?? 0),
       },
       recent_events_count: events.length,
       last_updated: new Date(Number(matchingEvent.sourceTime)).toISOString(),
@@ -427,15 +531,25 @@ export class StatsReadService {
     const rawDelta = agg.player_counters_delta ?? {};
     const playerStats: Record<string, PlayerCountersDelta> = {};
     for (const [login, c] of Object.entries(rawDelta)) {
+      const kills = c.kills ?? 0;
+      const deaths = c.deaths ?? 0;
+      const shots = c.shots ?? 0;
+      const hitsRocket = c.hits_rocket !== undefined ? c.hits_rocket : null;
+      const hitsLaser = c.hits_laser !== undefined ? c.hits_laser : null;
       playerStats[login] = {
-        kills: c.kills ?? 0,
-        deaths: c.deaths ?? 0,
+        kills,
+        deaths,
         hits: c.hits ?? 0,
-        shots: c.shots ?? 0,
+        shots,
         misses: c.misses ?? 0,
         rockets: c.rockets ?? 0,
         lasers: c.lasers ?? 0,
-        accuracy: c.accuracy ?? (c.shots ? (c.hits ?? 0) / c.shots : 0),
+        accuracy: c.accuracy ?? (shots ? (c.hits ?? 0) / shots : 0),
+        kd_ratio: this.computeKdRatio(kills, deaths),
+        hits_rocket: hitsRocket,
+        hits_laser: hitsLaser,
+        rocket_accuracy: this.computeWeaponAccuracy(hitsRocket, c.rockets ?? 0),
+        laser_accuracy: this.computeWeaponAccuracy(hitsLaser, c.lasers ?? 0),
       };
     }
 
@@ -670,6 +784,67 @@ export class StatsReadService {
       server_login: serverLogin,
       series: data,
       pagination: { total, limit, offset },
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // P2.6 - Player combat map history
+  // ---------------------------------------------------------------------------
+
+  async getPlayerCombatMapHistory(
+    serverLogin: string,
+    playerLogin: string,
+    limit: number,
+    offset: number,
+    since?: string,
+    until?: string,
+  ): Promise<PlayerCombatMapHistoryResponse> {
+    const { server } = await this.serverResolver.resolve(serverLogin);
+
+    const sinceMs = since ? BigInt(new Date(since).getTime()) : undefined;
+    const untilMs = until ? BigInt(new Date(until).getTime()) : undefined;
+
+    const events = await this.fetchLifecycleEvents(server.id, 1000, sinceMs, untilMs);
+
+    const allEntries: PlayerCombatMapHistoryEntry[] = [];
+
+    for (const event of events) {
+      const entry = this.extractMapCombatEntry(event);
+      if (!entry) continue;
+
+      const playerCounters = entry.player_stats[playerLogin];
+      if (!playerCounters) continue;
+
+      const won = this.determinePlayerWon(entry.team_stats, entry.win_context, playerLogin);
+
+      allEntries.push({
+        map_uid: entry.map_uid,
+        map_name: entry.map_name,
+        played_at: entry.played_at,
+        duration_seconds: entry.duration_seconds,
+        counters: playerCounters,
+        win_context: entry.win_context,
+        won,
+      });
+    }
+
+    // allEntries is already ordered most-recent first (from fetchLifecycleEvents desc order)
+    const mapsPlayed = allEntries.length;
+    const mapsWon = allEntries.filter((e) => e.won === true).length;
+    const winRate = mapsPlayed > 0
+      ? Math.round((mapsWon / mapsPlayed) * 10000) / 10000
+      : 0;
+
+    const data = allEntries.slice(offset, offset + limit);
+
+    return {
+      server_login: serverLogin,
+      player_login: playerLogin,
+      maps_played: mapsPlayed,
+      maps_won: mapsWon,
+      win_rate: winRate,
+      maps: data,
+      pagination: { total: mapsPlayed, limit, offset },
     };
   }
 }
