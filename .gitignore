@@ -8,3 +8,6 @@ pixel-control-server/logs
 # Docker data (bind-mount volumes)
 pixel-control-server/data/
 pixel-sm-server/data/
+
+# Dev UI (test tooling only, not production code)
+pixel-control-ui/

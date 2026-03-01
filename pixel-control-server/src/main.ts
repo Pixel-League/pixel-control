@@ -16,6 +16,9 @@ async function bootstrap() {
 
   app.setGlobalPrefix('v1');
 
+  // Enable CORS for local dev — UI runs on a different port (Vite default: 5173)
+  app.enableCors();
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   const swaggerConfig = new DocumentBuilder()

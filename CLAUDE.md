@@ -26,6 +26,16 @@ pixel-control-server/   # NestJS API (TypeScript)
   docker-compose.yml    # postgres:5433 + api:3000
   vitest.config.ts
 
+pixel-control-ui/       # Dev UI — Vite + React 19 + TypeScript + Tailwind CSS v4 + React Router v7
+  src/
+    api/            # Typed API client (client.ts + domain modules)
+    components/     # Badge, StatCard, JsonViewer, Pagination, CopyButton, ConfirmModal, etc.
+    layouts/        # MainLayout, ServerContext
+    pages/          # 25+ pages covering all 30+ endpoints
+    hooks/          # useApi, useServerContext
+    types/          # api.ts (full response types)
+    lib/            # config.ts, format.ts
+
 pixel-sm-server/        # Dockerized ShootMania Elite-only dev stack
   docker-compose.yml            # bridge networking (default)
   docker-compose.production.yml # production overrides
@@ -42,6 +52,15 @@ AGENTS.md               # Legacy project memory (historical, kept for reference)
 ```
 
 ## Common commands
+
+### pixel-control-ui (Dev UI)
+```bash
+cd pixel-control-ui
+npm install
+npm run dev            # Start dev server (port 5173)
+npm run build          # Production build (dist/)
+# API base URL: VITE_API_BASE_URL=http://localhost:3000/v1 (default)
+```
 
 ### Plugin
 ```bash
