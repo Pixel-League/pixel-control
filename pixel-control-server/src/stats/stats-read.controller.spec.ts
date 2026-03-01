@@ -320,4 +320,85 @@ describe('StatsReadController', () => {
       expect(result).toEqual(expected);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Elite fields passthrough tests (Phase 17)
+  // ---------------------------------------------------------------------------
+
+  describe('Elite fields passthrough', () => {
+    it('getCombatPlayers passes through Elite fields from service response', async () => {
+      const eliteResponse = {
+        data: [{
+          login: 'player1',
+          kills: 5, deaths: 2, hits: 20, shots: 40, misses: 20,
+          rockets: 10, lasers: 5, accuracy: 0.5, kd_ratio: 2.5,
+          hits_rocket: 8, hits_laser: 2, rocket_accuracy: 0.8, laser_accuracy: 0.4,
+          attack_rounds_played: 5, attack_rounds_won: 3, attack_win_rate: 0.6,
+          defense_rounds_played: 5, defense_rounds_won: 4, defense_win_rate: 0.8,
+        }],
+        pagination: { total: 1, limit: 50, offset: 0 },
+      };
+      service.getCombatPlayersCounters.mockResolvedValue(eliteResponse);
+
+      const result = await controller.getCombatPlayers('test-server', {});
+
+      expect(result).toEqual(eliteResponse);
+      const p1 = (result as typeof eliteResponse).data[0];
+      expect(p1.attack_rounds_played).toBe(5);
+      expect(p1.attack_win_rate).toBeCloseTo(0.6);
+      expect(p1.defense_rounds_played).toBe(5);
+      expect(p1.defense_win_rate).toBeCloseTo(0.8);
+    });
+
+    it('getPlayerCombatCounters passes through Elite fields from service response', async () => {
+      const eliteCounters = {
+        login: 'player1',
+        counters: {
+          kills: 3, deaths: 1, hits: 10, shots: 20, misses: 10,
+          rockets: 8, lasers: 4, accuracy: 0.5, kd_ratio: 3,
+          hits_rocket: null, hits_laser: null, rocket_accuracy: null, laser_accuracy: null,
+          attack_rounds_played: 4, attack_rounds_won: 2, attack_win_rate: 0.5,
+          defense_rounds_played: 4, defense_rounds_won: 3, defense_win_rate: 0.75,
+        },
+        recent_events_count: 10,
+        last_updated: '2026-02-28T10:00:00.000Z',
+      };
+      service.getPlayerCombatCounters.mockResolvedValue(eliteCounters);
+
+      const result = await controller.getPlayerCombatCounters('test-server', 'player1');
+
+      expect(result).toEqual(eliteCounters);
+    });
+
+    it('getPlayerCombatMapHistory passes through Elite fields in per-map counters', async () => {
+      const eliteMapHistory = {
+        server_login: 'test-server',
+        player_login: 'player1',
+        maps_played: 2,
+        maps_won: 1,
+        win_rate: 0.5,
+        maps: [{
+          map_uid: 'uid-elite',
+          map_name: 'Elite Map',
+          played_at: '2026-02-28T10:00:00.000Z',
+          duration_seconds: 180,
+          counters: {
+            kills: 3, deaths: 1, hits: 12, shots: 20, misses: 8,
+            rockets: 10, lasers: 5, accuracy: 0.6, kd_ratio: 3,
+            hits_rocket: 8, hits_laser: 2, rocket_accuracy: 0.8, laser_accuracy: 0.4,
+            attack_rounds_played: 3, attack_rounds_won: 2, attack_win_rate: 0.6667,
+            defense_rounds_played: 3, defense_rounds_won: 2, defense_win_rate: 0.6667,
+          },
+          win_context: { winner_team_id: 0 },
+          won: true,
+        }],
+        pagination: { total: 2, limit: 10, offset: 0 },
+      };
+      service.getPlayerCombatMapHistory.mockResolvedValue(eliteMapHistory);
+
+      const result = await controller.getPlayerCombatMapHistory('test-server', 'player1', {});
+
+      expect(result).toEqual(eliteMapHistory);
+    });
+  });
 });

@@ -101,6 +101,13 @@ Note: The `pagination` object uses the same `{ total, limit, offset }` shape as 
 - [Done] Phase 10 - Unit Tests (derived stats)
 - [Done] Phase 11 - API Contract Update (derived stats)
 - [Done] Phase 12 - Live QA Smoke Testing (derived stats)
+- [Done] Phase 13 - Plugin: Elite round tracking store (PHP)
+- [Done] Phase 14 - Plugin: Wire Elite callbacks and evaluate round outcomes (PHP)
+- [Done] Phase 15 - Plugin: Integrate Elite counters into aggregates and combat snapshots (PHP)
+- [Done] Phase 16 - API: Add Elite attack/defense win rate fields to all player counter interfaces (TypeScript)
+- [Done] Phase 17 - Unit Tests (Elite attack/defense win rate)
+- [Done] Phase 18 - API Contract Update (Elite attack/defense win rate)
+- [Done] Phase 19 - Live QA Smoke Testing (Elite attack/defense win rate)
 
 ### Phase 1 - Interface & Service Implementation
 
@@ -621,11 +628,666 @@ These fields are optional/nullable because events emitted before the plugin upda
 - [Todo] P12.7 - Clean up test data
   - Delete test server.
 
+---
+
+### Phase 13 - Plugin: Elite round tracking store (PHP)
+
+This phase adds the per-round Elite tracking infrastructure to `PlayerCombatStatsStore`. The store must track transient per-round state (reset each turn) alongside permanent cumulative counters.
+
+**Background -- Elite turn mechanics:**
+- `OnEliteStartTurnStructure` provides `getAttacker()` (Player) and `getDefenderLogins()` (string[]).
+- `OnEliteEndTurnStructure` provides `getVictoryType()` (int). Victory types: `TIME_LIMIT = 1` (defense wins, clock ran out), `CAPTURE = 2` (attack wins, pole captured), `ATTACKER_ELIMINATED = 3` (defense wins, attacker killed), `DEFENDERS_ELIMINATED = 4` (attack wins, all defenders killed).
+- Attack wins when `victoryType` is `CAPTURE (2)` or `DEFENDERS_ELIMINATED (4)`.
+- Defense success for a player follows custom rules: **(Rule A)** player landed 1+ hit AND did NOT die during the round, **OR (Rule B)** player landed 2+ rocket hits during the round (even if they died).
+
+**Mode detection:** The plugin reads `PIXEL_SM_MODE` env var via `$this->readEnvString('PIXEL_SM_MODE', '')` in `ConnectivityDomainTrait::buildServerSnapshot()`. For Elite detection, use the same mechanism: `strtolower($this->readEnvString('PIXEL_SM_MODE', ''))` and check if it contains `'elite'`.
+
+- [Done] P13.1 - Add cumulative Elite counters to `PlayerCombatStatsStore::buildDefaultCounterRow()`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - Add these keys after `'hits_laser' => 0`:
+    ```php
+    'attack_rounds_played' => 0,
+    'attack_rounds_won' => 0,
+    'defense_rounds_played' => 0,
+    'defense_rounds_won' => 0,
+    ```
+  - These are cumulative counters that persist across rounds (like kills, deaths, etc.) and are included in combat snapshots.
+
+- [Done] P13.2 - Add transient per-round Elite state properties to `PlayerCombatStatsStore`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - Add new private properties for transient round state:
+    ```php
+    /** @var bool $eliteRoundActive */
+    private $eliteRoundActive = false;
+    /** @var string|null $eliteRoundAttackerLogin */
+    private $eliteRoundAttackerLogin = null;
+    /** @var string[] $eliteRoundDefenderLogins */
+    private $eliteRoundDefenderLogins = array();
+    /** @var array $eliteRoundHits Per-player hit count during current round, keyed by login */
+    private $eliteRoundHits = array();
+    /** @var array $eliteRoundRocketHits Per-player rocket hit count during current round, keyed by login */
+    private $eliteRoundRocketHits = array();
+    /** @var array $eliteRoundDeaths Per-player death count during current round, keyed by login */
+    private $eliteRoundDeaths = array();
+    ```
+
+- [Done] P13.3 - Add `openEliteRound($attackerLogin, array $defenderLogins)` method
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - Public method. Resets transient round state and opens a new tracking window:
+    ```php
+    /**
+     * Open an Elite round tracking window.
+     *
+     * @param string $attackerLogin
+     * @param string[] $defenderLogins
+     */
+    public function openEliteRound($attackerLogin, array $defenderLogins) {
+        $this->eliteRoundActive = true;
+        $this->eliteRoundAttackerLogin = $this->normalizeLogin($attackerLogin);
+        $this->eliteRoundDefenderLogins = array();
+        foreach ($defenderLogins as $login) {
+            $normalized = $this->normalizeLogin($login);
+            if ($normalized !== null) {
+                $this->eliteRoundDefenderLogins[] = $normalized;
+            }
+        }
+        $this->eliteRoundHits = array();
+        $this->eliteRoundRocketHits = array();
+        $this->eliteRoundDeaths = array();
+
+        // Ensure all participants are tracked
+        if ($this->eliteRoundAttackerLogin !== null) {
+            $this->ensurePlayer($this->eliteRoundAttackerLogin);
+            $this->playerCounters[$this->eliteRoundAttackerLogin]['attack_rounds_played']++;
+        }
+        foreach ($this->eliteRoundDefenderLogins as $defenderLogin) {
+            $this->ensurePlayer($defenderLogin);
+            $this->playerCounters[$defenderLogin]['defense_rounds_played']++;
+        }
+    }
+    ```
+
+- [Done] P13.4 - Add `closeEliteRound($victoryType)` method
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - Public method. Evaluates round outcome and increments win counters:
+    ```php
+    /**
+     * Close the current Elite round and evaluate outcomes.
+     *
+     * @param int $victoryType VictoryTypes constant (1=TIME_LIMIT, 2=CAPTURE, 3=ATTACKER_ELIMINATED, 4=DEFENDERS_ELIMINATED)
+     */
+    public function closeEliteRound($victoryType) {
+        if (!$this->eliteRoundActive) {
+            return;
+        }
+
+        $this->eliteRoundActive = false;
+        $victoryType = (int) $victoryType;
+
+        // Attack wins when: CAPTURE (2) or DEFENDERS_ELIMINATED (4)
+        $attackWon = ($victoryType === 2 || $victoryType === 4);
+
+        // Credit attacker win
+        if ($attackWon && $this->eliteRoundAttackerLogin !== null) {
+            $this->ensurePlayer($this->eliteRoundAttackerLogin);
+            $this->playerCounters[$this->eliteRoundAttackerLogin]['attack_rounds_won']++;
+        }
+
+        // Evaluate defense success per defender
+        foreach ($this->eliteRoundDefenderLogins as $defenderLogin) {
+            $this->ensurePlayer($defenderLogin);
+            $roundHits = isset($this->eliteRoundHits[$defenderLogin]) ? (int) $this->eliteRoundHits[$defenderLogin] : 0;
+            $roundRocketHits = isset($this->eliteRoundRocketHits[$defenderLogin]) ? (int) $this->eliteRoundRocketHits[$defenderLogin] : 0;
+            $roundDeaths = isset($this->eliteRoundDeaths[$defenderLogin]) ? (int) $this->eliteRoundDeaths[$defenderLogin] : 0;
+
+            // Rule A: 1+ hit AND 0 deaths
+            $ruleA = ($roundHits >= 1 && $roundDeaths === 0);
+            // Rule B: 2+ rocket hits (regardless of death)
+            $ruleB = ($roundRocketHits >= 2);
+
+            if ($ruleA || $ruleB) {
+                $this->playerCounters[$defenderLogin]['defense_rounds_won']++;
+            }
+        }
+
+        // Reset transient state
+        $this->eliteRoundAttackerLogin = null;
+        $this->eliteRoundDefenderLogins = array();
+        $this->eliteRoundHits = array();
+        $this->eliteRoundRocketHits = array();
+        $this->eliteRoundDeaths = array();
+    }
+    ```
+
+- [Done] P13.5 - Add `recordEliteRoundHit($login, $weaponId)` method
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - Public method. Tracks per-round hit data during an active Elite round. This is called FROM `recordHit()` so the caller does not need to call it separately:
+    ```php
+    /**
+     * Track a hit during an active Elite round for per-round evaluation.
+     *
+     * @param string $login
+     * @param int|null $weaponId
+     */
+    private function trackEliteRoundHit($login, $weaponId = null) {
+        if (!$this->eliteRoundActive) {
+            return;
+        }
+
+        $normalizedLogin = $this->normalizeLogin($login);
+        if ($normalizedLogin === null) {
+            return;
+        }
+
+        if (!isset($this->eliteRoundHits[$normalizedLogin])) {
+            $this->eliteRoundHits[$normalizedLogin] = 0;
+        }
+        $this->eliteRoundHits[$normalizedLogin]++;
+
+        if ($weaponId === self::WEAPON_ROCKET) {
+            if (!isset($this->eliteRoundRocketHits[$normalizedLogin])) {
+                $this->eliteRoundRocketHits[$normalizedLogin] = 0;
+            }
+            $this->eliteRoundRocketHits[$normalizedLogin]++;
+        }
+    }
+    ```
+  - Note: This is a PRIVATE method called internally by `recordHit()`. The method name in the step title is the conceptual name; in implementation it should be `trackEliteRoundHit`.
+
+- [Done] P13.6 - Add `recordEliteRoundDeath($login)` method
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - Private method called from `recordKill()` to track per-round deaths for defense evaluation:
+    ```php
+    /**
+     * Track a death during an active Elite round for per-round evaluation.
+     *
+     * @param string $login
+     */
+    private function trackEliteRoundDeath($login) {
+        if (!$this->eliteRoundActive) {
+            return;
+        }
+
+        $normalizedLogin = $this->normalizeLogin($login);
+        if ($normalizedLogin === null) {
+            return;
+        }
+
+        if (!isset($this->eliteRoundDeaths[$normalizedLogin])) {
+            $this->eliteRoundDeaths[$normalizedLogin] = 0;
+        }
+        $this->eliteRoundDeaths[$normalizedLogin]++;
+    }
+    ```
+
+- [Done] P13.7 - Update `recordHit()` to call `trackEliteRoundHit()`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - After the existing weapon-specific hit tracking (hits_laser, hits_rocket), add:
+    ```php
+    $this->trackEliteRoundHit($normalizedLogin, $weaponId);
+    ```
+
+- [Done] P13.8 - Update `recordKill()` to call `trackEliteRoundDeath()` for the victim
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - After `$this->playerCounters[$normalizedVictimLogin]['deaths']++`, add:
+    ```php
+    $this->trackEliteRoundDeath($normalizedVictimLogin);
+    ```
+
+- [Done] P13.9 - Update `reset()` to clear Elite transient state
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - After `$this->playerCounters = array();`, add:
+    ```php
+    $this->eliteRoundActive = false;
+    $this->eliteRoundAttackerLogin = null;
+    $this->eliteRoundDefenderLogins = array();
+    $this->eliteRoundHits = array();
+    $this->eliteRoundRocketHits = array();
+    $this->eliteRoundDeaths = array();
+    ```
+
+- [Done] P13.10 - Add `isEliteRoundActive()` getter (optional, for debugging/logging)
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - Simple getter:
+    ```php
+    /**
+     * @return bool
+     */
+    public function isEliteRoundActive() {
+        return $this->eliteRoundActive;
+    }
+    ```
+
+### Phase 14 - Plugin: Wire Elite callbacks and evaluate round outcomes (PHP)
+
+This phase wires the `OnEliteStartTurn` and `OnEliteEndTurn` callbacks to the store methods. The plugin already receives these as mode callbacks (registered in `CallbackRegistry` under `modeCallbacks['elite']`) and also projects them as lifecycle events (via `queueLifecycleProjectionFromModeCallback`). The mode callback handler (`handleModeCallback`) calls `queueCallbackEvent('mode', ...)` which falls through to `buildPayloadSummary()` (no `buildModePayload` exists).
+
+The Elite round tracking needs to happen **before** the combat event payload is built (so that `player_counters` snapshots already include updated attack/defense counters) AND before the mode event is queued. The best hook point is inside `handleModeCallback()` in `CoreDomainTrait`, which is the entry point for all mode callbacks.
+
+- [Done] P14.1 - Create a new trait `EliteRoundTrackingTrait` at `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Domain/Combat/EliteRoundTrackingTrait.php`
+  - New file. This trait handles Elite-specific round tracking, keeping it separate from the generic `CombatDomainTrait` (SRP).
+  - The trait needs access to `$this->playerCombatStatsStore` and `$this->maniaControl` (both are properties on `PixelControlPlugin`).
+  - Contents:
+    ```php
+    <?php
+
+    namespace PixelControl\Domain\Combat;
+
+    use ManiaControl\Callbacks\Structures\ShootMania\OnEliteStartTurnStructure;
+    use ManiaControl\Callbacks\Structures\ShootMania\OnEliteEndTurnStructure;
+    use ManiaControl\Logger;
+    use ManiaControl\Players\Player;
+
+    trait EliteRoundTrackingTrait {
+        /**
+         * Process an Elite mode callback for round tracking.
+         * Called from handleModeCallback before the event is queued.
+         *
+         * @param array $callbackArguments
+         */
+        private function processEliteRoundTracking(array $callbackArguments) {
+            if (!$this->playerCombatStatsStore) {
+                return;
+            }
+
+            if (!$this->isEliteModeActive()) {
+                return;
+            }
+
+            $callbackObject = $this->extractEliteCallbackObject($callbackArguments);
+            if ($callbackObject === null) {
+                return;
+            }
+
+            if ($callbackObject instanceof OnEliteStartTurnStructure) {
+                $this->handleEliteStartTurn($callbackObject);
+                return;
+            }
+
+            if ($callbackObject instanceof OnEliteEndTurnStructure) {
+                $this->handleEliteEndTurn($callbackObject);
+                return;
+            }
+        }
+
+        /**
+         * @return bool
+         */
+        private function isEliteModeActive() {
+            $mode = strtolower($this->readEnvString('PIXEL_SM_MODE', ''));
+            return strpos($mode, 'elite') !== false;
+        }
+
+        /**
+         * @param OnEliteStartTurnStructure $structure
+         */
+        private function handleEliteStartTurn(OnEliteStartTurnStructure $structure) {
+            $attacker = $structure->getAttacker();
+            $attackerLogin = '';
+            if ($attacker instanceof Player && isset($attacker->login)) {
+                $attackerLogin = trim((string) $attacker->login);
+            }
+
+            $defenderLogins = array();
+            $rawDefenders = $structure->getDefenderLogins();
+            if (is_array($rawDefenders)) {
+                foreach ($rawDefenders as $login) {
+                    $normalized = trim((string) $login);
+                    if ($normalized !== '') {
+                        $defenderLogins[] = $normalized;
+                    }
+                }
+            }
+
+            $this->playerCombatStatsStore->openEliteRound($attackerLogin, $defenderLogins);
+
+            Logger::log(
+                '[PixelControl][elite][round_opened] attacker=' . ($attackerLogin !== '' ? $attackerLogin : 'unknown')
+                . ', defenders=' . implode(',', $defenderLogins)
+                . ', defender_count=' . count($defenderLogins)
+                . '.'
+            );
+        }
+
+        /**
+         * @param OnEliteEndTurnStructure $structure
+         */
+        private function handleEliteEndTurn(OnEliteEndTurnStructure $structure) {
+            $victoryType = (int) $structure->getVictoryType();
+            $this->playerCombatStatsStore->closeEliteRound($victoryType);
+
+            $victoryLabel = $this->resolveEliteVictoryLabel($victoryType);
+            Logger::log(
+                '[PixelControl][elite][round_closed] victory_type=' . $victoryType
+                . ' (' . $victoryLabel . ').'
+            );
+        }
+
+        /**
+         * @param array $callbackArguments
+         * @return OnEliteStartTurnStructure|OnEliteEndTurnStructure|null
+         */
+        private function extractEliteCallbackObject(array $callbackArguments) {
+            if (empty($callbackArguments)) {
+                return null;
+            }
+
+            $firstArgument = $callbackArguments[0];
+            if ($firstArgument instanceof OnEliteStartTurnStructure) {
+                return $firstArgument;
+            }
+
+            if ($firstArgument instanceof OnEliteEndTurnStructure) {
+                return $firstArgument;
+            }
+
+            return null;
+        }
+
+        /**
+         * @param int $victoryType
+         * @return string
+         */
+        private function resolveEliteVictoryLabel($victoryType) {
+            switch ((int) $victoryType) {
+                case 1: return 'time_limit';
+                case 2: return 'capture';
+                case 3: return 'attacker_eliminated';
+                case 4: return 'defenders_eliminated';
+                default: return 'unknown_' . (int) $victoryType;
+            }
+        }
+    }
+    ```
+
+- [Done] P14.2 - Add `use EliteRoundTrackingTrait;` to `PixelControlPlugin`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/PixelControlPlugin.php`
+  - Add `use PixelControl\Domain\Combat\EliteRoundTrackingTrait;` to the imports at top.
+  - Add `use EliteRoundTrackingTrait;` to the class body, after `use CombatDomainTrait;`.
+
+- [Done] P14.3 - Call `processEliteRoundTracking()` from `handleModeCallback()` in `CoreDomainTrait`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Domain/Core/CoreDomainTrait.php`
+  - Update `handleModeCallback()` from:
+    ```php
+    public function handleModeCallback(...$callbackArguments) {
+        $this->queueCallbackEvent('mode', $callbackArguments);
+        $this->queueLifecycleProjectionFromModeCallback($callbackArguments);
+    }
+    ```
+    to:
+    ```php
+    public function handleModeCallback(...$callbackArguments) {
+        $this->processEliteRoundTracking($callbackArguments);
+        $this->queueCallbackEvent('mode', $callbackArguments);
+        $this->queueLifecycleProjectionFromModeCallback($callbackArguments);
+    }
+    ```
+  - **Critical**: `processEliteRoundTracking` MUST be called BEFORE `queueCallbackEvent` so that the `openEliteRound`/`closeEliteRound` updates are reflected in the `player_counters` snapshot included in the mode event and the lifecycle projection event.
+
+- [Done] P14.4 - Run plugin quality checks
+  - Command: `bash /Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/scripts/check-quality.sh`
+  - All PHP syntax checks must pass.
+  - All existing PHP tests must pass.
+
+### Phase 15 - Plugin: Integrate Elite counters into aggregates and combat snapshots (PHP)
+
+This phase ensures the 4 new cumulative counters (`attack_rounds_played`, `attack_rounds_won`, `defense_rounds_played`, `defense_rounds_won`) flow through to all event payloads that include `player_counters`.
+
+- [Done] P15.1 - Update `PlayerCombatStatsStore::withComputedFields()` to add attack/defense win rates
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`
+  - After the `laser_accuracy` computation block, add:
+    ```php
+    $attackRoundsPlayed = isset($counters['attack_rounds_played']) ? (int) $counters['attack_rounds_played'] : 0;
+    $attackRoundsWon = isset($counters['attack_rounds_won']) ? (int) $counters['attack_rounds_won'] : 0;
+    $counters['attack_win_rate'] = ($attackRoundsPlayed > 0) ? round($attackRoundsWon / $attackRoundsPlayed, 4) : 0.0;
+
+    $defenseRoundsPlayed = isset($counters['defense_rounds_played']) ? (int) $counters['defense_rounds_played'] : 0;
+    $defenseRoundsWon = isset($counters['defense_rounds_won']) ? (int) $counters['defense_rounds_won'] : 0;
+    $counters['defense_win_rate'] = ($defenseRoundsPlayed > 0) ? round($defenseRoundsWon / $defenseRoundsPlayed, 4) : 0.0;
+    ```
+  - These computed fields are included in every `snapshotAll()` and `snapshotForPlayers()` call, which means they flow into combat event payloads (`player_counters`) automatically.
+
+- [Done] P15.2 - Update `MatchAggregateTelemetryTrait::getCombatCounterKeys()` to include Elite keys
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Domain/Match/MatchAggregateTelemetryTrait.php`
+  - Change from:
+    ```php
+    return array('kills', 'deaths', 'hits', 'shots', 'misses', 'rockets', 'lasers', 'hits_rocket', 'hits_laser', 'accuracy', 'rocket_accuracy', 'laser_accuracy');
+    ```
+    to:
+    ```php
+    return array('kills', 'deaths', 'hits', 'shots', 'misses', 'rockets', 'lasers', 'hits_rocket', 'hits_laser', 'attack_rounds_played', 'attack_rounds_won', 'defense_rounds_played', 'defense_rounds_won', 'accuracy', 'rocket_accuracy', 'laser_accuracy', 'attack_win_rate', 'defense_win_rate');
+    ```
+
+- [Done] P15.3 - Update `MatchAggregateTelemetryTrait::buildCombatCounterDelta()` to include Elite numeric keys
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Domain/Match/MatchAggregateTelemetryTrait.php`
+  - Change `$numericCounterKeys` from:
+    ```php
+    $numericCounterKeys = array('kills', 'deaths', 'hits', 'shots', 'misses', 'rockets', 'lasers', 'hits_rocket', 'hits_laser');
+    ```
+    to:
+    ```php
+    $numericCounterKeys = array('kills', 'deaths', 'hits', 'shots', 'misses', 'rockets', 'lasers', 'hits_rocket', 'hits_laser', 'attack_rounds_played', 'attack_rounds_won', 'defense_rounds_played', 'defense_rounds_won');
+    ```
+  - After the `laser_accuracy` computation block, add:
+    ```php
+    $deltaAttackPlayed = isset($deltaRow['attack_rounds_played']) ? (int) $deltaRow['attack_rounds_played'] : 0;
+    $deltaAttackWon = isset($deltaRow['attack_rounds_won']) ? (int) $deltaRow['attack_rounds_won'] : 0;
+    $deltaRow['attack_win_rate'] = ($deltaAttackPlayed > 0 ? round($deltaAttackWon / $deltaAttackPlayed, 4) : 0.0);
+
+    $deltaDefensePlayed = isset($deltaRow['defense_rounds_played']) ? (int) $deltaRow['defense_rounds_played'] : 0;
+    $deltaDefenseWon = isset($deltaRow['defense_rounds_won']) ? (int) $deltaRow['defense_rounds_won'] : 0;
+    $deltaRow['defense_win_rate'] = ($deltaDefensePlayed > 0 ? round($deltaDefenseWon / $deltaDefensePlayed, 4) : 0.0);
+    ```
+
+- [Done] P15.4 - Update `MatchAggregateTelemetryTrait::buildZeroCounterRow()` to include Elite keys
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Domain/Match/MatchAggregateTelemetryTrait.php`
+  - Add to the return array:
+    ```php
+    'attack_rounds_played' => 0,
+    'attack_rounds_won' => 0,
+    'defense_rounds_played' => 0,
+    'defense_rounds_won' => 0,
+    'attack_win_rate' => 0.0,
+    'defense_win_rate' => 0.0,
+    ```
+
+- [Done] P15.5 - Update `MatchAggregateTelemetryTrait::buildCombatCounterTotals()` to sum Elite keys
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Domain/Match/MatchAggregateTelemetryTrait.php`
+  - After the existing `$totals['hits_laser'] += ...` line, add:
+    ```php
+    $totals['attack_rounds_played'] += isset($counterRow['attack_rounds_played']) ? (int) $counterRow['attack_rounds_played'] : 0;
+    $totals['attack_rounds_won'] += isset($counterRow['attack_rounds_won']) ? (int) $counterRow['attack_rounds_won'] : 0;
+    $totals['defense_rounds_played'] += isset($counterRow['defense_rounds_played']) ? (int) $counterRow['defense_rounds_played'] : 0;
+    $totals['defense_rounds_won'] += isset($counterRow['defense_rounds_won']) ? (int) $counterRow['defense_rounds_won'] : 0;
+    ```
+  - After the existing `$totals['laser_accuracy'] = ...` line, add:
+    ```php
+    $totals['attack_win_rate'] = ($totals['attack_rounds_played'] > 0 ? round($totals['attack_rounds_won'] / $totals['attack_rounds_played'], 4) : 0.0);
+    $totals['defense_win_rate'] = ($totals['defense_rounds_played'] > 0 ? round($totals['defense_rounds_won'] / $totals['defense_rounds_played'], 4) : 0.0);
+    ```
+
+- [Done] P15.6 - Update `MatchAggregateTelemetryTrait::buildTeamCounterDelta()` to sum Elite keys per team
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/src/Domain/Match/MatchAggregateTelemetryTrait.php`
+  - In the per-player loop (after `$teamsByKey[$teamKey]['totals']['hits_laser'] += ...`), add:
+    ```php
+    $teamsByKey[$teamKey]['totals']['attack_rounds_played'] += isset($counterRow['attack_rounds_played']) ? (int) $counterRow['attack_rounds_played'] : 0;
+    $teamsByKey[$teamKey]['totals']['attack_rounds_won'] += isset($counterRow['attack_rounds_won']) ? (int) $counterRow['attack_rounds_won'] : 0;
+    $teamsByKey[$teamKey]['totals']['defense_rounds_played'] += isset($counterRow['defense_rounds_played']) ? (int) $counterRow['defense_rounds_played'] : 0;
+    $teamsByKey[$teamKey]['totals']['defense_rounds_won'] += isset($counterRow['defense_rounds_won']) ? (int) $counterRow['defense_rounds_won'] : 0;
+    ```
+  - In the per-team post-processing loop (after computing `$teamRow['totals']['laser_accuracy']`), add:
+    ```php
+    $teamAttackPlayed = isset($teamRow['totals']['attack_rounds_played']) ? (int) $teamRow['totals']['attack_rounds_played'] : 0;
+    $teamAttackWon = isset($teamRow['totals']['attack_rounds_won']) ? (int) $teamRow['totals']['attack_rounds_won'] : 0;
+    $teamRow['totals']['attack_win_rate'] = ($teamAttackPlayed > 0 ? round($teamAttackWon / $teamAttackPlayed, 4) : 0.0);
+
+    $teamDefensePlayed = isset($teamRow['totals']['defense_rounds_played']) ? (int) $teamRow['totals']['defense_rounds_played'] : 0;
+    $teamDefenseWon = isset($teamRow['totals']['defense_rounds_won']) ? (int) $teamRow['totals']['defense_rounds_won'] : 0;
+    $teamRow['totals']['defense_win_rate'] = ($teamDefensePlayed > 0 ? round($teamDefenseWon / $teamDefensePlayed, 4) : 0.0);
+    ```
+
+- [Done] P15.7 - Run plugin quality checks
+  - Command: `bash /Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-plugin/scripts/check-quality.sh`
+  - All PHP syntax checks and tests must pass.
+
+### Phase 16 - API: Add Elite attack/defense win rate fields to all player counter interfaces (TypeScript)
+
+These fields are optional/nullable because:
+- Events from non-Elite modes will have these counters at 0 (or absent for older events).
+- Events from servers running plugin versions before this update will not have these fields at all.
+
+For consistency with existing nullable fields (`hits_rocket`, `hits_laser`), the Elite counter fields should be `number | null` on the API side.
+
+- [Done] P16.1 - Add Elite fields to `PlayerCountersDelta` interface
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.service.ts`
+  - Add after `laser_accuracy`:
+    ```typescript
+    attack_rounds_played: number | null;
+    attack_rounds_won: number | null;
+    attack_win_rate: number | null;
+    defense_rounds_played: number | null;
+    defense_rounds_won: number | null;
+    defense_win_rate: number | null;
+    ```
+
+- [Done] P16.2 - Add Elite fields to `PlayerCounters` interface
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.service.ts`
+  - Add the same 6 fields as in P16.1.
+
+- [Done] P16.3 - Update `RawLifecyclePayload` type to include Elite fields in `player_counters_delta`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.service.ts`
+  - Add optional fields to the `player_counters_delta` value type:
+    ```typescript
+    attack_rounds_played?: number;
+    attack_rounds_won?: number;
+    defense_rounds_played?: number;
+    defense_rounds_won?: number;
+    attack_win_rate?: number;
+    defense_win_rate?: number;
+    ```
+
+- [Done] P16.4 - Create private helper `computeEliteWinRate(played: number | null, won: number | null): number | null`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.service.ts`
+  - Returns `null` if `played` is `null`. Otherwise: `played > 0 ? Math.round((won / played) * 10000) / 10000 : 0`.
+  - Add as a private method on `StatsReadService` (next to `computeKdRatio` and `computeWeaponAccuracy`).
+
+- [Done] P16.5 - Update `extractMapCombatEntry()` to include Elite fields in `player_stats`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.service.ts`
+  - When building `playerStats[login]`, read `c.attack_rounds_played`, `c.attack_rounds_won`, `c.defense_rounds_played`, `c.defense_rounds_won` from the raw payload.
+  - If present (`!== undefined`), set them as numbers. If absent, set them as `null`.
+  - Compute `attack_win_rate` and `defense_win_rate` using the helper from P16.4.
+  - This automatically propagates to:
+    - `GET .../stats/combat/maps` (per-player entries)
+    - `GET .../stats/combat/maps/:mapUid` (per-player entries)
+    - `GET .../stats/combat/maps/:mapUid/players/:login` (counters)
+    - `GET .../stats/combat/series` (per-player entries)
+    - `GET .../stats/combat/players/:login/maps` (per-map counters via `entry.player_stats[playerLogin]`)
+
+- [Done] P16.6 - Update `getCombatPlayersCounters()` to include Elite fields
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.service.ts`
+  - When building `PlayerCounters` objects from combat event `player_counters`, extract the Elite fields.
+
+- [Done] P16.7 - Update `getPlayerCombatCounters()` to include Elite fields
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.service.ts`
+  - Same approach as P16.6, for the single-player detail endpoint.
+
+- [Done] P16.8 - Update Swagger descriptions on all affected controller routes
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.controller.ts`
+  - Update `@ApiResponse` descriptions to mention the 6 new fields on all routes that return player counters.
+
+- [Done] P16.9 - Run full test suite and fix any TypeScript compilation errors
+  - Command: `cd /Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server && npm run build && npm run test`
+  - Existing tests will likely fail where mock data does not include the new required fields. Fix by adding `null` values for the 6 new fields in test mock data.
+
+### Phase 17 - Unit Tests (Elite attack/defense win rate)
+
+- [Done] P17.1 - Add Elite fields to existing test mock helpers
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.service.spec.ts`
+  - Update `makeMapEndEvent` helper to optionally accept Elite counter overrides in player data.
+  - Update `makeCombatEvent` helper similarly.
+  - Update all existing test assertions that check for specific field counts to account for the new fields.
+
+- [Done] P17.2 - Add service tests for Elite fields in `extractMapCombatEntry`-based endpoints
+  - Test cases:
+    1. When event payload includes Elite counters (`attack_rounds_played`, etc.), they appear in response with correct values.
+    2. When event payload does NOT include Elite counters (old events / non-Elite mode), they appear as `null`.
+    3. `attack_win_rate` = `attack_rounds_won / attack_rounds_played` (rounded to 4dp).
+    4. `defense_win_rate` = `defense_rounds_won / defense_rounds_played` (rounded to 4dp).
+    5. Win rates are `null` when the base counters are `null`.
+    6. Win rates are `0` when `played` is `0` (but not null).
+
+- [Done] P17.3 - Add service tests for Elite fields in `getCombatPlayersCounters` and `getPlayerCombatCounters`
+  - Same pattern as P17.2, but for the combat event-based endpoints.
+
+- [Done] P17.4 - Add controller tests (verify passthrough)
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server/src/stats/stats-read.controller.spec.ts`
+  - Verify controller still passes through service responses unchanged for Elite-enriched endpoints.
+
+- [Done] P17.5 - Run full test suite
+  - Command: `cd /Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/pixel-control-server && npm run test`
+  - All tests must pass.
+
+### Phase 18 - API Contract Update (Elite attack/defense win rate)
+
+- [Done] P18.1 - Update `PlayerCountersDelta` / `PlayerCounters` documentation in `NEW_API_CONTRACT.md`
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/NEW_API_CONTRACT.md`
+  - Add the 6 new fields to all places where player counter fields are documented:
+    - `attack_rounds_played` (number | null): Attack rounds played in Elite mode. `null` if event predates this feature or is from a non-Elite server.
+    - `attack_rounds_won` (number | null): Attack rounds won (capture or defenders eliminated). `null` if unavailable.
+    - `attack_win_rate` (number | null): `attack_rounds_won / attack_rounds_played`. `null` when base counters are null.
+    - `defense_rounds_played` (number | null): Defense rounds played in Elite mode. `null` if unavailable.
+    - `defense_rounds_won` (number | null): Defense rounds won per custom criteria (Rule A: 1+ hit, 0 deaths; Rule B: 2+ rocket hits). `null` if unavailable.
+    - `defense_win_rate` (number | null): `defense_rounds_won / defense_rounds_played`. `null` when base counters are null.
+
+- [Done] P18.2 - Document the defense success criteria in `NEW_API_CONTRACT.md`
+  - Add a subsection explaining the defense win criteria for Elite mode:
+    - Rule A: Player landed at least 1 hit AND did not die during the round.
+    - Rule B: Player landed at least 2 rocket hits during the round (even if the player died).
+    - A defense round is "won" if Rule A OR Rule B is satisfied.
+  - Also document the attack win criteria: attacker captures pole (`victoryType = 2`) or eliminates all defenders (`victoryType = 4`).
+
+- [Done] P18.3 - Update response shape JSON examples
+  - File: `/Users/louislacoste/Documents/code/freelance/shootmania-esport/pixel-control/NEW_API_CONTRACT.md`
+  - Add the new fields to all JSON response examples that include player counters.
+
+### Phase 19 - Live QA Smoke Testing (Elite attack/defense win rate)
+
+- [Done] P19.1 - Ensure the dev stack is running
+  - Start PostgreSQL + server (same as Phase 5/12).
+
+- [Done] P19.2 - Seed test data simulating Elite mode events
+  - Register test server.
+  - Send lifecycle `map.end` events with `player_counters_delta` containing the Elite counter fields:
+    - Player A: `attack_rounds_played: 5, attack_rounds_won: 3, defense_rounds_played: 5, defense_rounds_won: 4`
+    - Player B: `attack_rounds_played: 5, attack_rounds_won: 2, defense_rounds_played: 5, defense_rounds_won: 3`
+  - Also send a lifecycle `map.end` event WITHOUT Elite fields (simulating old/non-Elite data) for backward compat testing.
+
+- [Done] P19.3 - Test Elite fields on all player counter endpoints
+  - `GET .../stats/combat/players` -- each player entry has Elite fields (or null for old data).
+  - `GET .../stats/combat/players/:login` -- `counters` includes all 6 Elite fields.
+  - `GET .../stats/combat/maps` -- each map's `player_stats` entries have Elite fields.
+  - `GET .../stats/combat/maps/:mapUid/players/:login` -- counters include Elite fields.
+  - `GET .../stats/combat/players/:login/maps` -- per-map counters include Elite fields.
+  - Verify events without Elite fields return `null` for all 6 fields.
+  - Verify computed win rates match expected values.
+  - **Result: 21/21 assertions pass** (qa-p2.6-elite-smoke.sh).
+
+- [Done] P19.4 - Verify all existing endpoints still work (no regressions)
+  - Run through all existing endpoints and verify responses are valid.
+  - Verify the existing smoke scripts still pass:
+    - `bash .../scripts/qa-p0-smoke.sh` — 43/43 passed
+    - `bash .../scripts/qa-p1-smoke.sh` — 35/35 passed
+    - `bash .../scripts/qa-p2.6-smoke.sh` — 29/29 passed
+
+- [Done] P19.5 - Clean up test data
+  - Delete test server.
+
 ## Evidence / Artifacts
 
 - Unit tests: `pixel-control-server/src/stats/stats-read.service.spec.ts`, `pixel-control-server/src/stats/stats-read.controller.spec.ts`
 - API contract: `NEW_API_CONTRACT.md`
-- Plugin files modified: `pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`, `pixel-control-plugin/src/Domain/Combat/CombatDomainTrait.php`, `pixel-control-plugin/src/Domain/Match/MatchAggregateTelemetryTrait.php`
+- Plugin files modified (Phases 1-12): `pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php`, `pixel-control-plugin/src/Domain/Combat/CombatDomainTrait.php`, `pixel-control-plugin/src/Domain/Match/MatchAggregateTelemetryTrait.php`
+- Plugin files modified (Phases 13-15): `pixel-control-plugin/src/Stats/PlayerCombatStatsStore.php` (Elite round tracking), `pixel-control-plugin/src/Domain/Combat/EliteRoundTrackingTrait.php` (new trait), `pixel-control-plugin/src/Domain/Core/CoreDomainTrait.php` (wiring), `pixel-control-plugin/src/Domain/Match/MatchAggregateTelemetryTrait.php` (aggregate keys), `pixel-control-plugin/src/PixelControlPlugin.php` (trait use)
 
 ## Success Criteria
 
@@ -667,6 +1329,23 @@ These fields are optional/nullable because events emitted before the plugin upda
 - All unit tests pass. All existing tests remain green.
 - `NEW_API_CONTRACT.md` fully documents all new fields.
 - Swagger descriptions updated on all affected routes.
+
+### Elite attack/defense win rate (Phases 13-19)
+- `PlayerCombatStatsStore` tracks per-round Elite state: attacker login, defender logins, per-round hits/rocket hits/deaths.
+- `openEliteRound()` increments `attack_rounds_played` / `defense_rounds_played` for participants.
+- `closeEliteRound()` evaluates outcomes:
+  - Attack win: `victoryType` is CAPTURE (2) or DEFENDERS_ELIMINATED (4).
+  - Defense success: Rule A (1+ hit, 0 deaths) OR Rule B (2+ rocket hits regardless of death).
+- `recordHit()` and `recordKill()` feed per-round tracking during active Elite rounds.
+- New `EliteRoundTrackingTrait` handles `OnEliteStartTurnStructure`/`OnEliteEndTurnStructure` parsing.
+- `processEliteRoundTracking()` is called BEFORE `queueCallbackEvent` in `handleModeCallback()` so counters are current in snapshots.
+- All aggregate methods (`buildCombatCounterDelta`, `buildCombatCounterTotals`, `buildTeamCounterDelta`, `buildZeroCounterRow`, `getCombatCounterKeys`) include the 4 raw + 2 computed Elite keys.
+- API exposes 6 nullable fields on all player counter interfaces: `attack_rounds_played`, `attack_rounds_won`, `attack_win_rate`, `defense_rounds_played`, `defense_rounds_won`, `defense_win_rate`.
+- These fields are `null` for events from servers not running the updated plugin or from non-Elite modes (backward compat).
+- All unit tests pass. All existing tests remain green.
+- `NEW_API_CONTRACT.md` documents all new fields plus the defense success criteria rules.
+- Swagger descriptions updated on all affected routes.
+- Live QA confirms correct behavior with both Elite-enriched and legacy events.
 
 ## Notes / outcomes
 

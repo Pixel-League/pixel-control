@@ -147,7 +147,7 @@ trait MatchAggregateTelemetryTrait {
 	private function buildCombatCounterDelta(array $baselineCounters, array $currentCounters) {
 		$deltaCounters = array();
 		$counterKeys = $this->getCombatCounterKeys();
-		$numericCounterKeys = array('kills', 'deaths', 'hits', 'shots', 'misses', 'rockets', 'lasers', 'hits_rocket', 'hits_laser');
+		$numericCounterKeys = array('kills', 'deaths', 'hits', 'shots', 'misses', 'rockets', 'lasers', 'hits_rocket', 'hits_laser', 'attack_rounds_played', 'attack_rounds_won', 'defense_rounds_played', 'defense_rounds_won');
 
 		$logins = array_values(array_unique(array_merge(array_keys($baselineCounters), array_keys($currentCounters))));
 		sort($logins);
@@ -174,6 +174,14 @@ trait MatchAggregateTelemetryTrait {
 			$deltaLasers = isset($deltaRow['lasers']) ? (int) $deltaRow['lasers'] : 0;
 			$deltaHitsLaser = isset($deltaRow['hits_laser']) ? (int) $deltaRow['hits_laser'] : 0;
 			$deltaRow['laser_accuracy'] = ($deltaLasers > 0 ? round($deltaHitsLaser / $deltaLasers, 4) : 0.0);
+
+			$deltaAttackPlayed = isset($deltaRow['attack_rounds_played']) ? (int) $deltaRow['attack_rounds_played'] : 0;
+			$deltaAttackWon = isset($deltaRow['attack_rounds_won']) ? (int) $deltaRow['attack_rounds_won'] : 0;
+			$deltaRow['attack_win_rate'] = ($deltaAttackPlayed > 0 ? round($deltaAttackWon / $deltaAttackPlayed, 4) : 0.0);
+
+			$deltaDefensePlayed = isset($deltaRow['defense_rounds_played']) ? (int) $deltaRow['defense_rounds_played'] : 0;
+			$deltaDefenseWon = isset($deltaRow['defense_rounds_won']) ? (int) $deltaRow['defense_rounds_won'] : 0;
+			$deltaRow['defense_win_rate'] = ($deltaDefensePlayed > 0 ? round($deltaDefenseWon / $deltaDefensePlayed, 4) : 0.0);
 
 			$hasNonZeroCounter = false;
 			foreach ($counterKeys as $counterKey) {
@@ -218,11 +226,17 @@ trait MatchAggregateTelemetryTrait {
 			$totals['lasers'] += isset($counterRow['lasers']) ? (int) $counterRow['lasers'] : 0;
 			$totals['hits_rocket'] += isset($counterRow['hits_rocket']) ? (int) $counterRow['hits_rocket'] : 0;
 			$totals['hits_laser'] += isset($counterRow['hits_laser']) ? (int) $counterRow['hits_laser'] : 0;
+			$totals['attack_rounds_played'] += isset($counterRow['attack_rounds_played']) ? (int) $counterRow['attack_rounds_played'] : 0;
+			$totals['attack_rounds_won'] += isset($counterRow['attack_rounds_won']) ? (int) $counterRow['attack_rounds_won'] : 0;
+			$totals['defense_rounds_played'] += isset($counterRow['defense_rounds_played']) ? (int) $counterRow['defense_rounds_played'] : 0;
+			$totals['defense_rounds_won'] += isset($counterRow['defense_rounds_won']) ? (int) $counterRow['defense_rounds_won'] : 0;
 		}
 
 		$totals['accuracy'] = ($totals['shots'] > 0 ? round($totals['hits'] / $totals['shots'], 4) : 0.0);
 		$totals['rocket_accuracy'] = ($totals['rockets'] > 0 ? round($totals['hits_rocket'] / $totals['rockets'], 4) : 0.0);
 		$totals['laser_accuracy'] = ($totals['lasers'] > 0 ? round($totals['hits_laser'] / $totals['lasers'], 4) : 0.0);
+		$totals['attack_win_rate'] = ($totals['attack_rounds_played'] > 0 ? round($totals['attack_rounds_won'] / $totals['attack_rounds_played'], 4) : 0.0);
+		$totals['defense_win_rate'] = ($totals['defense_rounds_played'] > 0 ? round($totals['defense_rounds_won'] / $totals['defense_rounds_played'], 4) : 0.0);
 
 		return $totals;
 	}
@@ -282,6 +296,10 @@ trait MatchAggregateTelemetryTrait {
 			$teamsByKey[$teamKey]['totals']['lasers'] += isset($counterRow['lasers']) ? (int) $counterRow['lasers'] : 0;
 			$teamsByKey[$teamKey]['totals']['hits_rocket'] += isset($counterRow['hits_rocket']) ? (int) $counterRow['hits_rocket'] : 0;
 			$teamsByKey[$teamKey]['totals']['hits_laser'] += isset($counterRow['hits_laser']) ? (int) $counterRow['hits_laser'] : 0;
+			$teamsByKey[$teamKey]['totals']['attack_rounds_played'] += isset($counterRow['attack_rounds_played']) ? (int) $counterRow['attack_rounds_played'] : 0;
+			$teamsByKey[$teamKey]['totals']['attack_rounds_won'] += isset($counterRow['attack_rounds_won']) ? (int) $counterRow['attack_rounds_won'] : 0;
+			$teamsByKey[$teamKey]['totals']['defense_rounds_played'] += isset($counterRow['defense_rounds_played']) ? (int) $counterRow['defense_rounds_played'] : 0;
+			$teamsByKey[$teamKey]['totals']['defense_rounds_won'] += isset($counterRow['defense_rounds_won']) ? (int) $counterRow['defense_rounds_won'] : 0;
 		}
 
 		foreach ($teamsByKey as &$teamRow) {
@@ -300,6 +318,14 @@ trait MatchAggregateTelemetryTrait {
 			$teamLasers = isset($teamRow['totals']['lasers']) ? (int) $teamRow['totals']['lasers'] : 0;
 			$teamHitsLaser = isset($teamRow['totals']['hits_laser']) ? (int) $teamRow['totals']['hits_laser'] : 0;
 			$teamRow['totals']['laser_accuracy'] = ($teamLasers > 0 ? round($teamHitsLaser / $teamLasers, 4) : 0.0);
+
+			$teamAttackPlayed = isset($teamRow['totals']['attack_rounds_played']) ? (int) $teamRow['totals']['attack_rounds_played'] : 0;
+			$teamAttackWon = isset($teamRow['totals']['attack_rounds_won']) ? (int) $teamRow['totals']['attack_rounds_won'] : 0;
+			$teamRow['totals']['attack_win_rate'] = ($teamAttackPlayed > 0 ? round($teamAttackWon / $teamAttackPlayed, 4) : 0.0);
+
+			$teamDefensePlayed = isset($teamRow['totals']['defense_rounds_played']) ? (int) $teamRow['totals']['defense_rounds_played'] : 0;
+			$teamDefenseWon = isset($teamRow['totals']['defense_rounds_won']) ? (int) $teamRow['totals']['defense_rounds_won'] : 0;
+			$teamRow['totals']['defense_win_rate'] = ($teamDefensePlayed > 0 ? round($teamDefenseWon / $teamDefensePlayed, 4) : 0.0);
 		}
 		unset($teamRow);
 
@@ -381,7 +407,7 @@ trait MatchAggregateTelemetryTrait {
 
 
 	private function getCombatCounterKeys() {
-		return array('kills', 'deaths', 'hits', 'shots', 'misses', 'rockets', 'lasers', 'hits_rocket', 'hits_laser', 'accuracy', 'rocket_accuracy', 'laser_accuracy');
+		return array('kills', 'deaths', 'hits', 'shots', 'misses', 'rockets', 'lasers', 'hits_rocket', 'hits_laser', 'attack_rounds_played', 'attack_rounds_won', 'defense_rounds_played', 'defense_rounds_won', 'accuracy', 'rocket_accuracy', 'laser_accuracy', 'attack_win_rate', 'defense_win_rate');
 	}
 
 
@@ -396,9 +422,15 @@ trait MatchAggregateTelemetryTrait {
 			'lasers' => 0,
 			'hits_rocket' => 0,
 			'hits_laser' => 0,
+			'attack_rounds_played' => 0,
+			'attack_rounds_won' => 0,
+			'defense_rounds_played' => 0,
+			'defense_rounds_won' => 0,
 			'accuracy' => 0.0,
 			'rocket_accuracy' => 0.0,
 			'laser_accuracy' => 0.0,
+			'attack_win_rate' => 0.0,
+			'defense_win_rate' => 0.0,
 		);
 	}
 

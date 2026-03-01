@@ -9,11 +9,35 @@ class PlayerCombatStatsStore {
 	/** @var array $playerCounters */
 	private $playerCounters = array();
 
+	/** @var bool $eliteRoundActive */
+	private $eliteRoundActive = false;
+
+	/** @var string|null $eliteRoundAttackerLogin */
+	private $eliteRoundAttackerLogin = null;
+
+	/** @var string[] $eliteRoundDefenderLogins */
+	private $eliteRoundDefenderLogins = array();
+
+	/** @var array $eliteRoundHits Per-player hit count during current round, keyed by login */
+	private $eliteRoundHits = array();
+
+	/** @var array $eliteRoundRocketHits Per-player rocket hit count during current round, keyed by login */
+	private $eliteRoundRocketHits = array();
+
+	/** @var array $eliteRoundDeaths Per-player death count during current round, keyed by login */
+	private $eliteRoundDeaths = array();
+
 	/**
 	 * Reset all tracked counters.
 	 */
 	public function reset() {
 		$this->playerCounters = array();
+		$this->eliteRoundActive = false;
+		$this->eliteRoundAttackerLogin = null;
+		$this->eliteRoundDefenderLogins = array();
+		$this->eliteRoundHits = array();
+		$this->eliteRoundRocketHits = array();
+		$this->eliteRoundDeaths = array();
 	}
 
 	/**
@@ -58,6 +82,8 @@ class PlayerCombatStatsStore {
 		if ($weaponId === self::WEAPON_ROCKET) {
 			$this->playerCounters[$normalizedLogin]['hits_rocket']++;
 		}
+
+		$this->trackEliteRoundHit($normalizedLogin, $weaponId);
 	}
 
 	/**
@@ -88,7 +114,93 @@ class PlayerCombatStatsStore {
 		if ($normalizedVictimLogin !== null) {
 			$this->ensurePlayer($normalizedVictimLogin);
 			$this->playerCounters[$normalizedVictimLogin]['deaths']++;
+			$this->trackEliteRoundDeath($normalizedVictimLogin);
 		}
+	}
+
+	/**
+	 * Open an Elite round tracking window.
+	 *
+	 * @param string $attackerLogin
+	 * @param string[] $defenderLogins
+	 */
+	public function openEliteRound($attackerLogin, array $defenderLogins) {
+		$this->eliteRoundActive = true;
+		$this->eliteRoundAttackerLogin = $this->normalizeLogin($attackerLogin);
+		$this->eliteRoundDefenderLogins = array();
+		foreach ($defenderLogins as $login) {
+			$normalized = $this->normalizeLogin($login);
+			if ($normalized !== null) {
+				$this->eliteRoundDefenderLogins[] = $normalized;
+			}
+		}
+		$this->eliteRoundHits = array();
+		$this->eliteRoundRocketHits = array();
+		$this->eliteRoundDeaths = array();
+
+		// Ensure all participants are tracked
+		if ($this->eliteRoundAttackerLogin !== null) {
+			$this->ensurePlayer($this->eliteRoundAttackerLogin);
+			$this->playerCounters[$this->eliteRoundAttackerLogin]['attack_rounds_played']++;
+		}
+		foreach ($this->eliteRoundDefenderLogins as $defenderLogin) {
+			$this->ensurePlayer($defenderLogin);
+			$this->playerCounters[$defenderLogin]['defense_rounds_played']++;
+		}
+	}
+
+	/**
+	 * Close the current Elite round and evaluate outcomes.
+	 *
+	 * @param int $victoryType VictoryTypes constant (1=TIME_LIMIT, 2=CAPTURE, 3=ATTACKER_ELIMINATED, 4=DEFENDERS_ELIMINATED)
+	 */
+	public function closeEliteRound($victoryType) {
+		if (!$this->eliteRoundActive) {
+			return;
+		}
+
+		$this->eliteRoundActive = false;
+		$victoryType = (int) $victoryType;
+
+		// Attack wins when: CAPTURE (2) or DEFENDERS_ELIMINATED (4)
+		$attackWon = ($victoryType === 2 || $victoryType === 4);
+
+		// Credit attacker win
+		if ($attackWon && $this->eliteRoundAttackerLogin !== null) {
+			$this->ensurePlayer($this->eliteRoundAttackerLogin);
+			$this->playerCounters[$this->eliteRoundAttackerLogin]['attack_rounds_won']++;
+		}
+
+		// Evaluate defense success per defender
+		foreach ($this->eliteRoundDefenderLogins as $defenderLogin) {
+			$this->ensurePlayer($defenderLogin);
+			$roundHits = isset($this->eliteRoundHits[$defenderLogin]) ? (int) $this->eliteRoundHits[$defenderLogin] : 0;
+			$roundRocketHits = isset($this->eliteRoundRocketHits[$defenderLogin]) ? (int) $this->eliteRoundRocketHits[$defenderLogin] : 0;
+			$roundDeaths = isset($this->eliteRoundDeaths[$defenderLogin]) ? (int) $this->eliteRoundDeaths[$defenderLogin] : 0;
+
+			// Rule A: 1+ hit AND 0 deaths
+			$ruleA = ($roundHits >= 1 && $roundDeaths === 0);
+			// Rule B: 2+ rocket hits (regardless of death)
+			$ruleB = ($roundRocketHits >= 2);
+
+			if ($ruleA || $ruleB) {
+				$this->playerCounters[$defenderLogin]['defense_rounds_won']++;
+			}
+		}
+
+		// Reset transient state
+		$this->eliteRoundAttackerLogin = null;
+		$this->eliteRoundDefenderLogins = array();
+		$this->eliteRoundHits = array();
+		$this->eliteRoundRocketHits = array();
+		$this->eliteRoundDeaths = array();
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isEliteRoundActive() {
+		return $this->eliteRoundActive;
 	}
 
 	/**
@@ -160,6 +272,10 @@ class PlayerCombatStatsStore {
 			'lasers' => 0,
 			'hits_rocket' => 0,
 			'hits_laser' => 0,
+			'attack_rounds_played' => 0,
+			'attack_rounds_won' => 0,
+			'defense_rounds_played' => 0,
+			'defense_rounds_won' => 0,
 		);
 	}
 
@@ -186,7 +302,55 @@ class PlayerCombatStatsStore {
 		$hitsLaser = isset($counters['hits_laser']) ? (int) $counters['hits_laser'] : 0;
 		$counters['laser_accuracy'] = ($lasers > 0) ? round($hitsLaser / $lasers, 4) : 0.0;
 
+		$attackRoundsPlayed = isset($counters['attack_rounds_played']) ? (int) $counters['attack_rounds_played'] : 0;
+		$attackRoundsWon = isset($counters['attack_rounds_won']) ? (int) $counters['attack_rounds_won'] : 0;
+		$counters['attack_win_rate'] = ($attackRoundsPlayed > 0) ? round($attackRoundsWon / $attackRoundsPlayed, 4) : 0.0;
+
+		$defenseRoundsPlayed = isset($counters['defense_rounds_played']) ? (int) $counters['defense_rounds_played'] : 0;
+		$defenseRoundsWon = isset($counters['defense_rounds_won']) ? (int) $counters['defense_rounds_won'] : 0;
+		$counters['defense_win_rate'] = ($defenseRoundsPlayed > 0) ? round($defenseRoundsWon / $defenseRoundsPlayed, 4) : 0.0;
+
 		return $counters;
+	}
+
+	/**
+	 * Track a hit during an active Elite round for per-round evaluation.
+	 *
+	 * @param string $login Already normalized login
+	 * @param int|null $weaponId
+	 */
+	private function trackEliteRoundHit($login, $weaponId = null) {
+		if (!$this->eliteRoundActive) {
+			return;
+		}
+
+		if (!isset($this->eliteRoundHits[$login])) {
+			$this->eliteRoundHits[$login] = 0;
+		}
+		$this->eliteRoundHits[$login]++;
+
+		if ($weaponId === self::WEAPON_ROCKET) {
+			if (!isset($this->eliteRoundRocketHits[$login])) {
+				$this->eliteRoundRocketHits[$login] = 0;
+			}
+			$this->eliteRoundRocketHits[$login]++;
+		}
+	}
+
+	/**
+	 * Track a death during an active Elite round for per-round evaluation.
+	 *
+	 * @param string $login Already normalized login
+	 */
+	private function trackEliteRoundDeath($login) {
+		if (!$this->eliteRoundActive) {
+			return;
+		}
+
+		if (!isset($this->eliteRoundDeaths[$login])) {
+			$this->eliteRoundDeaths[$login] = 0;
+		}
+		$this->eliteRoundDeaths[$login]++;
 	}
 
 	/**

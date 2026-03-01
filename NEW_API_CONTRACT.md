@@ -748,21 +748,37 @@ Data source: lifecycle events (category `lifecycle`) stored in the `Event` table
 
 **`PlayerCountersDelta` fields (applies to all endpoints returning player combat counters):**
 
-| Field            | Type           | Description |
-| ---------------- | -------------- | ----------- |
-| `kills`          | number         | Kill count for this scope |
-| `deaths`         | number         | Death count for this scope |
-| `hits`           | number         | Total hits (all weapons) |
-| `shots`          | number         | Total shots (all weapons) |
-| `misses`         | number         | Total misses |
-| `rockets`        | number         | Rocket shots fired |
-| `lasers`         | number         | Laser shots fired |
-| `accuracy`       | number         | `hits / shots`, rounded to 4 dp. 0 when shots=0 |
-| `kd_ratio`       | number         | `kills / deaths`, rounded to 4 dp. Returns `kills` when `deaths=0`; returns `0` when both are 0 |
-| `hits_rocket`    | number \| null | Rocket hits. `null` if event predates plugin v2 (hits_rocket tracking) |
-| `hits_laser`     | number \| null | Laser hits. `null` if event predates plugin v2 |
-| `rocket_accuracy`| number \| null | `hits_rocket / rockets`, rounded to 4 dp. `null` when `hits_rocket` is null |
-| `laser_accuracy` | number \| null | `hits_laser / lasers`, rounded to 4 dp. `null` when `hits_laser` is null |
+| Field                    | Type           | Description |
+| ------------------------ | -------------- | ----------- |
+| `kills`                  | number         | Kill count for this scope |
+| `deaths`                 | number         | Death count for this scope |
+| `hits`                   | number         | Total hits (all weapons) |
+| `shots`                  | number         | Total shots (all weapons) |
+| `misses`                 | number         | Total misses |
+| `rockets`                | number         | Rocket shots fired |
+| `lasers`                 | number         | Laser shots fired |
+| `accuracy`               | number         | `hits / shots`, rounded to 4 dp. 0 when shots=0 |
+| `kd_ratio`               | number         | `kills / deaths`, rounded to 4 dp. Returns `kills` when `deaths=0`; returns `0` when both are 0 |
+| `hits_rocket`            | number \| null | Rocket hits. `null` if event predates plugin v2 (hits_rocket tracking) |
+| `hits_laser`             | number \| null | Laser hits. `null` if event predates plugin v2 |
+| `rocket_accuracy`        | number \| null | `hits_rocket / rockets`, rounded to 4 dp. `null` when `hits_rocket` is null |
+| `laser_accuracy`         | number \| null | `hits_laser / lasers`, rounded to 4 dp. `null` when `hits_laser` is null |
+| `attack_rounds_played`   | number \| null | Attack rounds played in Elite mode. `null` if event predates this feature or is from a non-Elite server |
+| `attack_rounds_won`      | number \| null | Attack rounds won (capture or defenders eliminated). `null` if unavailable |
+| `attack_win_rate`        | number \| null | `attack_rounds_won / attack_rounds_played`, rounded to 4 dp. `null` when base counters are null; `0` when `attack_rounds_played=0` |
+| `defense_rounds_played`  | number \| null | Defense rounds played in Elite mode. `null` if unavailable |
+| `defense_rounds_won`     | number \| null | Defense rounds won per custom criteria (see defense win criteria below). `null` if unavailable |
+| `defense_win_rate`       | number \| null | `defense_rounds_won / defense_rounds_played`, rounded to 4 dp. `null` when base counters are null; `0` when `defense_rounds_played=0` |
+
+**Elite mode defense win criteria:**
+- **Rule A**: Defender landed at least 1 hit AND did not die during the round.
+- **Rule B**: Defender landed at least 2 rocket hits during the round (even if they died).
+- A defense round is counted as "won" if Rule A **OR** Rule B is satisfied.
+
+**Elite mode attack win criteria:**
+- Attacker captures the pole (`victoryType = 2`) → attack wins.
+- Attacker eliminates all defenders (`victoryType = 4`) → attack wins.
+- Time limit reached (`victoryType = 1`) or attacker eliminated (`victoryType = 3`) → defense wins.
 
 **`MapCombatStatsEntry` shape:**
 ```json
@@ -775,7 +791,9 @@ Data source: lifecycle events (category `lifecycle`) stored in the `Event` table
     "player1": {
       "kills": 5, "deaths": 2, "hits": 20, "shots": 40, "misses": 20, "rockets": 10, "lasers": 10,
       "accuracy": 0.5, "kd_ratio": 2.5,
-      "hits_rocket": 6, "hits_laser": 2, "rocket_accuracy": 0.6, "laser_accuracy": 0.6667
+      "hits_rocket": 6, "hits_laser": 2, "rocket_accuracy": 0.6, "laser_accuracy": 0.6667,
+      "attack_rounds_played": 5, "attack_rounds_won": 3, "attack_win_rate": 0.6,
+      "defense_rounds_played": 5, "defense_rounds_won": 4, "defense_win_rate": 0.8
     }
   },
   "team_stats": [...],
@@ -827,7 +845,9 @@ Data source: lifecycle events (category `lifecycle`) stored in the `Event` table
       "counters": {
         "kills": 5, "deaths": 2, "hits": 18, "shots": 25, "misses": 7, "rockets": 8, "lasers": 3,
         "accuracy": 0.72, "kd_ratio": 2.5,
-        "hits_rocket": 6, "hits_laser": 2, "rocket_accuracy": 0.75, "laser_accuracy": 0.6667
+        "hits_rocket": 6, "hits_laser": 2, "rocket_accuracy": 0.75, "laser_accuracy": 0.6667,
+        "attack_rounds_played": 5, "attack_rounds_won": 3, "attack_win_rate": 0.6,
+        "defense_rounds_played": 5, "defense_rounds_won": 4, "defense_win_rate": 0.8
       },
       "win_context": { "winner_team_id": 0 },
       "won": true

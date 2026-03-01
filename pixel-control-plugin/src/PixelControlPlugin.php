@@ -18,6 +18,7 @@ use PixelControl\Queue\EventQueueInterface;
 use PixelControl\Retry\RetryPolicyInterface;
 use PixelControl\Stats\PlayerCombatStatsStore;
 use PixelControl\Domain\Combat\CombatDomainTrait;
+use PixelControl\Domain\Combat\EliteRoundTrackingTrait;
 use PixelControl\Domain\Connectivity\ConnectivityDomainTrait;
 use PixelControl\Domain\Core\CoreDomainTrait;
 use PixelControl\Domain\Lifecycle\LifecycleDomainTrait;
@@ -43,6 +44,7 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	use PlayerDomainTrait;
 	use MatchDomainTrait;
 	use CombatDomainTrait;
+	use EliteRoundTrackingTrait;
 	use PipelineDomainTrait;
 	use SeriesControlDomainTrait;
 	use TeamControlDomainTrait;

@@ -165,6 +165,7 @@ trait CoreDomainTrait {
 	}
 
 	public function handleModeCallback(...$callbackArguments) {
+		$this->processEliteRoundTracking($callbackArguments);
 		$this->queueCallbackEvent('mode', $callbackArguments);
 		$this->queueLifecycleProjectionFromModeCallback($callbackArguments);
 	}

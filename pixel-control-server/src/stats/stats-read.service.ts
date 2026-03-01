@@ -22,6 +22,12 @@ export interface PlayerCountersDelta {
   hits_laser: number | null;
   rocket_accuracy: number | null;
   laser_accuracy: number | null;
+  attack_rounds_played: number | null;
+  attack_rounds_won: number | null;
+  attack_win_rate: number | null;
+  defense_rounds_played: number | null;
+  defense_rounds_won: number | null;
+  defense_win_rate: number | null;
 }
 
 export interface MapCombatStatsEntry {
@@ -89,6 +95,12 @@ export interface PlayerCounters {
   hits_laser: number | null;
   rocket_accuracy: number | null;
   laser_accuracy: number | null;
+  attack_rounds_played: number | null;
+  attack_rounds_won: number | null;
+  attack_win_rate: number | null;
+  defense_rounds_played: number | null;
+  defense_rounds_won: number | null;
+  defense_win_rate: number | null;
 }
 
 export interface CombatSummaryResponse {
@@ -180,6 +192,12 @@ interface RawLifecyclePayload {
       accuracy?: number;
       hits_rocket?: number;
       hits_laser?: number;
+      attack_rounds_played?: number;
+      attack_rounds_won?: number;
+      defense_rounds_played?: number;
+      defense_rounds_won?: number;
+      attack_win_rate?: number;
+      defense_win_rate?: number;
     }>;
     team_counters_delta?: Array<{
       team_id?: number | null;
@@ -220,6 +238,12 @@ interface RawCombatPayload {
     accuracy?: number;
     hits_rocket?: number;
     hits_laser?: number;
+    attack_rounds_played?: number;
+    attack_rounds_won?: number;
+    defense_rounds_played?: number;
+    defense_rounds_won?: number;
+    attack_win_rate?: number;
+    defense_win_rate?: number;
   }>;
   scores_section?: string;
   scores_snapshot?: Record<string, unknown>;
@@ -247,6 +271,11 @@ export class StatsReadService {
   private computeWeaponAccuracy(hits: number | null, shots: number): number | null {
     if (hits === null) return null;
     return shots > 0 ? Math.round((hits / shots) * 10000) / 10000 : 0;
+  }
+
+  private computeEliteWinRate(played: number | null, won: number | null): number | null {
+    if (played === null) return null;
+    return played > 0 ? Math.round(((won ?? 0) / played) * 10000) / 10000 : 0;
   }
 
   private determinePlayerWon(
@@ -394,6 +423,10 @@ export class StatsReadService {
         const shots = c.shots ?? 0;
         const hitsRocket = c.hits_rocket !== undefined ? c.hits_rocket : null;
         const hitsLaser = c.hits_laser !== undefined ? c.hits_laser : null;
+        const attackRoundsPlayed = c.attack_rounds_played !== undefined ? c.attack_rounds_played : null;
+        const attackRoundsWon = c.attack_rounds_won !== undefined ? c.attack_rounds_won : null;
+        const defenseRoundsPlayed = c.defense_rounds_played !== undefined ? c.defense_rounds_played : null;
+        const defenseRoundsWon = c.defense_rounds_won !== undefined ? c.defense_rounds_won : null;
         return {
           login,
           kills,
@@ -409,6 +442,12 @@ export class StatsReadService {
           hits_laser: hitsLaser,
           rocket_accuracy: this.computeWeaponAccuracy(hitsRocket, c.rockets ?? 0),
           laser_accuracy: this.computeWeaponAccuracy(hitsLaser, c.lasers ?? 0),
+          attack_rounds_played: attackRoundsPlayed,
+          attack_rounds_won: attackRoundsWon,
+          attack_win_rate: this.computeEliteWinRate(attackRoundsPlayed, attackRoundsWon),
+          defense_rounds_played: defenseRoundsPlayed,
+          defense_rounds_won: defenseRoundsWon,
+          defense_win_rate: this.computeEliteWinRate(defenseRoundsPlayed, defenseRoundsWon),
         };
       },
     );
@@ -447,6 +486,10 @@ export class StatsReadService {
     const shots = c.shots ?? 0;
     const hitsRocket = c.hits_rocket !== undefined ? c.hits_rocket : null;
     const hitsLaser = c.hits_laser !== undefined ? c.hits_laser : null;
+    const attackRoundsPlayed = c.attack_rounds_played !== undefined ? c.attack_rounds_played : null;
+    const attackRoundsWon = c.attack_rounds_won !== undefined ? c.attack_rounds_won : null;
+    const defenseRoundsPlayed = c.defense_rounds_played !== undefined ? c.defense_rounds_played : null;
+    const defenseRoundsWon = c.defense_rounds_won !== undefined ? c.defense_rounds_won : null;
 
     return {
       login: playerLogin,
@@ -464,6 +507,12 @@ export class StatsReadService {
         hits_laser: hitsLaser,
         rocket_accuracy: this.computeWeaponAccuracy(hitsRocket, c.rockets ?? 0),
         laser_accuracy: this.computeWeaponAccuracy(hitsLaser, c.lasers ?? 0),
+        attack_rounds_played: attackRoundsPlayed,
+        attack_rounds_won: attackRoundsWon,
+        attack_win_rate: this.computeEliteWinRate(attackRoundsPlayed, attackRoundsWon),
+        defense_rounds_played: defenseRoundsPlayed,
+        defense_rounds_won: defenseRoundsWon,
+        defense_win_rate: this.computeEliteWinRate(defenseRoundsPlayed, defenseRoundsWon),
       },
       recent_events_count: events.length,
       last_updated: new Date(Number(matchingEvent.sourceTime)).toISOString(),
@@ -536,6 +585,10 @@ export class StatsReadService {
       const shots = c.shots ?? 0;
       const hitsRocket = c.hits_rocket !== undefined ? c.hits_rocket : null;
       const hitsLaser = c.hits_laser !== undefined ? c.hits_laser : null;
+      const attackRoundsPlayed = c.attack_rounds_played !== undefined ? c.attack_rounds_played : null;
+      const attackRoundsWon = c.attack_rounds_won !== undefined ? c.attack_rounds_won : null;
+      const defenseRoundsPlayed = c.defense_rounds_played !== undefined ? c.defense_rounds_played : null;
+      const defenseRoundsWon = c.defense_rounds_won !== undefined ? c.defense_rounds_won : null;
       playerStats[login] = {
         kills,
         deaths,
@@ -550,6 +603,12 @@ export class StatsReadService {
         hits_laser: hitsLaser,
         rocket_accuracy: this.computeWeaponAccuracy(hitsRocket, c.rockets ?? 0),
         laser_accuracy: this.computeWeaponAccuracy(hitsLaser, c.lasers ?? 0),
+        attack_rounds_played: attackRoundsPlayed,
+        attack_rounds_won: attackRoundsWon,
+        attack_win_rate: this.computeEliteWinRate(attackRoundsPlayed, attackRoundsWon),
+        defense_rounds_played: defenseRoundsPlayed,
+        defense_rounds_won: defenseRoundsWon,
+        defense_win_rate: this.computeEliteWinRate(defenseRoundsPlayed, defenseRoundsWon),
       };
     }
 

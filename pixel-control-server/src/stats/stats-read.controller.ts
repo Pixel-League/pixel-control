@@ -67,6 +67,8 @@ export class StatsReadController {
       'rockets, lasers, accuracy, kd_ratio). Also includes weapon-specific hit fields: ' +
       'hits_rocket and hits_laser (null for events predating plugin v2), and derived accuracies: ' +
       'rocket_accuracy and laser_accuracy (null when hits_rocket/hits_laser are null). ' +
+      'Elite mode fields: attack_rounds_played, attack_rounds_won, attack_win_rate, ' +
+      'defense_rounds_played, defense_rounds_won, defense_win_rate (null for non-Elite or old events). ' +
       'Supports pagination and optional time-range filtering.',
   })
   @ApiParam({
@@ -82,7 +84,9 @@ export class StatsReadController {
     status: 200,
     description:
       'Per-player counters returned. Fields: data (array of { login, kills, deaths, hits, shots, misses, rockets, lasers, accuracy, ' +
-      'kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy }), pagination { total, limit, offset }.',
+      'kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy, ' +
+      'attack_rounds_played, attack_rounds_won, attack_win_rate, defense_rounds_played, defense_rounds_won, defense_win_rate }), ' +
+      'pagination { total, limit, offset }.',
   })
   @ApiResponse({ status: 404, description: 'Server not found.' })
   @Get(':serverLogin/stats/combat/players')
@@ -107,9 +111,11 @@ export class StatsReadController {
       'Returns a per-map combat history for a single player, ordered most-recent first. ' +
       'Each map entry is extracted from a lifecycle map.end event that carries aggregate_stats with scope="map". ' +
       'Includes per-map counters (kills, deaths, hits, shots, accuracy, kd_ratio, hits_rocket, hits_laser, ' +
-      'rocket_accuracy, laser_accuracy), map metadata (uid, name, played_at, duration_seconds), win_context, ' +
-      'and a won boolean (null when team assignment data is unavailable). ' +
+      'rocket_accuracy, laser_accuracy, attack_rounds_played, attack_rounds_won, attack_win_rate, ' +
+      'defense_rounds_played, defense_rounds_won, defense_win_rate), map metadata (uid, name, played_at, duration_seconds), ' +
+      'win_context, and a won boolean (null when team assignment data is unavailable). ' +
       'Top-level response includes maps_played, maps_won, and win_rate computed across all maps (before pagination). ' +
+      'Elite mode fields are null for non-Elite or pre-plugin-update events. ' +
       'Returns empty maps: [] (not 404) when the player has no map history. ' +
       'Supports pagination (default limit 10) and ISO8601 time-range filtering.',
   })
@@ -134,7 +140,9 @@ export class StatsReadController {
       'maps (array of { map_uid, map_name, played_at, duration_seconds, counters: PlayerCountersDelta, win_context, won }), ' +
       'pagination { total, limit, offset }. ' +
       'PlayerCountersDelta includes kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy ' +
-      '(rocket/laser fields are null for events predating plugin v2).',
+      '(rocket/laser fields are null for events predating plugin v2), ' +
+      'attack_rounds_played, attack_rounds_won, attack_win_rate, defense_rounds_played, defense_rounds_won, defense_win_rate ' +
+      '(Elite fields are null for non-Elite or pre-plugin-update events).',
   })
   @ApiResponse({ status: 404, description: 'Server not found.' })
   @Get(':serverLogin/stats/combat/players/:login/maps')
@@ -159,7 +167,9 @@ export class StatsReadController {
       'Returns combat counters for a specific player login, from the most recent combat event ' +
       'containing that player\'s data. Also includes the total count of combat events for context ' +
       'and the timestamp of the last update. Counters include kd_ratio, hits_rocket, hits_laser, ' +
-      'rocket_accuracy, and laser_accuracy (null for events predating plugin v2).',
+      'rocket_accuracy, and laser_accuracy (null for events predating plugin v2). ' +
+      'Elite mode fields: attack_rounds_played, attack_rounds_won, attack_win_rate, ' +
+      'defense_rounds_played, defense_rounds_won, defense_win_rate (null for non-Elite or old events).',
   })
   @ApiParam({
     name: 'serverLogin',
@@ -175,7 +185,8 @@ export class StatsReadController {
     status: 200,
     description:
       'Player combat counters returned. Fields: login, counters { kills, deaths, hits, shots, misses, rockets, lasers, accuracy, ' +
-      'kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy }, ' +
+      'kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy, ' +
+      'attack_rounds_played, attack_rounds_won, attack_win_rate, defense_rounds_played, defense_rounds_won, defense_win_rate }, ' +
       'recent_events_count, last_updated (ISO8601).',
   })
   @ApiResponse({ status: 404, description: 'Server not found or no combat data for this player.' })
@@ -204,8 +215,10 @@ export class StatsReadController {
       'Returns combat statistics broken down by completed map, ordered most-recent first. ' +
       'Each entry is extracted from a lifecycle map.end event that carries aggregate_stats with scope="map". ' +
       'Includes per-player counters (kills, deaths, hits, shots, accuracy, kd_ratio, hits_rocket, hits_laser, ' +
-      'rocket_accuracy, laser_accuracy), team stats, totals, win context, and map metadata (uid, name). ' +
+      'rocket_accuracy, laser_accuracy, attack_rounds_played, attack_rounds_won, attack_win_rate, ' +
+      'defense_rounds_played, defense_rounds_won, defense_win_rate), team stats, totals, win context, and map metadata (uid, name). ' +
       'hits_rocket/hits_laser/rocket_accuracy/laser_accuracy are null for events predating plugin v2. ' +
+      'Elite mode fields are null for non-Elite or pre-plugin-update events. ' +
       'Supports pagination and ISO8601 time-range filtering.',
   })
   @ApiParam({
@@ -245,7 +258,9 @@ export class StatsReadController {
       'Data is sourced from the most recent lifecycle map.end event whose map_rotation.current_map.uid ' +
       'matches the requested UID. Returns 404 if no map.end event has been stored for this UID. ' +
       'Per-player entries include kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy ' +
-      '(null for events predating plugin v2).',
+      '(null for events predating plugin v2), and Elite mode fields: attack_rounds_played, attack_rounds_won, ' +
+      'attack_win_rate, defense_rounds_played, defense_rounds_won, defense_win_rate ' +
+      '(null for non-Elite or pre-plugin-update events).',
   })
   @ApiParam({
     name: 'serverLogin',
@@ -286,7 +301,9 @@ export class StatsReadController {
       'Data is extracted from the player_counters_delta of the most recent lifecycle map.end event ' +
       'for that map. Returns 404 if the map or player is not found. ' +
       'Counters include kd_ratio, hits_rocket, hits_laser, rocket_accuracy, laser_accuracy ' +
-      '(null for events predating plugin v2).',
+      '(null for events predating plugin v2), and Elite mode fields: attack_rounds_played, attack_rounds_won, ' +
+      'attack_win_rate, defense_rounds_played, defense_rounds_won, defense_win_rate ' +
+      '(null for non-Elite or pre-plugin-update events).',
   })
   @ApiParam({
     name: 'serverLogin',
@@ -308,7 +325,8 @@ export class StatsReadController {
     description:
       'Player map stats returned. Fields: server_login, map_uid, map_name, player_login, ' +
       'counters { kills, deaths, hits, shots, misses, rockets, lasers, accuracy, kd_ratio, ' +
-      'hits_rocket, hits_laser, rocket_accuracy, laser_accuracy }, played_at.',
+      'hits_rocket, hits_laser, rocket_accuracy, laser_accuracy, attack_rounds_played, attack_rounds_won, ' +
+      'attack_win_rate, defense_rounds_played, defense_rounds_won, defense_win_rate }, played_at.',
   })
   @ApiResponse({ status: 404, description: 'Server, map, or player not found.' })
   @Get(':serverLogin/stats/combat/maps/:mapUid/players/:login')
@@ -336,7 +354,9 @@ export class StatsReadController {
       'aggregated series_totals (sum of all map totals), and the series win context. ' +
       'Open series (match.begin without a matching match.end) are excluded. ' +
       'Per-player entries within each map include kd_ratio, hits_rocket, hits_laser, rocket_accuracy, ' +
-      'laser_accuracy (null for events predating plugin v2). ' +
+      'laser_accuracy (null for events predating plugin v2), and Elite mode fields: attack_rounds_played, ' +
+      'attack_rounds_won, attack_win_rate, defense_rounds_played, defense_rounds_won, defense_win_rate ' +
+      '(null for non-Elite or pre-plugin-update events). ' +
       'Results are ordered most-recent first. Supports pagination and ISO8601 time-range filtering.',
   })
   @ApiParam({

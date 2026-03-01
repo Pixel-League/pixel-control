@@ -75,6 +75,9 @@ const makeCombatEvent = (overrides: {
     kills?: number; deaths?: number; hits?: number; shots?: number;
     misses?: number; rockets?: number; lasers?: number;
     hits_rocket?: number; hits_laser?: number;
+    attack_rounds_played?: number; attack_rounds_won?: number;
+    defense_rounds_played?: number; defense_rounds_won?: number;
+    attack_win_rate?: number; defense_win_rate?: number;
   }>;
   scoresSection?: string;
   scoresSnapshot?: Record<string, unknown>;
@@ -384,6 +387,9 @@ describe('StatsReadService', () => {
       kills?: number; deaths?: number; hits?: number; shots?: number;
       misses?: number; rockets?: number; lasers?: number; accuracy?: number;
       hits_rocket?: number; hits_laser?: number;
+      attack_rounds_played?: number; attack_rounds_won?: number;
+      defense_rounds_played?: number; defense_rounds_won?: number;
+      attack_win_rate?: number; defense_win_rate?: number;
     }> = {},
     totals: Record<string, number> = {},
     winContext: Record<string, unknown> = {},
@@ -949,6 +955,180 @@ describe('StatsReadService', () => {
       expect(result.maps_played).toBe(0);
       expect(result.maps_won).toBe(0);
       expect(result.win_rate).toBe(0);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Elite attack/defense win rate tests (Phase 17)
+  // ---------------------------------------------------------------------------
+
+  describe('Elite fields: extractMapCombatEntry-based endpoints', () => {
+    beforeEach(() => { lifecycleSeq = 0; });
+
+    it('returns Elite counter fields from player_counters_delta when present', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-e1', 'Elite Map 1', BigInt(1_000_000), {
+          player1: {
+            kills: 3, deaths: 1,
+            attack_rounds_played: 5, attack_rounds_won: 3,
+            defense_rounds_played: 5, defense_rounds_won: 4,
+          },
+        }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      const p1 = result.maps[0].player_stats['player1'];
+      expect(p1.attack_rounds_played).toBe(5);
+      expect(p1.attack_rounds_won).toBe(3);
+      expect(p1.attack_win_rate).toBeCloseTo(0.6);
+      expect(p1.defense_rounds_played).toBe(5);
+      expect(p1.defense_rounds_won).toBe(4);
+      expect(p1.defense_win_rate).toBeCloseTo(0.8);
+    });
+
+    it('returns null for Elite fields when absent from event (old/non-Elite events)', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-e2', 'Old Map', BigInt(1_000_000), {
+          player1: { kills: 2, deaths: 1 },
+        }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      const p1 = result.maps[0].player_stats['player1'];
+      expect(p1.attack_rounds_played).toBeNull();
+      expect(p1.attack_rounds_won).toBeNull();
+      expect(p1.attack_win_rate).toBeNull();
+      expect(p1.defense_rounds_played).toBeNull();
+      expect(p1.defense_rounds_won).toBeNull();
+      expect(p1.defense_win_rate).toBeNull();
+    });
+
+    it('computes attack_win_rate=0 when attack_rounds_played=0 (but not null)', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-e3', 'Zero Elite Map', BigInt(1_000_000), {
+          player1: {
+            kills: 1,
+            attack_rounds_played: 0, attack_rounds_won: 0,
+            defense_rounds_played: 0, defense_rounds_won: 0,
+          },
+        }),
+      ]);
+
+      const result = await service.getMapCombatStatsList('test-server', 50, 0);
+
+      const p1 = result.maps[0].player_stats['player1'];
+      expect(p1.attack_win_rate).toBe(0);
+      expect(p1.defense_win_rate).toBe(0);
+    });
+
+    it('propagates Elite fields to getPlayerCombatMapHistory counters', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeMapEndEvent('uid-e4', 'Elite History', BigInt(1_000_000), {
+          player1: {
+            kills: 2, deaths: 0,
+            attack_rounds_played: 4, attack_rounds_won: 2,
+            defense_rounds_played: 4, defense_rounds_won: 3,
+          },
+        }),
+      ]);
+
+      const result = await service.getPlayerCombatMapHistory('test-server', 'player1', 10, 0);
+
+      const counters = result.maps[0].counters;
+      expect(counters.attack_rounds_played).toBe(4);
+      expect(counters.attack_rounds_won).toBe(2);
+      expect(counters.attack_win_rate).toBeCloseTo(0.5);
+      expect(counters.defense_rounds_played).toBe(4);
+      expect(counters.defense_rounds_won).toBe(3);
+      expect(counters.defense_win_rate).toBeCloseTo(0.75);
+    });
+  });
+
+  describe('Elite fields: getCombatPlayersCounters and getPlayerCombatCounters', () => {
+    it('returns null for Elite fields when not present in combat event', async () => {
+      prisma.event.findFirst.mockResolvedValue(makeCombatEvent({}));
+
+      const result = await service.getCombatPlayersCounters('test-server', 50, 0);
+
+      const p1 = result.data.find((p) => p.login === 'player1');
+      expect(p1!.attack_rounds_played).toBeNull();
+      expect(p1!.attack_rounds_won).toBeNull();
+      expect(p1!.attack_win_rate).toBeNull();
+      expect(p1!.defense_rounds_played).toBeNull();
+      expect(p1!.defense_rounds_won).toBeNull();
+      expect(p1!.defense_win_rate).toBeNull();
+    });
+
+    it('returns Elite fields when present in combat event', async () => {
+      prisma.event.findFirst.mockResolvedValue(
+        makeCombatEvent({
+          playerCounters: {
+            player1: {
+              kills: 5, deaths: 2,
+              attack_rounds_played: 6, attack_rounds_won: 4,
+              defense_rounds_played: 6, defense_rounds_won: 5,
+            },
+          },
+        }),
+      );
+
+      const result = await service.getCombatPlayersCounters('test-server', 50, 0);
+
+      const p1 = result.data[0];
+      expect(p1.attack_rounds_played).toBe(6);
+      expect(p1.attack_rounds_won).toBe(4);
+      expect(p1.attack_win_rate).toBeCloseTo(0.6667);
+      expect(p1.defense_rounds_played).toBe(6);
+      expect(p1.defense_rounds_won).toBe(5);
+      expect(p1.defense_win_rate).toBeCloseTo(0.8333);
+    });
+
+    it('returns null for Elite fields in getPlayerCombatCounters when not in event', async () => {
+      prisma.event.findMany.mockResolvedValue([makeCombatEvent({})]);
+
+      const result = await service.getPlayerCombatCounters('test-server', 'player1');
+
+      expect(result.counters.attack_rounds_played).toBeNull();
+      expect(result.counters.attack_rounds_won).toBeNull();
+      expect(result.counters.attack_win_rate).toBeNull();
+      expect(result.counters.defense_rounds_played).toBeNull();
+      expect(result.counters.defense_rounds_won).toBeNull();
+      expect(result.counters.defense_win_rate).toBeNull();
+    });
+
+    it('returns Elite fields in getPlayerCombatCounters when present', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeCombatEvent({
+          playerCounters: {
+            player1: {
+              kills: 3, deaths: 1,
+              attack_rounds_played: 5, attack_rounds_won: 3,
+              defense_rounds_played: 5, defense_rounds_won: 4,
+            },
+          },
+        }),
+      ]);
+
+      const result = await service.getPlayerCombatCounters('test-server', 'player1');
+
+      expect(result.counters.attack_rounds_played).toBe(5);
+      expect(result.counters.attack_rounds_won).toBe(3);
+      expect(result.counters.attack_win_rate).toBeCloseTo(0.6);
+      expect(result.counters.defense_rounds_played).toBe(5);
+      expect(result.counters.defense_rounds_won).toBe(4);
+      expect(result.counters.defense_win_rate).toBeCloseTo(0.8);
+    });
+
+    it('returns defense_win_rate=null when defense_rounds_played is null (old event)', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        makeCombatEvent({ playerCounters: { player1: { kills: 1 } } }),
+      ]);
+
+      const result = await service.getPlayerCombatCounters('test-server', 'player1');
+
+      expect(result.counters.defense_win_rate).toBeNull();
     });
   });
 });
