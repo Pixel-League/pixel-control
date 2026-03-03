@@ -2,13 +2,13 @@
 
 - [ ] Faire le serveur SM aussi compatible avec les modes :
   - [x] Elite
-  - [x] Joust
-  - [x] Battle
+  - [ ] Joust
+  - [ ] Battle
   - [ ] Siege
   - [ ] DuelElite
   - [ ] SpeedBall
 
-- [x] Ajouter une UI pour faire le veto au lieu d'un simple veto dans le chat
+- [ ] Ajouter une UI pour faire le veto au lieu d'un simple veto dans le chat, dans le jeu (pas dans pixel-control-ui)
 
 - [ ] Faire un audit de comment les informations seront transmisent entre "Pixel Plugin <-> Pixel Server"
 

@@ -169,12 +169,12 @@ Aliases: `map.next`, `map.skip_current` → `map.skip`; `map.res` → `map.resta
 
 | Method   | Endpoint                                      | Body                  | Description         | Dev Status | Priority |
 | -------- | --------------------------------------------- | --------------------- | ------------------- | ---------- | -------- |
-| `POST`   | `/v1/servers/:serverLogin/maps/skip`          | —                     | Skip to next map    | Todo 🛑    | P3.1     |
-| `POST`   | `/v1/servers/:serverLogin/maps/restart`       | —                     | Restart current map | Todo 🛑    | P3.2     |
-| `POST`   | `/v1/servers/:serverLogin/maps/jump`          | `{ map_uid }`         | Jump to specific map | Todo 🛑    | P3.3     |
-| `POST`   | `/v1/servers/:serverLogin/maps/queue`         | `{ map_uid }`         | Queue map for next   | Todo 🛑    | P3.4     |
-| `POST`   | `/v1/servers/:serverLogin/maps`               | `{ mx_id }`           | Add map from MX     | Todo 🛑    | P3.5     |
-| `DELETE`  | `/v1/servers/:serverLogin/maps/:mapUid`      | —                     | Remove map          | Todo 🛑    | P3.6     |
+| `POST`   | `/v1/servers/:serverLogin/maps/skip`          | —                     | Skip to next map    | Done ✅    | P3.1     |
+| `POST`   | `/v1/servers/:serverLogin/maps/restart`       | —                     | Restart current map | Done ✅    | P3.2     |
+| `POST`   | `/v1/servers/:serverLogin/maps/jump`          | `{ map_uid }`         | Jump to specific map | Done ✅    | P3.3     |
+| `POST`   | `/v1/servers/:serverLogin/maps/queue`         | `{ map_uid }`         | Queue map for next   | Done ✅    | P3.4     |
+| `POST`   | `/v1/servers/:serverLogin/maps`               | `{ mx_id }`           | Add map from MX     | Done ✅    | P3.5     |
+| `DELETE`  | `/v1/servers/:serverLogin/maps/:mapUid`      | —                     | Remove map          | Done ✅    | P3.6     |
 | `GET`    | `/v1/servers/:serverLogin/maps`               | —                     | List map pool (from plugin telemetry) | Done ✅    | P2.11    |
 
 #### Warmup & Pause
@@ -194,10 +194,10 @@ Aliases: `warmup.stop` → `warmup.end`; `pause.resume` → `pause.end`
 
 | Method | Endpoint                                          | Body              | Description            | Dev Status | Priority |
 | ------ | ------------------------------------------------- | ----------------- | ---------------------- | ---------- | -------- |
-| `POST` | `/v1/servers/:serverLogin/warmup/extend`          | `{ seconds }`     | Extend warmup          | Todo 🛑    | P3.7     |
-| `POST` | `/v1/servers/:serverLogin/warmup/end`             | —                 | End warmup             | Todo 🛑    | P3.8     |
-| `POST` | `/v1/servers/:serverLogin/pause/start`            | —                 | Pause match            | Todo 🛑    | P3.9     |
-| `POST` | `/v1/servers/:serverLogin/pause/end`              | —                 | Resume from pause      | Todo 🛑    | P3.10    |
+| `POST` | `/v1/servers/:serverLogin/warmup/extend`          | `{ seconds }`     | Extend warmup          | Done ✅    | P3.7     |
+| `POST` | `/v1/servers/:serverLogin/warmup/end`             | —                 | End warmup             | Done ✅    | P3.8     |
+| `POST` | `/v1/servers/:serverLogin/pause/start`            | —                 | Pause match            | Done ✅    | P3.9     |
+| `POST` | `/v1/servers/:serverLogin/pause/end`              | —                 | Resume from pause      | Done ✅    | P3.10    |
 
 #### Vote Management
 
@@ -339,12 +339,12 @@ Aliases: `bo.set` → `match.bo.set`; `bo.get`, `match.bo` → `match.bo.get`; `
 
 | Method | Endpoint                                                | Body                            | Description           | Dev Status | Priority |
 | ------ | ------------------------------------------------------- | ------------------------------- | --------------------- | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/match/best-of`                | —                               | Get best-of           | Todo 🛑    | P3.12    |
-| `PUT`  | `/v1/servers/:serverLogin/match/best-of`                | `{ best_of }`                   | Set best-of           | Todo 🛑    | P3.11    |
-| `GET`  | `/v1/servers/:serverLogin/match/maps-score`             | —                               | Get maps score        | Todo 🛑    | P3.14    |
-| `PUT`  | `/v1/servers/:serverLogin/match/maps-score`             | `{ target_team, maps_score }`   | Set maps score        | Todo 🛑    | P3.13    |
-| `GET`  | `/v1/servers/:serverLogin/match/round-score`            | —                               | Get round score       | Todo 🛑    | P3.16    |
-| `PUT`  | `/v1/servers/:serverLogin/match/round-score`            | `{ target_team, score }`        | Set round score       | Todo 🛑    | P3.15    |
+| `GET`  | `/v1/servers/:serverLogin/match/best-of`                | —                               | Get best-of           | Done ✅    | P3.12    |
+| `PUT`  | `/v1/servers/:serverLogin/match/best-of`                | `{ best_of }`                   | Set best-of           | Done ✅    | P3.11    |
+| `GET`  | `/v1/servers/:serverLogin/match/maps-score`             | —                               | Get maps score        | Done ✅    | P3.14    |
+| `PUT`  | `/v1/servers/:serverLogin/match/maps-score`             | `{ target_team, maps_score }`   | Set maps score        | Done ✅    | P3.13    |
+| `GET`  | `/v1/servers/:serverLogin/match/round-score`            | —                               | Get round score       | Done ✅    | P3.16    |
+| `PUT`  | `/v1/servers/:serverLogin/match/round-score`            | `{ target_team, score }`        | Set round score       | Done ✅    | P3.15    |
 
 #### Chat-Only Commands (Super/Master Admin)
 
@@ -1226,16 +1226,16 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 
 | Method   | Endpoint                                    | Plugin Action       | Domain       | Dev Status | Priority  |
 | -------- | ------------------------------------------- | ------------------- | ------------ | ---------- | --------- |
-| `POST`   | `.../maps/skip`                             | `map.skip`          | Maps         | Todo 🛑    | P3.1      |
-| `POST`   | `.../maps/restart`                          | `map.restart`       | Maps         | Todo 🛑    | P3.2      |
-| `POST`   | `.../maps/jump`                             | `map.jump`          | Maps         | Todo 🛑    | P3.3      |
-| `POST`   | `.../maps/queue`                            | `map.queue`         | Maps         | Todo 🛑    | P3.4      |
-| `POST`   | `.../maps`                                  | `map.add`           | Maps         | Todo 🛑    | P3.5      |
-| `DELETE`  | `.../maps/:mapUid`                         | `map.remove`        | Maps         | Todo 🛑    | P3.6      |
-| `POST`   | `.../warmup/extend`                         | `warmup.extend`     | Warmup       | Todo 🛑    | P3.7      |
-| `POST`   | `.../warmup/end`                            | `warmup.end`        | Warmup       | Todo 🛑    | P3.8      |
-| `POST`   | `.../pause/start`                           | `pause.start`       | Pause        | Todo 🛑    | P3.9      |
-| `POST`   | `.../pause/end`                             | `pause.end`         | Pause        | Todo 🛑    | P3.10     |
+| `POST`   | `.../maps/skip`                             | `map.skip`          | Maps         | Done ✅    | P3.1      |
+| `POST`   | `.../maps/restart`                          | `map.restart`       | Maps         | Done ✅    | P3.2      |
+| `POST`   | `.../maps/jump`                             | `map.jump`          | Maps         | Done ✅    | P3.3      |
+| `POST`   | `.../maps/queue`                            | `map.queue`         | Maps         | Done ✅    | P3.4      |
+| `POST`   | `.../maps`                                  | `map.add`           | Maps         | Done ✅    | P3.5      |
+| `DELETE`  | `.../maps/:mapUid`                         | `map.remove`        | Maps         | Done ✅    | P3.6      |
+| `POST`   | `.../warmup/extend`                         | `warmup.extend`     | Warmup       | Done ✅    | P3.7      |
+| `POST`   | `.../warmup/end`                            | `warmup.end`        | Warmup       | Done ✅    | P3.8      |
+| `POST`   | `.../pause/start`                           | `pause.start`       | Pause        | Done ✅    | P3.9      |
+| `POST`   | `.../pause/end`                             | `pause.end`         | Pause        | Done ✅    | P3.10     |
 | `POST`   | `.../votes/cancel`                          | `vote.cancel`       | Votes        | Todo 🛑    | P5.10     |
 | `PUT`    | `.../votes/ratio`                           | `vote.set_ratio`    | Votes        | Todo 🛑    | P5.11     |
 | `POST`   | `.../votes/custom`                          | `vote.custom_start` | Votes        | Todo 🛑    | P5.12     |
@@ -1254,9 +1254,9 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `PUT`    | `.../teams/policy`                          | `team.policy.set`   | Teams        | Todo 🛑    | P4.9      |
 | `POST`   | `.../teams/roster`                          | `team.roster.assign`| Teams        | Todo 🛑    | P4.11     |
 | `DELETE`  | `.../teams/roster/:login`                  | `team.roster.unassign` | Teams     | Todo 🛑    | P4.12     |
-| `PUT`    | `.../match/best-of`                         | `match.bo.set`      | Match        | Todo 🛑    | P3.11     |
-| `PUT`    | `.../match/maps-score`                      | `match.maps.set`    | Match        | Todo 🛑    | P3.13     |
-| `PUT`    | `.../match/round-score`                     | `match.score.set`   | Match        | Todo 🛑    | P3.15     |
+| `PUT`    | `.../match/best-of`                         | `match.bo.set`      | Match        | Done ✅    | P3.11     |
+| `PUT`    | `.../match/maps-score`                      | `match.maps.set`    | Match        | Done ✅    | P3.13     |
+| `PUT`    | `.../match/round-score`                     | `match.score.set`   | Match        | Done ✅    | P3.15     |
 | `POST`   | `.../veto/ready`                            | VetoDraft.Ready     | Veto         | Todo 🛑    | P4.2      |
 | `POST`   | `.../veto/start`                            | VetoDraft.Start     | Veto         | Todo 🛑    | P4.3      |
 | `POST`   | `.../veto/action`                           | VetoDraft.Action    | Veto         | Todo 🛑    | P4.4      |
@@ -1304,9 +1304,9 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `GET`  | `.../teams/policy`                          | connectivity     | Current team policy                   | Todo 🛑    | P4.10    |
 | `GET`  | `.../teams/roster`                          | connectivity     | Current roster                        | Todo 🛑    | P4.13    |
 | `GET`  | `.../whitelist`                             | connectivity     | Current whitelist                     | Todo 🛑    | P5.7     |
-| `GET`  | `.../match/best-of`                         | connectivity     | Best-of configuration                 | Todo 🛑    | P3.12    |
-| `GET`  | `.../match/maps-score`                      | connectivity     | Maps score state                      | Todo 🛑    | P3.14    |
-| `GET`  | `.../match/round-score`                     | connectivity     | Round score state                     | Todo 🛑    | P3.16    |
+| `GET`  | `.../match/best-of`                         | connectivity     | Best-of configuration                 | Done ✅    | P3.12    |
+| `GET`  | `.../match/maps-score`                      | connectivity     | Maps score state                      | Done ✅    | P3.14    |
+| `GET`  | `.../match/round-score`                     | connectivity     | Round score state                     | Done ✅    | P3.16    |
 | `GET`  | `.../veto/status`                           | veto             | Veto/draft session state              | Todo 🛑    | P4.1     |
 | `GET`  | `.../mode`                                  | mode             | Current game mode + events            | Done ✅    | P2.12    |
 

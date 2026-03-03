@@ -13,6 +13,7 @@ use PixelControl\Callbacks\CallbackRegistry;
 use PixelControl\Queue\EventQueueInterface;
 use PixelControl\Retry\RetryPolicyInterface;
 use PixelControl\Stats\PlayerCombatStatsStore;
+use PixelControl\Domain\Admin\AdminCommandTrait;
 use PixelControl\Domain\Combat\CombatDomainTrait;
 use PixelControl\Domain\Combat\EliteRoundTrackingTrait;
 use PixelControl\Domain\Connectivity\ConnectivityDomainTrait;
@@ -31,6 +32,7 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	use CombatDomainTrait;
 	use EliteRoundTrackingTrait;
 	use PipelineDomainTrait;
+	use AdminCommandTrait;
 
 	const ID = 100001;
 	const VERSION = '0.1.0-dev';

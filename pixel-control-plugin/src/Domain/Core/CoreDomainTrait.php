@@ -46,6 +46,7 @@ trait CoreDomainTrait {
 		$this->initializeEventPipeline();
 		$this->callbackRegistry = new CallbackRegistry();
 		$this->callbackRegistry->register($maniaControl, $this);
+		$this->registerAdminCommandListener();
 		$this->registerPeriodicTimers();
 		$this->resolvePlayerConstraintPolicyContext(true);
 		$this->queueConnectivityEvent('registration', $this->buildRegistrationPayload());

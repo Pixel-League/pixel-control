@@ -3,6 +3,10 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdminMapsModule } from './admin-maps/admin-maps.module';
+import { AdminMatchModule } from './admin-match/admin-match.module';
+import { AdminProxyModule } from './admin-proxy/admin-proxy.module';
+import { AdminWarmupPauseModule } from './admin-warmup-pause/admin-warmup-pause.module';
 import { CommonModule } from './common/common.module';
 import { IngestionModule } from './ingestion/ingestion.module';
 import { LifecycleReadModule } from './lifecycle/lifecycle-read.module';
@@ -27,6 +31,10 @@ import { StatusModule } from './status/status.module';
     LifecycleReadModule,
     MapsReadModule,
     ModeReadModule,
+    AdminProxyModule,
+    AdminMapsModule,
+    AdminWarmupPauseModule,
+    AdminMatchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -119,7 +119,7 @@ bash scripts/replay-extended-telemetry-wave4.sh
 ## CI / Release
 - **No CI configured** (no `.github/workflows/`, no `.gitlab-ci.yml`).
 - No release/versioning process defined yet.
-- Current active branch: `feat/p2-read-api` (P2 + P2.5 + P2.6 + Elite enrichment — not yet merged into `main`).
+- Current active branch: `feat/p3-admin-commands` (P0–P3 + Elite enrichment + API Test UI — not yet merged into `main`).
 
 ## Gotchas
 - **Apple Silicon**: set `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64` — game binaries are x86.
@@ -130,3 +130,6 @@ bash scripts/replay-extended-telemetry-wave4.sh
 - `SM_SCORES` is the score/winner source for win-context enrichment in lifecycle aggregates.
 - **Admin events** are NOT a separate category — admin actions are embedded in lifecycle events as metadata fields.
 - **Plugin sends NO batch events** — it dispatches events individually. BatchService is forward-compatible scaffolding only.
+- **P3 Admin Commands (AdminProxyModule)**: socket config via env vars `MC_SOCKET_HOST` (default: `127.0.0.1`), `MC_SOCKET_PORT` (default: `31501`), `MC_SOCKET_PASSWORD`. ManiaControl socket must be accessible from the API. For Docker dev stack, expose port 31501 in `pixel-sm-server/docker-compose.yml`.
+- **ManiaControl socket protocol**: AES-192-CBC encrypted TCP. IV = `kZ2Kt0CzKUjN2MJX` (constant). Frame: `<encrypted_length>\n<encrypted_data>`. Encryption key = socket password, truncated/padded to 24 bytes.
+- **Plugin admin listener**: `PixelControl.Admin.ExecuteAction` communication channel, re-implemented in `AdminCommandTrait.php` for P3 scope (16 actions only). Link-auth validation per request.
