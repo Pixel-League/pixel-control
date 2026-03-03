@@ -16,8 +16,14 @@ async function bootstrap() {
 
   app.setGlobalPrefix('v1');
 
-  // Enable CORS for local dev — UI runs on a different port (Vite default: 5173)
-  app.enableCors();
+  // CORS — configured via env vars
+  const corsOrigin = process.env.CORS_ORIGIN || '*';
+  const corsMethods = process.env.CORS_METHODS || 'GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD';
+  app.enableCors({
+    origin: corsOrigin === '*' ? '*' : corsOrigin.split(',').map((o) => o.trim()),
+    methods: corsMethods.split(',').map((m) => m.trim()),
+    credentials: process.env.CORS_CREDENTIALS === 'true',
+  });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
