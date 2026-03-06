@@ -11,3 +11,8 @@ pixel-sm-server/data/
 
 # Dev UI (test tooling only, not production code)
 pixel-control-ui/
+
+# Pixel Design System — build artifacts and dependencies
+pixel-design-system/node_modules/
+pixel-design-system/dist/
+pixel-design-system/storybook-static/
