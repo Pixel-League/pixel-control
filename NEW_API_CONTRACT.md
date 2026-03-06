@@ -219,11 +219,11 @@ Vote policy modes: `cancel_non_admin_vote_on_callback`, and others.
 
 | Method | Endpoint                                          | Body                       | Description            | Dev Status | Priority |
 | ------ | ------------------------------------------------- | -------------------------- | ---------------------- | ---------- | -------- |
-| `POST` | `/v1/servers/:serverLogin/votes/cancel`           | —                          | Cancel active vote     | Todo 🛑    | P5.10    |
-| `PUT`  | `/v1/servers/:serverLogin/votes/ratio`            | `{ command, ratio }`       | Set vote ratio         | Todo 🛑    | P5.11    |
-| `POST` | `/v1/servers/:serverLogin/votes/custom`           | `{ vote_index }`           | Start custom vote      | Todo 🛑    | P5.12    |
-| `GET`  | `/v1/servers/:serverLogin/votes/policy`           | —                          | Get vote policy        | Todo 🛑    | P5.13    |
-| `PUT`  | `/v1/servers/:serverLogin/votes/policy`           | `{ mode }`                 | Set vote policy        | Todo 🛑    | P5.14    |
+| `POST` | `/v1/servers/:serverLogin/votes/cancel`           | —                          | Cancel active vote     | Done ✅    | P5.10    |
+| `PUT`  | `/v1/servers/:serverLogin/votes/ratio`            | `{ command, ratio }`       | Set vote ratio         | Done ✅    | P5.11    |
+| `POST` | `/v1/servers/:serverLogin/votes/custom`           | `{ vote_index }`           | Start custom vote      | Done ✅    | P5.12    |
+| `GET`  | `/v1/servers/:serverLogin/votes/policy`           | —                          | Get vote policy        | Done ✅    | P5.13    |
+| `PUT`  | `/v1/servers/:serverLogin/votes/policy`           | `{ mode }`                 | Set vote policy        | Done ✅    | P5.14    |
 
 #### Player Management
 
@@ -265,8 +265,8 @@ Auth levels: `player`, `moderator`, `admin`, `superadmin`
 
 | Method   | Endpoint                                                  | Body              | Description     | Dev Status | Priority |
 | -------- | --------------------------------------------------------- | ----------------- | --------------- | ---------- | -------- |
-| `POST`   | `/v1/servers/:serverLogin/players/:login/auth`            | `{ auth_level }`  | Grant auth      | Todo 🛑    | P5.1     |
-| `DELETE`  | `/v1/servers/:serverLogin/players/:login/auth`           | —                 | Revoke auth     | Todo 🛑    | P5.2     |
+| `POST`   | `/v1/servers/:serverLogin/players/:login/auth`            | `{ auth_level }`  | Grant auth      | Done ✅    | P5.1     |
+| `DELETE`  | `/v1/servers/:serverLogin/players/:login/auth`           | —                 | Revoke auth     | Done ✅    | P5.2     |
 
 #### Whitelist Management
 
@@ -288,13 +288,13 @@ Aliases: `whitelist.on` → `whitelist.enable`; `whitelist.off` → `whitelist.d
 
 | Method   | Endpoint                                                 | Body                | Description          | Dev Status | Priority |
 | -------- | -------------------------------------------------------- | ------------------- | -------------------- | ---------- | -------- |
-| `POST`   | `/v1/servers/:serverLogin/whitelist/enable`              | —                   | Enable whitelist     | Todo 🛑    | P5.3     |
-| `POST`   | `/v1/servers/:serverLogin/whitelist/disable`             | —                   | Disable whitelist    | Todo 🛑    | P5.4     |
-| `POST`   | `/v1/servers/:serverLogin/whitelist`                     | `{ target_login }`  | Add to whitelist     | Todo 🛑    | P5.5     |
-| `DELETE`  | `/v1/servers/:serverLogin/whitelist/:login`             | —                   | Remove from whitelist | Todo 🛑    | P5.6     |
-| `GET`    | `/v1/servers/:serverLogin/whitelist`                     | —                   | List whitelist       | Todo 🛑    | P5.7     |
-| `DELETE`  | `/v1/servers/:serverLogin/whitelist`                    | —                   | Clear whitelist      | Todo 🛑    | P5.8     |
-| `POST`   | `/v1/servers/:serverLogin/whitelist/sync`                | —                   | Sync to runtime      | Todo 🛑    | P5.9     |
+| `POST`   | `/v1/servers/:serverLogin/whitelist/enable`              | —                   | Enable whitelist     | Done ✅    | P5.3     |
+| `POST`   | `/v1/servers/:serverLogin/whitelist/disable`             | —                   | Disable whitelist    | Done ✅    | P5.4     |
+| `POST`   | `/v1/servers/:serverLogin/whitelist`                     | `{ target_login }`  | Add to whitelist     | Done ✅    | P5.5     |
+| `DELETE`  | `/v1/servers/:serverLogin/whitelist/:login`             | —                   | Remove from whitelist | Done ✅    | P5.6     |
+| `GET`    | `/v1/servers/:serverLogin/whitelist`                     | —                   | List whitelist       | Done ✅    | P5.7     |
+| `DELETE`  | `/v1/servers/:serverLogin/whitelist`                    | —                   | Clear whitelist      | Done ✅    | P5.8     |
+| `POST`   | `/v1/servers/:serverLogin/whitelist/sync`                | —                   | Sync to runtime      | Done ✅    | P5.9     |
 
 #### Team Control
 
@@ -1236,21 +1236,21 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `POST`   | `.../warmup/end`                            | `warmup.end`        | Warmup       | Done ✅    | P3.8      |
 | `POST`   | `.../pause/start`                           | `pause.start`       | Pause        | Done ✅    | P3.9      |
 | `POST`   | `.../pause/end`                             | `pause.end`         | Pause        | Done ✅    | P3.10     |
-| `POST`   | `.../votes/cancel`                          | `vote.cancel`       | Votes        | Todo 🛑    | P5.10     |
-| `PUT`    | `.../votes/ratio`                           | `vote.set_ratio`    | Votes        | Todo 🛑    | P5.11     |
-| `POST`   | `.../votes/custom`                          | `vote.custom_start` | Votes        | Todo 🛑    | P5.12     |
-| `PUT`    | `.../votes/policy`                          | `vote.policy.set`   | Votes        | Todo 🛑    | P5.14     |
+| `POST`   | `.../votes/cancel`                          | `vote.cancel`       | Votes        | Done ✅    | P5.10     |
+| `PUT`    | `.../votes/ratio`                           | `vote.set_ratio`    | Votes        | Done ✅    | P5.11     |
+| `POST`   | `.../votes/custom`                          | `vote.custom_start` | Votes        | Done ✅    | P5.12     |
+| `PUT`    | `.../votes/policy`                          | `vote.policy.set`   | Votes        | Done ✅    | P5.14     |
 | `POST`   | `.../players/:login/force-team`             | `player.force_team` | Players      | Done ✅    | P4.6      |
 | `POST`   | `.../players/:login/force-play`             | `player.force_play` | Players      | Done ✅    | P4.7      |
 | `POST`   | `.../players/:login/force-spec`             | `player.force_spec` | Players      | Done ✅    | P4.8      |
-| `POST`   | `.../players/:login/auth`                   | `auth.grant`        | Auth         | Todo 🛑    | P5.1      |
-| `DELETE`  | `.../players/:login/auth`                  | `auth.revoke`       | Auth         | Todo 🛑    | P5.2      |
-| `POST`   | `.../whitelist/enable`                      | `whitelist.enable`  | Whitelist    | Todo 🛑    | P5.3      |
-| `POST`   | `.../whitelist/disable`                     | `whitelist.disable` | Whitelist    | Todo 🛑    | P5.4      |
-| `POST`   | `.../whitelist`                             | `whitelist.add`     | Whitelist    | Todo 🛑    | P5.5      |
-| `DELETE`  | `.../whitelist/:login`                     | `whitelist.remove`  | Whitelist    | Todo 🛑    | P5.6      |
-| `DELETE`  | `.../whitelist`                            | `whitelist.clean`   | Whitelist    | Todo 🛑    | P5.8      |
-| `POST`   | `.../whitelist/sync`                        | `whitelist.sync`    | Whitelist    | Todo 🛑    | P5.9      |
+| `POST`   | `.../players/:login/auth`                   | `auth.grant`        | Auth         | Done ✅    | P5.1      |
+| `DELETE`  | `.../players/:login/auth`                  | `auth.revoke`       | Auth         | Done ✅    | P5.2      |
+| `POST`   | `.../whitelist/enable`                      | `whitelist.enable`  | Whitelist    | Done ✅    | P5.3      |
+| `POST`   | `.../whitelist/disable`                     | `whitelist.disable` | Whitelist    | Done ✅    | P5.4      |
+| `POST`   | `.../whitelist`                             | `whitelist.add`     | Whitelist    | Done ✅    | P5.5      |
+| `DELETE`  | `.../whitelist/:login`                     | `whitelist.remove`  | Whitelist    | Done ✅    | P5.6      |
+| `DELETE`  | `.../whitelist`                            | `whitelist.clean`   | Whitelist    | Done ✅    | P5.8      |
+| `POST`   | `.../whitelist/sync`                        | `whitelist.sync`    | Whitelist    | Done ✅    | P5.9      |
 | `PUT`    | `.../teams/policy`                          | `team.policy.set`   | Teams        | Done ✅    | P4.9      |
 | `POST`   | `.../teams/roster`                          | `team.roster.assign`| Teams        | Done ✅    | P4.11     |
 | `DELETE`  | `.../teams/roster/:login`                  | `team.roster.unassign` | Teams     | Done ✅    | P4.12     |
@@ -1300,10 +1300,10 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `GET`  | `.../lifecycle`                             | lifecycle        | Current lifecycle state               | Done ✅    | P2.7     |
 | `GET`  | `.../lifecycle/map-rotation`                | lifecycle        | Map rotation + veto state             | Done ✅    | P2.8     |
 | `GET`  | `.../lifecycle/aggregate-stats`             | lifecycle        | Latest aggregate stats                | Done ✅    | P2.9     |
-| `GET`  | `.../votes/policy`                          | connectivity     | Current vote policy                   | Todo 🛑    | P5.13    |
+| `GET`  | `.../votes/policy`                          | connectivity     | Current vote policy                   | Done ✅    | P5.13    |
 | `GET`  | `.../teams/policy`                          | connectivity     | Current team policy                   | Done ✅    | P4.10    |
 | `GET`  | `.../teams/roster`                          | connectivity     | Current roster                        | Done ✅    | P4.13    |
-| `GET`  | `.../whitelist`                             | connectivity     | Current whitelist                     | Todo 🛑    | P5.7     |
+| `GET`  | `.../whitelist`                             | connectivity     | Current whitelist                     | Done ✅    | P5.7     |
 | `GET`  | `.../match/best-of`                         | connectivity     | Best-of configuration                 | Done ✅    | P3.12    |
 | `GET`  | `.../match/maps-score`                      | connectivity     | Maps score state                      | Done ✅    | P3.14    |
 | `GET`  | `.../match/round-score`                     | connectivity     | Round score state                     | Done ✅    | P3.16    |

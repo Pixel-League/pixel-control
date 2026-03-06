@@ -21,6 +21,9 @@ import { AdminPlayersModule } from './admin-players/admin-players.module';
 import { AdminTeamsModule } from './admin-teams/admin-teams.module';
 import { VetoDraftProxyModule } from './veto-draft-proxy/veto-draft-proxy.module';
 import { VetoDraftModule } from './veto-draft/veto-draft.module';
+import { AdminAuthModule } from './admin-auth/admin-auth.module';
+import { AdminWhitelistModule } from './admin-whitelist/admin-whitelist.module';
+import { AdminVotesModule } from './admin-votes/admin-votes.module';
 
 @Module({
   imports: [
@@ -43,6 +46,9 @@ import { VetoDraftModule } from './veto-draft/veto-draft.module';
     VetoDraftModule,
     AdminPlayersModule,
     AdminTeamsModule,
+    AdminAuthModule,
+    AdminWhitelistModule,
+    AdminVotesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

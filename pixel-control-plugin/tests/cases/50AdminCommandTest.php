@@ -554,4 +554,281 @@ return array(
 		Assert::same('team_b', $answer->data['details']['roster']['playerB']);
 	},
 
+	// ─── P5 Auth management ───────────────────────────────────────────────────────
+
+	'auth.grant with valid params succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'somePlayer';
+		$params->auth_level = 'admin';
+		$data = makeAdminRequest('auth.grant', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('auth_granted', $answer->data['code']);
+		Assert::same('somePlayer', $answer->data['details']['target_login']);
+		Assert::same('admin', $answer->data['details']['auth_level']);
+	},
+
+	'auth.grant with missing target_login returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->auth_level = 'moderator';
+		$data = makeAdminRequest('auth.grant', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
+	'auth.grant with invalid auth_level returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'somePlayer';
+		$params->auth_level = 'god';
+		$data = makeAdminRequest('auth.grant', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
+	'auth.revoke with valid params succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'somePlayer';
+		$data = makeAdminRequest('auth.revoke', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('auth_revoked', $answer->data['code']);
+		Assert::same('somePlayer', $answer->data['details']['target_login']);
+	},
+
+	// ─── P5 Whitelist management ──────────────────────────────────────────────────
+
+	'whitelist.enable succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('whitelist.enable', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('whitelist_enabled', $answer->data['code']);
+		Assert::same(true, $answer->data['details']['enabled']);
+	},
+
+	'whitelist.disable succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('whitelist.disable', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('whitelist_disabled', $answer->data['code']);
+		Assert::same(false, $answer->data['details']['enabled']);
+	},
+
+	'whitelist.add with valid login succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'playerX';
+		$data = makeAdminRequest('whitelist.add', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('whitelist_added', $answer->data['code']);
+		Assert::same('playerX', $answer->data['details']['target_login']);
+		Assert::same(true, in_array('playerX', $answer->data['details']['whitelist'], true));
+	},
+
+	'whitelist.add with missing login returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('whitelist.add', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
+	'whitelist.remove with valid login succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+
+		// Add first.
+		$addParams = new stdClass();
+		$addParams->target_login = 'playerX';
+		$harness->callHandleAdminExecuteAction(
+			makeAdminRequest('whitelist.add', 'test-server.local', 'valid-token', $addParams)
+		);
+
+		// Now remove.
+		$params = new stdClass();
+		$params->target_login = 'playerX';
+		$data = makeAdminRequest('whitelist.remove', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('whitelist_removed', $answer->data['code']);
+		Assert::same('playerX', $answer->data['details']['target_login']);
+		Assert::same(false, in_array('playerX', $answer->data['details']['whitelist'], true));
+	},
+
+	'whitelist.remove with unknown login returns player_not_in_whitelist' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'unknownPlayer';
+		$data = makeAdminRequest('whitelist.remove', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('player_not_in_whitelist', $answer->data['code']);
+	},
+
+	'whitelist.list returns current whitelist' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+
+		// Add two players.
+		foreach (array('playerA', 'playerB') as $login) {
+			$p = new stdClass();
+			$p->target_login = $login;
+			$harness->callHandleAdminExecuteAction(
+				makeAdminRequest('whitelist.add', 'test-server.local', 'valid-token', $p)
+			);
+		}
+
+		$data = makeAdminRequest('whitelist.list', 'test-server.local', 'valid-token');
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('whitelist_retrieved', $answer->data['code']);
+		Assert::same(2, $answer->data['details']['count']);
+		Assert::same(true, in_array('playerA', $answer->data['details']['whitelist'], true));
+		Assert::same(true, in_array('playerB', $answer->data['details']['whitelist'], true));
+	},
+
+	'whitelist.clean clears the whitelist' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+
+		// Add some players first.
+		foreach (array('playerA', 'playerB', 'playerC') as $login) {
+			$p = new stdClass();
+			$p->target_login = $login;
+			$harness->callHandleAdminExecuteAction(
+				makeAdminRequest('whitelist.add', 'test-server.local', 'valid-token', $p)
+			);
+		}
+
+		$data = makeAdminRequest('whitelist.clean', 'test-server.local', 'valid-token');
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('whitelist_cleaned', $answer->data['code']);
+		Assert::same(3, $answer->data['details']['previous_count']);
+
+		// Verify whitelist is now empty.
+		$listData = makeAdminRequest('whitelist.list', 'test-server.local', 'valid-token');
+		$listAnswer = $harness->callHandleAdminExecuteAction($listData);
+		Assert::same(0, $listAnswer->data['details']['count']);
+	},
+
+	'whitelist.sync succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('whitelist.sync', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('whitelist_synced', $answer->data['code']);
+	},
+
+	// ─── P5 Vote management ───────────────────────────────────────────────────────
+
+	'vote.cancel succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('vote.cancel', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('vote_cancelled', $answer->data['code']);
+	},
+
+	'vote.set_ratio with valid params succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->command = 'kick';
+		$params->ratio = 0.6;
+		$data = makeAdminRequest('vote.set_ratio', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('vote_ratio_set', $answer->data['code']);
+		Assert::same('kick', $answer->data['details']['command']);
+		Assert::same(0.6, $answer->data['details']['ratio']);
+	},
+
+	'vote.set_ratio with invalid ratio returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->command = 'kick';
+		$params->ratio = 1.5;
+		$data = makeAdminRequest('vote.set_ratio', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
+	'vote.custom_start with valid vote_index succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->vote_index = 2;
+		$data = makeAdminRequest('vote.custom_start', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('custom_vote_started', $answer->data['code']);
+		Assert::same(2, $answer->data['details']['vote_index']);
+	},
+
+	'vote.custom_start with missing vote_index returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('vote.custom_start', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
+	'vote.policy.get returns current policy' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('vote.policy.get', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('vote_policy_retrieved', $answer->data['code']);
+		Assert::same('default', $answer->data['details']['mode']);
+		Assert::same(true, is_array($answer->data['details']['ratios']));
+	},
+
+	'vote.policy.set with valid mode succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->mode = 'strict';
+		$data = makeAdminRequest('vote.policy.set', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('vote_policy_set', $answer->data['code']);
+		Assert::same('strict', $answer->data['details']['mode']);
+
+		// Verify get now returns updated mode.
+		$getData = makeAdminRequest('vote.policy.get', 'test-server.local', 'valid-token');
+		$getAnswer = $harness->callHandleAdminExecuteAction($getData);
+		Assert::same('strict', $getAnswer->data['details']['mode']);
+	},
+
+	'vote.policy.set with missing mode returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('vote.policy.set', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
 );

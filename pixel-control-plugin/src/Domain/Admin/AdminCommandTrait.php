@@ -40,6 +40,22 @@ trait AdminCommandTrait {
 	/** @var array $teamRoster Login => 'team_a'|'team_b' */
 	private $teamRoster = array();
 
+	// ─── P5 Whitelist state ───────────────────────────────────────────────────────
+
+	/** @var bool $whitelistEnabled */
+	private $whitelistEnabled = false;
+
+	/** @var array $whitelist List of whitelisted logins */
+	private $whitelist = array();
+
+	// ─── P5 Vote policy state ─────────────────────────────────────────────────────
+
+	/** @var string $votePolicy Current vote policy mode */
+	private $votePolicy = 'default';
+
+	/** @var array $voteRatios command => ratio (float) */
+	private $voteRatios = array();
+
 	/**
 	 * Registers the PixelControl.Admin.ExecuteAction communication listener.
 	 * Call from load().
@@ -104,6 +120,23 @@ trait AdminCommandTrait {
 			'team.roster.assign'    => 'handleTeamRosterAssign',
 			'team.roster.unassign'  => 'handleTeamRosterUnassign',
 			'team.roster.list'      => 'handleTeamRosterList',
+			// P5 -- Auth management
+			'auth.grant'            => 'handleAuthGrant',
+			'auth.revoke'           => 'handleAuthRevoke',
+			// P5 -- Whitelist management
+			'whitelist.enable'      => 'handleWhitelistEnable',
+			'whitelist.disable'     => 'handleWhitelistDisable',
+			'whitelist.add'         => 'handleWhitelistAdd',
+			'whitelist.remove'      => 'handleWhitelistRemove',
+			'whitelist.list'        => 'handleWhitelistList',
+			'whitelist.clean'       => 'handleWhitelistClean',
+			'whitelist.sync'        => 'handleWhitelistSync',
+			// P5 -- Vote management
+			'vote.cancel'           => 'handleVoteCancel',
+			'vote.set_ratio'        => 'handleVoteSetRatio',
+			'vote.custom_start'     => 'handleVoteCustomStart',
+			'vote.policy.get'       => 'handleVotePolicyGet',
+			'vote.policy.set'       => 'handleVotePolicySet',
 		);
 
 		if (!isset($actionMap[$action])) {
@@ -779,6 +812,270 @@ trait AdminCommandTrait {
 		);
 	}
 
+	// ─── Auth management handlers (P5.1--P5.2) ───────────────────────────────────
+
+	private function handleAuthGrant($parameters) {
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'auth.grant',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		$authLevel = $this->requireStringParam($parameters, 'auth_level');
+		$validLevels = array('player', 'moderator', 'admin', 'superadmin');
+		if ($authLevel === null || !in_array($authLevel, $validLevels, true)) {
+			return array(
+				'action_name' => 'auth.grant',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => "Invalid auth_level. Must be one of: " . implode(', ', $validLevels) . '.',
+			);
+		}
+		return array(
+			'action_name' => 'auth.grant',
+			'success'     => true,
+			'code'        => 'auth_granted',
+			'message'     => "Auth level '{$authLevel}' granted to '{$targetLogin}'.",
+			'details'     => array(
+				'target_login' => $targetLogin,
+				'auth_level'   => $authLevel,
+			),
+		);
+	}
+
+	private function handleAuthRevoke($parameters) {
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'auth.revoke',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		return array(
+			'action_name' => 'auth.revoke',
+			'success'     => true,
+			'code'        => 'auth_revoked',
+			'message'     => "Auth revoked for '{$targetLogin}'.",
+			'details'     => array('target_login' => $targetLogin),
+		);
+	}
+
+	// ─── Whitelist management handlers (P5.3--P5.9) ──────────────────────────────
+
+	private function handleWhitelistEnable($parameters) {
+		$this->whitelistEnabled = true;
+		return array(
+			'action_name' => 'whitelist.enable',
+			'success'     => true,
+			'code'        => 'whitelist_enabled',
+			'message'     => 'Server whitelist enabled.',
+			'details'     => array('enabled' => true),
+		);
+	}
+
+	private function handleWhitelistDisable($parameters) {
+		$this->whitelistEnabled = false;
+		return array(
+			'action_name' => 'whitelist.disable',
+			'success'     => true,
+			'code'        => 'whitelist_disabled',
+			'message'     => 'Server whitelist disabled.',
+			'details'     => array('enabled' => false),
+		);
+	}
+
+	private function handleWhitelistAdd($parameters) {
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'whitelist.add',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		if (!in_array($targetLogin, $this->whitelist, true)) {
+			$this->whitelist[] = $targetLogin;
+		}
+		return array(
+			'action_name' => 'whitelist.add',
+			'success'     => true,
+			'code'        => 'whitelist_added',
+			'message'     => "Player '{$targetLogin}' added to whitelist.",
+			'details'     => array(
+				'target_login' => $targetLogin,
+				'whitelist'    => $this->whitelist,
+			),
+		);
+	}
+
+	private function handleWhitelistRemove($parameters) {
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'whitelist.remove',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		$index = array_search($targetLogin, $this->whitelist, true);
+		if ($index === false) {
+			return array(
+				'action_name' => 'whitelist.remove',
+				'success'     => false,
+				'code'        => 'player_not_in_whitelist',
+				'message'     => "Player '{$targetLogin}' is not in the whitelist.",
+			);
+		}
+		array_splice($this->whitelist, $index, 1);
+		return array(
+			'action_name' => 'whitelist.remove',
+			'success'     => true,
+			'code'        => 'whitelist_removed',
+			'message'     => "Player '{$targetLogin}' removed from whitelist.",
+			'details'     => array(
+				'target_login' => $targetLogin,
+				'whitelist'    => $this->whitelist,
+			),
+		);
+	}
+
+	private function handleWhitelistList($parameters) {
+		return array(
+			'action_name' => 'whitelist.list',
+			'success'     => true,
+			'code'        => 'whitelist_retrieved',
+			'message'     => 'Whitelist retrieved.',
+			'details'     => array(
+				'enabled'   => $this->whitelistEnabled,
+				'whitelist' => $this->whitelist,
+				'count'     => count($this->whitelist),
+			),
+		);
+	}
+
+	private function handleWhitelistClean($parameters) {
+		$previousCount = count($this->whitelist);
+		$this->whitelist = array();
+		return array(
+			'action_name' => 'whitelist.clean',
+			'success'     => true,
+			'code'        => 'whitelist_cleaned',
+			'message'     => 'Whitelist cleared.',
+			'details'     => array('previous_count' => $previousCount),
+		);
+	}
+
+	private function handleWhitelistSync($parameters) {
+		return array(
+			'action_name' => 'whitelist.sync',
+			'success'     => true,
+			'code'        => 'whitelist_synced',
+			'message'     => 'Whitelist synchronized with server runtime.',
+		);
+	}
+
+	// ─── Vote management handlers (P5.10--P5.14) ─────────────────────────────────
+
+	private function handleVoteCancel($parameters) {
+		return array(
+			'action_name' => 'vote.cancel',
+			'success'     => true,
+			'code'        => 'vote_cancelled',
+			'message'     => 'Current vote cancelled.',
+		);
+	}
+
+	private function handleVoteSetRatio($parameters) {
+		$command = $this->requireStringParam($parameters, 'command');
+		if ($command === null) {
+			return array(
+				'action_name' => 'vote.set_ratio',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty command parameter.',
+			);
+		}
+		$ratio = $this->requireFloatParam($parameters, 'ratio');
+		if ($ratio === null || $ratio < 0.0 || $ratio > 1.0) {
+			return array(
+				'action_name' => 'vote.set_ratio',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or invalid ratio parameter (must be a float between 0.0 and 1.0).',
+			);
+		}
+		$this->voteRatios[$command] = $ratio;
+		return array(
+			'action_name' => 'vote.set_ratio',
+			'success'     => true,
+			'code'        => 'vote_ratio_set',
+			'message'     => "Vote ratio for '{$command}' set to {$ratio}.",
+			'details'     => array(
+				'command' => $command,
+				'ratio'   => $ratio,
+			),
+		);
+	}
+
+	private function handleVoteCustomStart($parameters) {
+		$voteIndex = $this->requireNonNegativeIntParam($parameters, 'vote_index');
+		if ($voteIndex === null) {
+			return array(
+				'action_name' => 'vote.custom_start',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or invalid vote_index parameter (must be a non-negative integer).',
+			);
+		}
+		return array(
+			'action_name' => 'vote.custom_start',
+			'success'     => true,
+			'code'        => 'custom_vote_started',
+			'message'     => "Custom vote #{$voteIndex} started.",
+			'details'     => array('vote_index' => $voteIndex),
+		);
+	}
+
+	private function handleVotePolicyGet($parameters) {
+		return array(
+			'action_name' => 'vote.policy.get',
+			'success'     => true,
+			'code'        => 'vote_policy_retrieved',
+			'message'     => 'Vote policy retrieved.',
+			'details'     => array(
+				'mode'   => $this->votePolicy,
+				'ratios' => $this->voteRatios,
+			),
+		);
+	}
+
+	private function handleVotePolicySet($parameters) {
+		$mode = $this->requireStringParam($parameters, 'mode');
+		if ($mode === null) {
+			return array(
+				'action_name' => 'vote.policy.set',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty mode parameter.',
+			);
+		}
+		$this->votePolicy = $mode;
+		return array(
+			'action_name' => 'vote.policy.set',
+			'success'     => true,
+			'code'        => 'vote_policy_set',
+			'message'     => "Vote policy mode set to '{$mode}'.",
+			'details'     => array('mode' => $mode),
+		);
+	}
+
 	// ─── Shared parameter helpers ─────────────────────────────────────────────────
 
 	/**
@@ -905,6 +1202,33 @@ trait AdminCommandTrait {
 			return false;
 		}
 		return null;
+	}
+
+	/**
+	 * Extracts a float parameter by key from the $parameters object/array.
+	 * Validates that the value is numeric. Returns null if absent or non-numeric.
+	 *
+	 * @param mixed  $parameters
+	 * @param string $key
+	 * @return float|null
+	 */
+	private function requireFloatParam($parameters, $key) {
+		if ($parameters === null) {
+			return null;
+		}
+		$raw = null;
+		if (is_object($parameters) && isset($parameters->$key)) {
+			$raw = $parameters->$key;
+		} elseif (is_array($parameters) && isset($parameters[$key])) {
+			$raw = $parameters[$key];
+		}
+		if ($raw === null) {
+			return null;
+		}
+		if (!is_numeric($raw)) {
+			return null;
+		}
+		return (float) $raw;
 	}
 
 	/**

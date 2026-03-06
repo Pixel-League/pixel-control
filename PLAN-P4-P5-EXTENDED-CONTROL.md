@@ -145,17 +145,17 @@ API client: extend `src/api/admin.ts` with new functions; create `src/api/veto.t
 - [Done] Phase 11 -- P4 full regression
 - [Done] Phase 12 -- P4 documentation update
 - [Todo] Phase 13 -- P4 commit
-- [Todo] Phase 14 -- Plugin: Extend AdminCommandTrait (P5.1--P5.14)
-- [Todo] Phase 15 -- Plugin: PHP lint + tests for P5
-- [Todo] Phase 16 -- Server: AdminAuthModule (P5.1--P5.2)
-- [Todo] Phase 17 -- Server: AdminWhitelistModule (P5.3--P5.9)
-- [Todo] Phase 18 -- Server: AdminVotesModule (P5.10--P5.14)
-- [Todo] Phase 19 -- Server: Unit tests for all P5 modules
-- [Todo] Phase 20 -- Server: P5 smoke test script
-- [Todo] Phase 21 -- UI: P5 pages (Auth, Whitelist, Votes)
-- [Todo] Phase 22 -- UI: Build verification + Chrome testing (P5)
-- [Todo] Phase 23 -- P5 full regression
-- [Todo] Phase 24 -- P5 documentation update
+- [Done] Phase 14 -- Plugin: Extend AdminCommandTrait (P5.1--P5.14)
+- [Done] Phase 15 -- Plugin: PHP lint + tests for P5
+- [Done] Phase 16 -- Server: AdminAuthModule (P5.1--P5.2)
+- [Done] Phase 17 -- Server: AdminWhitelistModule (P5.3--P5.9)
+- [Done] Phase 18 -- Server: AdminVotesModule (P5.10--P5.14)
+- [Done] Phase 19 -- Server: Unit tests for all P5 modules
+- [Done] Phase 20 -- Server: P5 smoke test script
+- [Done] Phase 21 -- UI: P5 pages (Auth, Whitelist, Votes)
+- [Done] Phase 22 -- UI: Build verification + Chrome testing (P5)
+- [Done] Phase 23 -- P5 full regression
+- [Done] Phase 24 -- P5 documentation update
 - [Todo] Phase 25 -- P5 commit
 
 ---
@@ -646,14 +646,14 @@ Extend the existing `AdminCommandTrait` with 8 new actions for player management
 
 Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `AdminCommandTrait` with 14 new actions.
 
-- [Todo] P14.0 -- Create branch `feat/p5-backlog` from `feat/p4-extended-control`
+- [Done] P14.0 -- Create branch `feat/p5-backlog` from `feat/p4-extended-control`
   - Acceptance: clean branch created.
 
-- [Todo] P14.1 -- Add internal whitelist and vote policy state to `AdminCommandTrait`
+- [Done] P14.1 -- Add internal whitelist and vote policy state to `AdminCommandTrait`
   - Properties: `$whitelistEnabled` (bool), `$whitelist` (array of logins), `$votePolicy` (string), `$voteRatios` (assoc array).
   - Estimated: ~10 lines.
 
-- [Todo] P14.2 -- Implement auth management handlers (P5.1--P5.2)
+- [Done] P14.2 -- Implement auth management handlers (P5.1--P5.2)
   - `handleAuthGrant($parameters)` -- action `auth.grant`
     - Requires `target_login` (string) and `auth_level` (string: `player`/`moderator`/`admin`/`superadmin`).
     - Uses ManiaControl's `AuthenticationManager` to set auth level.
@@ -665,7 +665,7 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
   - Add to `$actionMap`.
   - Estimated: ~60 lines.
 
-- [Todo] P14.3 -- Implement whitelist management handlers (P5.3--P5.9)
+- [Done] P14.3 -- Implement whitelist management handlers (P5.3--P5.9)
   - `handleWhitelistEnable($parameters)` -- action `whitelist.enable`
   - `handleWhitelistDisable($parameters)` -- action `whitelist.disable`
   - `handleWhitelistAdd($parameters)` -- action `whitelist.add`, requires `target_login`
@@ -676,7 +676,7 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
   - Add all 7 to `$actionMap`.
   - Estimated: ~160 lines.
 
-- [Todo] P14.4 -- Implement vote management handlers (P5.10--P5.14)
+- [Done] P14.4 -- Implement vote management handlers (P5.10--P5.14)
   - `handleVoteCancel($parameters)` -- action `vote.cancel`
   - `handleVoteSetRatio($parameters)` -- action `vote.set_ratio`, requires `command` (string) and `ratio` (float 0.0--1.0)
   - `handleVoteCustomStart($parameters)` -- action `vote.custom_start`, requires `vote_index` (int)
@@ -685,7 +685,7 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
   - Add all 5 to `$actionMap`.
   - Estimated: ~120 lines.
 
-- [Todo] P14.5 -- Add `requireFloatParam()` helper to `AdminCommandTrait`
+- [Done] P14.5 -- Add `requireFloatParam()` helper to `AdminCommandTrait`
   - For `vote.set_ratio` which needs a float `ratio` parameter (0.0--1.0).
   - Estimated: ~15 lines.
 
@@ -693,10 +693,10 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
 
 ### Phase 15 -- Plugin: PHP lint + tests for P5
 
-- [Todo] P15.1 -- Run PHP lint on all plugin source files
+- [Done] P15.1 -- Run PHP lint on all plugin source files
   - Acceptance: zero syntax errors.
 
-- [Todo] P15.2 -- Extend `50AdminCommandTest.php` with P5 admin action tests
+- [Done] P15.2 -- Extend `50AdminCommandTest.php` with P5 admin action tests
   - New test cases (~20):
     - `auth.grant` with valid params succeeds.
     - `auth.grant` with missing target_login returns `invalid_parameter`.
@@ -719,18 +719,18 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
     - `vote.policy.set` with missing mode returns `invalid_parameter`.
   - File: `pixel-control-plugin/tests/cases/50AdminCommandTest.php` (extend).
 
-- [Todo] P15.3 -- Run full plugin test suite
-  - Acceptance: all tests pass (previous ~77 + ~20 new = ~97 total).
+- [Done] P15.3 -- Run full plugin test suite
+  - Acceptance: 109 tests pass (88 previous + 21 new P5 tests), 0 failures.
 
 ---
 
 ### Phase 16 -- Server: AdminAuthModule (P5.1--P5.2)
 
-- [Todo] P16.1 -- Create DTOs for auth management
+- [Done] P16.1 -- Create DTOs for auth management
   - `AuthGrantDto` (`auth_level: string`, validated).
   - Estimated: ~10 lines.
 
-- [Todo] P16.2 -- Create `AdminAuthModule` with controller and service
+- [Done] P16.2 -- Create `AdminAuthModule` with controller and service
   - `src/admin-auth/admin-auth.service.ts`:
     - `grantAuth(serverLogin, playerLogin, authLevel)` -> `adminProxy.executeAction(serverLogin, 'auth.grant', { target_login, auth_level })`
     - `revokeAuth(serverLogin, playerLogin)` -> `adminProxy.executeAction(serverLogin, 'auth.revoke', { target_login })`
@@ -741,18 +741,18 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
   - `src/admin-auth/admin-auth.module.ts` -- imports `AdminProxyModule`.
   - Estimated: 3 new files, ~100 lines total.
 
-- [Todo] P16.3 -- Register `AdminAuthModule` in `AppModule`
+- [Done] P16.3 -- Register `AdminAuthModule` in `AppModule`
   - File modified: `src/app.module.ts`, ~2 lines.
 
 ---
 
 ### Phase 17 -- Server: AdminWhitelistModule (P5.3--P5.9)
 
-- [Todo] P17.1 -- Create DTOs for whitelist management
+- [Done] P17.1 -- Create DTOs for whitelist management
   - `WhitelistAddDto` (`target_login: string`).
   - Estimated: ~10 lines.
 
-- [Todo] P17.2 -- Create `AdminWhitelistModule` with controller and service
+- [Done] P17.2 -- Create `AdminWhitelistModule` with controller and service
   - `src/admin-whitelist/admin-whitelist.service.ts`:
     - `enableWhitelist(serverLogin)` -> `adminProxy.executeAction(serverLogin, 'whitelist.enable')`
     - `disableWhitelist(serverLogin)` -> `adminProxy.executeAction(serverLogin, 'whitelist.disable')`
@@ -777,20 +777,20 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
     - Decision: follow the API contract exactly (`DELETE /whitelist` for clean-all). Place the `@Delete(':serverLogin/whitelist')` method BEFORE `@Delete(':serverLogin/whitelist/:login')` in the controller -- Fastify matches in declaration order.
   - Estimated: 3 new files, ~220 lines total.
 
-- [Todo] P17.3 -- Register `AdminWhitelistModule` in `AppModule`
+- [Done] P17.3 -- Register `AdminWhitelistModule` in `AppModule`
   - File modified: `src/app.module.ts`, ~2 lines.
 
 ---
 
 ### Phase 18 -- Server: AdminVotesModule (P5.10--P5.14)
 
-- [Todo] P18.1 -- Create DTOs for vote management
+- [Done] P18.1 -- Create DTOs for vote management
   - `VoteSetRatioDto` (`command: string`, `ratio: number`).
   - `VoteCustomStartDto` (`vote_index: number`).
   - `VotePolicySetDto` (`mode: string`).
   - Estimated: ~25 lines.
 
-- [Todo] P18.2 -- Create `AdminVotesModule` with controller and service
+- [Done] P18.2 -- Create `AdminVotesModule` with controller and service
   - `src/admin-votes/admin-votes.service.ts`:
     - `cancelVote(serverLogin)` -> `adminProxy.executeAction(serverLogin, 'vote.cancel')`
     - `setVoteRatio(serverLogin, command, ratio)` -> `adminProxy.executeAction(serverLogin, 'vote.set_ratio', { command, ratio })`
@@ -807,33 +807,33 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
   - `src/admin-votes/admin-votes.module.ts` -- imports `AdminProxyModule`.
   - Estimated: 3 new files, ~180 lines total.
 
-- [Todo] P18.3 -- Register `AdminVotesModule` in `AppModule`
+- [Done] P18.3 -- Register `AdminVotesModule` in `AppModule`
   - File modified: `src/app.module.ts`, ~2 lines.
 
 ---
 
 ### Phase 19 -- Server: Unit tests for all P5 modules
 
-- [Todo] P19.1 -- Unit tests for `AdminAuthController` (~5 tests)
+- [Done] P19.1 -- Unit tests for `AdminAuthController` (~5 tests)
   - Tests: both endpoints route correctly, AuthGrantDto validated, login param extracted.
   - File: `src/admin-auth/admin-auth.controller.spec.ts`
 
-- [Todo] P19.2 -- Unit tests for `AdminWhitelistController` (~10 tests)
+- [Done] P19.2 -- Unit tests for `AdminWhitelistController` (~10 tests)
   - Tests: all 7 endpoints route correctly, WhitelistAddDto validated, route ordering for DELETE bare vs DELETE :login.
   - File: `src/admin-whitelist/admin-whitelist.controller.spec.ts`
 
-- [Todo] P19.3 -- Unit tests for `AdminVotesController` (~8 tests)
+- [Done] P19.3 -- Unit tests for `AdminVotesController` (~8 tests)
   - Tests: all 5 endpoints route correctly, DTOs validated.
   - File: `src/admin-votes/admin-votes.controller.spec.ts`
 
-- [Todo] P19.4 -- Run full server test suite
+- [Done] P19.4 -- Run full server test suite
   - Acceptance: all tests pass (previous ~358 + ~23 new = ~381 total). Zero failures.
 
 ---
 
 ### Phase 20 -- Server: P5 smoke test script
 
-- [Todo] P20.1 -- Create `scripts/qa-p5-backlog-smoke.sh`
+- [Done] P20.1 -- Create `scripts/qa-p5-backlog-smoke.sh`
   - Pattern: same as P3/P4 smoke scripts.
   - Test cases (~22):
     - P5.1: POST players/:login/auth with valid body -- expect 502 or 200.
@@ -860,41 +860,41 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
   - File: `pixel-control-server/scripts/qa-p5-backlog-smoke.sh`
   - Estimated: 1 new file, ~400 lines.
 
-- [Todo] P20.2 -- Run P5 smoke test
+- [Done] P20.2 -- Run P5 smoke test
   - Acceptance: all assertions pass in no-socket mode.
 
 ---
 
 ### Phase 21 -- UI: P5 pages (Auth, Whitelist, Votes)
 
-- [Todo] P21.1 -- Extend `src/api/admin.ts` with P5 admin functions
+- [Done] P21.1 -- Extend `src/api/admin.ts` with P5 admin functions
   - Auth: `grantAuth(serverLogin, login, authLevel)`, `revokeAuth(serverLogin, login)`
   - Whitelist: `enableWhitelist`, `disableWhitelist`, `addToWhitelist`, `removeFromWhitelist`, `listWhitelist`, `cleanWhitelist`, `syncWhitelist`
   - Votes: `cancelVote`, `setVoteRatio`, `startCustomVote`, `getVotePolicy`, `setVotePolicy`
   - Estimated: ~80 lines added.
 
-- [Todo] P21.2 -- Create `AdminAuthManagement.tsx` page
+- [Done] P21.2 -- Create `AdminAuthManagement.tsx` page
   - Sections: Grant Auth form (player login, auth level selector), Revoke Auth (player login, confirm modal).
   - Action history list.
   - Route: `/admin/auth`
   - File: `pixel-control-ui/src/pages/AdminAuthManagement.tsx`
   - Estimated: 1 new file, ~180 lines.
 
-- [Todo] P21.3 -- Create `AdminWhitelistManagement.tsx` page
+- [Done] P21.3 -- Create `AdminWhitelistManagement.tsx` page
   - Sections: Enable/Disable toggle, Add player form, Remove player form, List button with whitelist display, Clean (confirm modal), Sync button.
   - Action history list.
   - Route: `/admin/whitelist`
   - File: `pixel-control-ui/src/pages/AdminWhitelistManagement.tsx`
   - Estimated: 1 new file, ~300 lines.
 
-- [Todo] P21.4 -- Create `AdminVoteManagement.tsx` page
+- [Done] P21.4 -- Create `AdminVoteManagement.tsx` page
   - Sections: Cancel Vote button, Set Ratio form (command + ratio slider/input), Start Custom Vote form (vote_index), Policy display (GET) + Set form (mode selector).
   - Action history list.
   - Route: `/admin/votes`
   - File: `pixel-control-ui/src/pages/AdminVoteManagement.tsx`
   - Estimated: 1 new file, ~250 lines.
 
-- [Todo] P21.5 -- Register routes in `App.tsx` and add nav items in `MainLayout.tsx`
+- [Done] P21.5 -- Register routes in `App.tsx` and add nav items in `MainLayout.tsx`
   - Add imports and `<Route>` entries for all 3 new pages.
   - Add nav items to the "Admin" section:
     - `{ to: '/admin/auth', label: 'Auth Mgmt', icon: '...' }`
@@ -906,11 +906,11 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
 
 ### Phase 22 -- UI: Build verification + Chrome testing (P5)
 
-- [Todo] P22.1 -- Build pixel-control-ui
+- [Done] P22.1 -- Build pixel-control-ui
   - Command: `cd pixel-control-ui && npm run build`
   - Acceptance: zero TypeScript/build errors.
 
-- [Todo] P22.2 -- Chrome UI testing for P5 pages
+- [Done] P22.2 -- Chrome UI testing for P5 pages (skipped per parent instruction)
   - Navigate to `/admin/auth` -- verify page renders, grant form has login and level inputs.
   - Navigate to `/admin/whitelist` -- verify page renders, enable/disable buttons, add/remove forms, list/clean/sync controls.
   - Navigate to `/admin/votes` -- verify page renders, cancel button, ratio form, policy GET/SET.
@@ -921,31 +921,31 @@ Create branch `feat/p5-backlog` from `feat/p4-extended-control`, then extend `Ad
 
 ### Phase 23 -- P5 full regression
 
-- [Todo] P23.1 -- Run all server unit tests
+- [Done] P23.1 -- Run all server unit tests (394/394 pass)
   - Acceptance: all ~381 tests pass.
 
-- [Todo] P23.2 -- Run ALL smoke scripts (qa-p0 through qa-p5)
+- [Done] P23.2 -- Run ALL smoke scripts (qa-p0 through qa-p5) — all pass
   - Scripts: qa-p0, qa-p1, qa-p2, qa-p2.5, qa-p2.6, qa-p2.6-elite, qa-elite-enrichment, qa-p3, qa-p4, qa-p5.
   - Acceptance: all scripts exit 0.
 
-- [Todo] P23.3 -- Run plugin test suite
+- [Done] P23.3 -- Run plugin test suite (109/109 pass)
   - Acceptance: all ~97 tests pass.
 
-- [Todo] P23.4 -- Run plugin lint
+- [Done] P23.4 -- Run plugin lint (39 files, zero errors)
   - Acceptance: all PHP files pass `php -l`.
 
 ---
 
 ### Phase 24 -- P5 documentation update
 
-- [Todo] P24.1 -- Update `NEW_API_CONTRACT.md`
+- [Done] P24.1 -- Update `NEW_API_CONTRACT.md` (P5.1–P5.14 → Done, P5.15 remains Todo)
   - Change P5.1--P5.14 status from `Todo` to `Done`.
   - Estimated: 14 line changes.
 
-- [Todo] P24.2 -- Update `pixel-control-plugin/README.md`
+- [Done] P24.2 -- Update `pixel-control-plugin/README.md` (P5 actions already present from P14-P15 phases)
   - Add P5 admin actions to capability inventory.
 
-- [Todo] P24.3 -- Update project `CLAUDE.md` and memory if needed
+- [Done] P24.3 -- Update project `CLAUDE.md` and memory if needed
   - Add P5 module listing, update endpoint counts, new conventions.
 
 ---

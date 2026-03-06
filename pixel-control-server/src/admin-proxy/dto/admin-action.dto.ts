@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 // ---------------------------------------------------------------------------
 // Response interface (not a DTO class — used as TypeScript type only)
@@ -112,4 +112,56 @@ export class TeamRosterAssignDto {
   @IsString()
   @IsNotEmpty()
   team!: string;
+}
+
+// ---------------------------------------------------------------------------
+// P5 Auth management DTOs
+// ---------------------------------------------------------------------------
+
+export class AuthGrantDto {
+  @ApiProperty({ description: 'Auth level to grant: "player", "moderator", "admin", or "superadmin"', example: 'moderator' })
+  @IsString()
+  @IsNotEmpty()
+  auth_level!: string;
+}
+
+// ---------------------------------------------------------------------------
+// P5 Whitelist management DTOs
+// ---------------------------------------------------------------------------
+
+export class WhitelistAddDto {
+  @ApiProperty({ description: 'Login of the player to add to the whitelist', example: 'player.login.example' })
+  @IsString()
+  @IsNotEmpty()
+  target_login!: string;
+}
+
+// ---------------------------------------------------------------------------
+// P5 Vote management DTOs
+// ---------------------------------------------------------------------------
+
+export class VoteSetRatioDto {
+  @ApiProperty({ description: 'Vote command identifier (e.g. "skip", "kick")', example: 'skip' })
+  @IsString()
+  @IsNotEmpty()
+  command!: string;
+
+  @ApiProperty({ description: 'Required vote ratio as a float between 0.0 and 1.0', example: 0.5, minimum: 0, maximum: 1 })
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  ratio!: number;
+}
+
+export class VoteCustomStartDto {
+  @ApiProperty({ description: 'Index of the custom vote to start', example: 1 })
+  @IsInt()
+  vote_index!: number;
+}
+
+export class VotePolicySetDto {
+  @ApiProperty({ description: 'Vote policy mode to apply (e.g. "strict", "lenient", "off")', example: 'strict' })
+  @IsString()
+  @IsNotEmpty()
+  mode!: string;
 }
