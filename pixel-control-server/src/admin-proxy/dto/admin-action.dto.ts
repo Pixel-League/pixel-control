@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 // ---------------------------------------------------------------------------
 // Response interface (not a DTO class — used as TypeScript type only)
@@ -74,4 +74,42 @@ export class MatchRoundScoreDto {
   @IsInt()
   @Min(0)
   score!: number;
+}
+
+// ---------------------------------------------------------------------------
+// P4 Player management DTOs
+// ---------------------------------------------------------------------------
+
+export class ForceTeamDto {
+  @ApiProperty({ description: 'Team identifier: "team_a", "team_b", "0", "1", "red", "blue", "a", or "b"', example: 'team_a' })
+  @IsString()
+  @IsNotEmpty()
+  team!: string;
+}
+
+// ---------------------------------------------------------------------------
+// P4 Team control DTOs
+// ---------------------------------------------------------------------------
+
+export class TeamPolicyDto {
+  @ApiProperty({ description: 'Whether team enforcement policy is enabled', example: true })
+  @IsBoolean()
+  enabled!: boolean;
+
+  @ApiProperty({ description: 'Whether team switching is locked for players', example: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  switch_lock?: boolean;
+}
+
+export class TeamRosterAssignDto {
+  @ApiProperty({ description: 'Login of the player to assign to a team', example: 'player.login.example' })
+  @IsString()
+  @IsNotEmpty()
+  target_login!: string;
+
+  @ApiProperty({ description: 'Team to assign: "team_a", "team_b", "a", "b", "0", "1", "red", or "blue"', example: 'team_a' })
+  @IsString()
+  @IsNotEmpty()
+  team!: string;
 }

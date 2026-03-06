@@ -127,6 +127,8 @@ Core operations:
 - `PixelControl.VetoDraft.Cancel`
 - `PixelControl.VetoDraft.Ready`
 
+Implemented via `VetoDraftCommandTrait` (`src/Domain/VetoDraft/VetoDraftCommandTrait.php`). This trait maintains minimal in-memory session state (active flag, mode, steps, votes, captains) and is wired in `CoreDomainTrait.load()` via `registerVetoDraftCommandListener()`.
+
 ### Matchmaking ready gate
 
 - Matchmaking start requires explicit arming (`ready`).

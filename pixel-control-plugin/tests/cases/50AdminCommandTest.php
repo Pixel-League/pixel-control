@@ -15,13 +15,34 @@ class FakeServer {
 	public $login = 'test-server.local';
 }
 
+class FakeClientForAdmin {
+	public $forceSpectatorCalls = array();
+	public $forcePlayerTeamCalls = array();
+
+	public function forceSpectator($login, $mode) {
+		$this->forceSpectatorCalls[] = array('login' => $login, 'mode' => $mode);
+		return true;
+	}
+
+	public function forcePlayerTeam($login, $team) {
+		$this->forcePlayerTeamCalls[] = array('login' => $login, 'team' => $team);
+		return true;
+	}
+
+	public function triggerModeScriptEventArray($event, $params) {
+		return true;
+	}
+}
+
 class FakeManiaControlForAdmin {
 	public $settingManager;
 	public $server;
+	public $client;
 
 	public function __construct($settingValues = array()) {
 		$this->settingManager = new FakeSettingManager($settingValues);
 		$this->server = new FakeServer();
+		$this->client = new FakeClientForAdmin();
 	}
 
 	public function getSettingManager() {
@@ -34,6 +55,10 @@ class FakeManiaControlForAdmin {
 
 	public function getCommunicationManager() {
 		return null;
+	}
+
+	public function getClient() {
+		return $this->client;
 	}
 }
 
@@ -304,6 +329,229 @@ return array(
 		$answer = $harness->callHandleAdminExecuteAction($data);
 		Assert::same(false, $answer->data['success']);
 		Assert::same('invalid_seconds', $answer->data['code']);
+	},
+
+	// ─── P4 Player management ─────────────────────────────────────────────────────
+
+	'player.force_team with valid params succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'somePlayer';
+		$params->team = 'team_a';
+		$data = makeAdminRequest('player.force_team', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('player_team_forced', $answer->data['code']);
+		Assert::same('somePlayer', $answer->data['details']['target_login']);
+		Assert::same('team_a', $answer->data['details']['team']);
+	},
+
+	'player.force_team with numeric team 1 normalizes to team_b' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'somePlayer';
+		$params->team = '1';
+		$data = makeAdminRequest('player.force_team', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('team_b', $answer->data['details']['team']);
+	},
+
+	'player.force_team with missing target_login returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->team = 'team_a';
+		$data = makeAdminRequest('player.force_team', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
+	'player.force_team with invalid team returns invalid_team' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'somePlayer';
+		$params->team = 'invalid_value';
+		$data = makeAdminRequest('player.force_team', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_team', $answer->data['code']);
+	},
+
+	'player.force_play with valid params succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'somePlayer';
+		$data = makeAdminRequest('player.force_play', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('player_forced_play', $answer->data['code']);
+		Assert::same('somePlayer', $answer->data['details']['target_login']);
+	},
+
+	'player.force_play with missing target_login returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('player.force_play', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
+	'player.force_spec with valid params succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'somePlayer';
+		$data = makeAdminRequest('player.force_spec', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('player_forced_spec', $answer->data['code']);
+		Assert::same('somePlayer', $answer->data['details']['target_login']);
+	},
+
+	// ─── P4 Team control ─────────────────────────────────────────────────────────
+
+	'team.policy.set with enabled=true succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->enabled = true;
+		$params->switch_lock = false;
+		$data = makeAdminRequest('team.policy.set', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('team_policy_set', $answer->data['code']);
+		Assert::same(true, $answer->data['details']['enabled']);
+		Assert::same(false, $answer->data['details']['switch_lock']);
+	},
+
+	'team.policy.set with missing enabled returns invalid_parameter' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$data = makeAdminRequest('team.policy.set', 'test-server.local', 'valid-token');
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_parameter', $answer->data['code']);
+	},
+
+	'team.policy.get returns current policy' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+
+		// Set policy first.
+		$setParams = new stdClass();
+		$setParams->enabled = true;
+		$setParams->switch_lock = true;
+		$setData = makeAdminRequest('team.policy.set', 'test-server.local', 'valid-token', $setParams);
+		$harness->callHandleAdminExecuteAction($setData);
+
+		// Now get.
+		$getData = makeAdminRequest('team.policy.get', 'test-server.local', 'valid-token');
+		$answer = $harness->callHandleAdminExecuteAction($getData);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('team_policy_retrieved', $answer->data['code']);
+		Assert::same(true, $answer->data['details']['enabled']);
+		Assert::same(true, $answer->data['details']['switch_lock']);
+	},
+
+	'team.roster.assign with valid params succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'playerX';
+		$params->team = 'team_b';
+		$data = makeAdminRequest('team.roster.assign', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('team_roster_assigned', $answer->data['code']);
+		Assert::same('playerX', $answer->data['details']['target_login']);
+		Assert::same('team_b', $answer->data['details']['team']);
+		Assert::same('team_b', $answer->data['details']['roster']['playerX']);
+	},
+
+	'team.roster.assign with invalid team returns invalid_team' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'playerX';
+		$params->team = 'invalid';
+		$data = makeAdminRequest('team.roster.assign', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('invalid_team', $answer->data['code']);
+	},
+
+	'team.roster.assign accepts blue as team_b alias' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'playerX';
+		$params->team = 'blue';
+		$data = makeAdminRequest('team.roster.assign', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('team_b', $answer->data['details']['team']);
+	},
+
+	'team.roster.unassign with valid login succeeds' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+
+		// Assign first.
+		$assignParams = new stdClass();
+		$assignParams->target_login = 'playerX';
+		$assignParams->team = 'team_a';
+		$harness->callHandleAdminExecuteAction(
+			makeAdminRequest('team.roster.assign', 'test-server.local', 'valid-token', $assignParams)
+		);
+
+		// Now unassign.
+		$params = new stdClass();
+		$params->target_login = 'playerX';
+		$data = makeAdminRequest('team.roster.unassign', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('team_roster_unassigned', $answer->data['code']);
+		Assert::same('playerX', $answer->data['details']['target_login']);
+		Assert::same(false, isset($answer->data['details']['roster']['playerX']));
+	},
+
+	'team.roster.unassign with unknown login returns player_not_in_roster' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+		$params = new stdClass();
+		$params->target_login = 'unknownPlayer';
+		$data = makeAdminRequest('team.roster.unassign', 'test-server.local', 'valid-token', $params);
+
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(false, $answer->data['success']);
+		Assert::same('player_not_in_roster', $answer->data['code']);
+	},
+
+	'team.roster.list returns roster array' => function () {
+		$harness = new AdminCommandTestHarness(array('Pixel Control Link Token' => 'valid-token'));
+
+		// Assign two players.
+		foreach (array('playerA' => 'team_a', 'playerB' => 'team_b') as $login => $team) {
+			$p = new stdClass();
+			$p->target_login = $login;
+			$p->team = $team;
+			$harness->callHandleAdminExecuteAction(
+				makeAdminRequest('team.roster.assign', 'test-server.local', 'valid-token', $p)
+			);
+		}
+
+		$data = makeAdminRequest('team.roster.list', 'test-server.local', 'valid-token');
+		$answer = $harness->callHandleAdminExecuteAction($data);
+		Assert::same(true, $answer->data['success']);
+		Assert::same('team_roster_retrieved', $answer->data['code']);
+		Assert::same(2, $answer->data['details']['count']);
+		Assert::same('team_a', $answer->data['details']['roster']['playerA']);
+		Assert::same('team_b', $answer->data['details']['roster']['playerB']);
 	},
 
 );

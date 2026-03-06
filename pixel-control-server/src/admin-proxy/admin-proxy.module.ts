@@ -7,13 +7,15 @@ import { ManiaControlSocketClient } from './maniacontrol-socket.client';
 
 /**
  * Shared module providing ManiaControl socket communication infrastructure
- * for all P3 admin command modules.
+ * for all P3+ admin command modules.
  *
- * Exported: AdminProxyService (high-level action proxy with auth injection)
+ * Exported:
+ * - AdminProxyService (high-level action proxy with auth injection)
+ * - ManiaControlSocketClient (low-level TCP socket client, reusable by VetoDraftProxyModule)
  */
 @Module({
   imports: [CommonModule, ConfigModule],
   providers: [ManiaControlSocketClient, AdminProxyService],
-  exports: [AdminProxyService],
+  exports: [ManiaControlSocketClient, AdminProxyService],
 })
 export class AdminProxyModule {}

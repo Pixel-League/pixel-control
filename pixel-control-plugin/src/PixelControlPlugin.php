@@ -15,6 +15,7 @@ use PixelControl\Retry\RetryPolicyInterface;
 use PixelControl\Stats\PlayerCombatStatsStore;
 use PixelControl\Domain\Admin\AdminCommandTrait;
 use PixelControl\Domain\Combat\CombatDomainTrait;
+use PixelControl\Domain\VetoDraft\VetoDraftCommandTrait;
 use PixelControl\Domain\Combat\EliteRoundTrackingTrait;
 use PixelControl\Domain\Connectivity\ConnectivityDomainTrait;
 use PixelControl\Domain\Core\CoreDomainTrait;
@@ -33,6 +34,7 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	use EliteRoundTrackingTrait;
 	use PipelineDomainTrait;
 	use AdminCommandTrait;
+	use VetoDraftCommandTrait;
 
 	const ID = 100001;
 	const VERSION = '0.1.0-dev';

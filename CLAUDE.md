@@ -112,14 +112,14 @@ bash scripts/replay-extended-telemetry-wave4.sh
 - ManiaControl plugin pattern: implement `Plugin` interface (`prepare`, `load`, `unload`, metadata getters), wire callbacks via managers, settings via `SettingManager`.
 - NestJS server: Fastify platform, modules per domain, Prisma for DB, Vitest for tests.
 - Auth model (plugin→server): `link_bearer` token — finalized. API generates UUID tokens on first registration or explicit rotate.
-- Plugin is **Elite-only** after PLAN-ELITE-ENRICHMENT (all 14 phases done). VetoDraft, Admin Control, Access Control, Series Control, and Team Control subsystems have been removed. Only Elite mode callbacks remain in `CallbackRegistry.php`.
+- Plugin is **Elite-only** after PLAN-ELITE-ENRICHMENT (all 14 phases done). Full VetoDraft game logic was removed, but `VetoDraftCommandTrait` was re-added in P4 as a communication-listener-only trait (minimal session state, 5 socket methods). Admin Control, Access Control, Series Control, and Team Control subsystems have been removed. Only Elite mode callbacks remain in `CallbackRegistry.php`.
 - No inline TS imports — use static imports at file top.
 - `NEW_API_CONTRACT.md` (repo root) is the **route/contract source of truth** — keep it updated on every plugin→server change.
 
 ## CI / Release
 - **No CI configured** (no `.github/workflows/`, no `.gitlab-ci.yml`).
 - No release/versioning process defined yet.
-- Current active branch: `feat/p3-admin-commands` (P0–P3 + Elite enrichment + API Test UI — not yet merged into `main`).
+- Current active branch: `feat/p4-extended-control` (P0–P4 + Elite enrichment + API Test UI — not yet merged into `main`).
 
 ## Gotchas
 - **Apple Silicon**: set `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64` — game binaries are x86.
@@ -132,4 +132,7 @@ bash scripts/replay-extended-telemetry-wave4.sh
 - **Plugin sends NO batch events** — it dispatches events individually. BatchService is forward-compatible scaffolding only.
 - **P3 Admin Commands (AdminProxyModule)**: socket config via env vars `MC_SOCKET_HOST` (default: `127.0.0.1`), `MC_SOCKET_PORT` (default: `31501`), `MC_SOCKET_PASSWORD`. ManiaControl socket must be accessible from the API. For Docker dev stack, expose port 31501 in `pixel-sm-server/docker-compose.yml`.
 - **ManiaControl socket protocol**: AES-192-CBC encrypted TCP. IV = `kZ2Kt0CzKUjN2MJX` (constant). Frame: `<encrypted_length>\n<encrypted_data>`. Encryption key = socket password, truncated/padded to 24 bytes.
-- **Plugin admin listener**: `PixelControl.Admin.ExecuteAction` communication channel, re-implemented in `AdminCommandTrait.php` for P3 scope (16 actions only). Link-auth validation per request.
+- **Plugin admin listener**: `PixelControl.Admin.ExecuteAction` communication channel in `AdminCommandTrait.php`. P3: 16 actions. P4 extended: 8 new actions (`player.force_team`, `player.force_play`, `player.force_spec`, `team.policy.get|set`, `team.roster.assign|unassign|list`). Total: 24 actions. Link-auth validation per request.
+- **VetoDraftCommandTrait**: `PixelControl.VetoDraft.*` methods (Status, Ready, Start, Action, Cancel). Minimal session state in trait. Wired via `registerVetoDraftCommandListener()` in `CoreDomainTrait.load()`.
+- **P4 server modules**: `VetoDraftProxyModule` + `VetoDraftModule` (P4.1–P4.5), `AdminPlayersModule` (P4.6–P4.8), `AdminTeamsModule` (P4.9–P4.13).
+- **P4 UI pages**: `AdminVetoDraft` (/admin/veto), `AdminPlayerManagement` (/admin/players), `AdminTeamControl` (/admin/teams). New API client: `src/api/veto.ts`.

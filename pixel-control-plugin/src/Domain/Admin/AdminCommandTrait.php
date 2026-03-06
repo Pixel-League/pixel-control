@@ -29,6 +29,17 @@ trait AdminCommandTrait {
 	/** @var array $teamRoundScore */
 	private $teamRoundScore = array('team_a' => 0, 'team_b' => 0);
 
+	// ─── P4 Team control state ────────────────────────────────────────────────────
+
+	/** @var bool $teamPolicyEnabled */
+	private $teamPolicyEnabled = false;
+
+	/** @var bool $teamSwitchLock */
+	private $teamSwitchLock = false;
+
+	/** @var array $teamRoster Login => 'team_a'|'team_b' */
+	private $teamRoster = array();
+
 	/**
 	 * Registers the PixelControl.Admin.ExecuteAction communication listener.
 	 * Call from load().
@@ -64,22 +75,35 @@ trait AdminCommandTrait {
 		$parameters = isset($data->parameters) ? $data->parameters : null;
 
 		$actionMap = array(
-			'map.skip'        => 'handleMapSkip',
-			'map.restart'     => 'handleMapRestart',
-			'map.jump'        => 'handleMapJump',
-			'map.queue'       => 'handleMapQueue',
-			'map.add'         => 'handleMapAdd',
-			'map.remove'      => 'handleMapRemove',
-			'warmup.extend'   => 'handleWarmupExtend',
-			'warmup.end'      => 'handleWarmupEnd',
-			'pause.start'     => 'handlePauseStart',
-			'pause.end'       => 'handlePauseEnd',
-			'match.bo.get'    => 'handleMatchBestOfGet',
-			'match.bo.set'    => 'handleMatchBestOfSet',
-			'match.maps.get'  => 'handleMatchMapsGet',
-			'match.maps.set'  => 'handleMatchMapsSet',
-			'match.score.get' => 'handleMatchScoreGet',
-			'match.score.set' => 'handleMatchScoreSet',
+			// P3 -- Map management
+			'map.skip'              => 'handleMapSkip',
+			'map.restart'           => 'handleMapRestart',
+			'map.jump'              => 'handleMapJump',
+			'map.queue'             => 'handleMapQueue',
+			'map.add'               => 'handleMapAdd',
+			'map.remove'            => 'handleMapRemove',
+			// P3 -- Warmup and pause
+			'warmup.extend'         => 'handleWarmupExtend',
+			'warmup.end'            => 'handleWarmupEnd',
+			'pause.start'           => 'handlePauseStart',
+			'pause.end'             => 'handlePauseEnd',
+			// P3 -- Match configuration
+			'match.bo.get'          => 'handleMatchBestOfGet',
+			'match.bo.set'          => 'handleMatchBestOfSet',
+			'match.maps.get'        => 'handleMatchMapsGet',
+			'match.maps.set'        => 'handleMatchMapsSet',
+			'match.score.get'       => 'handleMatchScoreGet',
+			'match.score.set'       => 'handleMatchScoreSet',
+			// P4 -- Player management
+			'player.force_team'     => 'handlePlayerForceTeam',
+			'player.force_play'     => 'handlePlayerForcePlay',
+			'player.force_spec'     => 'handlePlayerForceSpec',
+			// P4 -- Team control
+			'team.policy.set'       => 'handleTeamPolicySet',
+			'team.policy.get'       => 'handleTeamPolicyGet',
+			'team.roster.assign'    => 'handleTeamRosterAssign',
+			'team.roster.unassign'  => 'handleTeamRosterUnassign',
+			'team.roster.list'      => 'handleTeamRosterList',
 		);
 
 		if (!isset($actionMap[$action])) {
@@ -530,6 +554,231 @@ trait AdminCommandTrait {
 		);
 	}
 
+	// ─── Player management handlers (P4.6--P4.8) ─────────────────────────────────
+
+	private function handlePlayerForceTeam($parameters) {
+		if (!$this->maniaControl) {
+			return $this->errorResponse('player.force_team', 'ManiaControl not available.');
+		}
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'player.force_team',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		$rawTeam = $this->requireStringParam($parameters, 'team');
+		if ($rawTeam === null) {
+			return array(
+				'action_name' => 'player.force_team',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty team parameter.',
+			);
+		}
+		$team = $this->normalizeTeamValue($rawTeam);
+		if ($team === null) {
+			return array(
+				'action_name' => 'player.force_team',
+				'success'     => false,
+				'code'        => 'invalid_team',
+				'message'     => "Invalid team value '{$rawTeam}'. Accepted: team_a, team_b, 0, 1, red, blue, a, b.",
+			);
+		}
+		$teamInt = ($team === 'team_a') ? 0 : 1;
+		// Force the player out of spectator mode first, then assign team.
+		$this->maniaControl->getClient()->forceSpectator($targetLogin, 0);
+		$this->maniaControl->getClient()->forcePlayerTeam($targetLogin, $teamInt);
+		return array(
+			'action_name' => 'player.force_team',
+			'success'     => true,
+			'code'        => 'player_team_forced',
+			'message'     => "Player '{$targetLogin}' forced to {$team}.",
+			'details'     => array(
+				'target_login' => $targetLogin,
+				'team'         => $team,
+			),
+		);
+	}
+
+	private function handlePlayerForcePlay($parameters) {
+		if (!$this->maniaControl) {
+			return $this->errorResponse('player.force_play', 'ManiaControl not available.');
+		}
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'player.force_play',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		$this->maniaControl->getClient()->forceSpectator($targetLogin, 0);
+		return array(
+			'action_name' => 'player.force_play',
+			'success'     => true,
+			'code'        => 'player_forced_play',
+			'message'     => "Player '{$targetLogin}' forced into player mode.",
+			'details'     => array('target_login' => $targetLogin),
+		);
+	}
+
+	private function handlePlayerForceSpec($parameters) {
+		if (!$this->maniaControl) {
+			return $this->errorResponse('player.force_spec', 'ManiaControl not available.');
+		}
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'player.force_spec',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		$this->maniaControl->getClient()->forceSpectator($targetLogin, 1);
+		return array(
+			'action_name' => 'player.force_spec',
+			'success'     => true,
+			'code'        => 'player_forced_spec',
+			'message'     => "Player '{$targetLogin}' forced into spectator mode.",
+			'details'     => array('target_login' => $targetLogin),
+		);
+	}
+
+	// ─── Team control handlers (P4.9--P4.13) ─────────────────────────────────────
+
+	private function handleTeamPolicySet($parameters) {
+		$enabled = $this->requireBoolParam($parameters, 'enabled');
+		if ($enabled === null) {
+			return array(
+				'action_name' => 'team.policy.set',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or invalid enabled parameter (must be boolean).',
+			);
+		}
+		$this->teamPolicyEnabled = $enabled;
+
+		$switchLock = $this->requireBoolParam($parameters, 'switch_lock');
+		if ($switchLock !== null) {
+			$this->teamSwitchLock = $switchLock;
+		}
+
+		return array(
+			'action_name' => 'team.policy.set',
+			'success'     => true,
+			'code'        => 'team_policy_set',
+			'message'     => 'Team policy updated.',
+			'details'     => array(
+				'enabled'     => $this->teamPolicyEnabled,
+				'switch_lock' => $this->teamSwitchLock,
+			),
+		);
+	}
+
+	private function handleTeamPolicyGet($parameters) {
+		return array(
+			'action_name' => 'team.policy.get',
+			'success'     => true,
+			'code'        => 'team_policy_retrieved',
+			'message'     => 'Team policy retrieved.',
+			'details'     => array(
+				'enabled'     => $this->teamPolicyEnabled,
+				'switch_lock' => $this->teamSwitchLock,
+			),
+		);
+	}
+
+	private function handleTeamRosterAssign($parameters) {
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'team.roster.assign',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		$rawTeam = $this->requireStringParam($parameters, 'team');
+		if ($rawTeam === null) {
+			return array(
+				'action_name' => 'team.roster.assign',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty team parameter.',
+			);
+		}
+		$team = $this->normalizeTeamValue($rawTeam);
+		if ($team === null) {
+			return array(
+				'action_name' => 'team.roster.assign',
+				'success'     => false,
+				'code'        => 'invalid_team',
+				'message'     => "Invalid team value '{$rawTeam}'. Accepted: team_a, team_b, 0, 1, red, blue, a, b.",
+			);
+		}
+		$this->teamRoster[$targetLogin] = $team;
+		return array(
+			'action_name' => 'team.roster.assign',
+			'success'     => true,
+			'code'        => 'team_roster_assigned',
+			'message'     => "Player '{$targetLogin}' assigned to {$team}.",
+			'details'     => array(
+				'target_login' => $targetLogin,
+				'team'         => $team,
+				'roster'       => $this->teamRoster,
+			),
+		);
+	}
+
+	private function handleTeamRosterUnassign($parameters) {
+		$targetLogin = $this->requireStringParam($parameters, 'target_login');
+		if ($targetLogin === null) {
+			return array(
+				'action_name' => 'team.roster.unassign',
+				'success'     => false,
+				'code'        => 'invalid_parameter',
+				'message'     => 'Missing or empty target_login parameter.',
+			);
+		}
+		if (!isset($this->teamRoster[$targetLogin])) {
+			return array(
+				'action_name' => 'team.roster.unassign',
+				'success'     => false,
+				'code'        => 'player_not_in_roster',
+				'message'     => "Player '{$targetLogin}' is not in the team roster.",
+			);
+		}
+		unset($this->teamRoster[$targetLogin]);
+		return array(
+			'action_name' => 'team.roster.unassign',
+			'success'     => true,
+			'code'        => 'team_roster_unassigned',
+			'message'     => "Player '{$targetLogin}' removed from team roster.",
+			'details'     => array(
+				'target_login' => $targetLogin,
+				'roster'       => $this->teamRoster,
+			),
+		);
+	}
+
+	private function handleTeamRosterList($parameters) {
+		return array(
+			'action_name' => 'team.roster.list',
+			'success'     => true,
+			'code'        => 'team_roster_retrieved',
+			'message'     => 'Team roster retrieved.',
+			'details'     => array(
+				'roster' => $this->teamRoster,
+				'count'  => count($this->teamRoster),
+			),
+		);
+	}
+
 	// ─── Shared parameter helpers ─────────────────────────────────────────────────
 
 	/**
@@ -619,5 +868,63 @@ trait AdminCommandTrait {
 			'code'        => 'internal_error',
 			'message'     => $message,
 		);
+	}
+
+	/**
+	 * Extracts a boolean parameter by key from the $parameters object/array.
+	 * Handles true/false booleans, 1/0 integers, and "true"/"false"/"1"/"0" strings.
+	 *
+	 * @param mixed  $parameters
+	 * @param string $key
+	 * @return bool|null Returns null if the key is absent or the value is not a recognizable boolean.
+	 */
+	private function requireBoolParam($parameters, $key) {
+		if ($parameters === null) {
+			return null;
+		}
+		$raw = null;
+		if (is_object($parameters) && property_exists($parameters, $key)) {
+			$raw = $parameters->$key;
+		} elseif (is_array($parameters) && array_key_exists($key, $parameters)) {
+			$raw = $parameters[$key];
+		}
+		if ($raw === null && $raw !== false && $raw !== 0) {
+			return null;
+		}
+		if (is_bool($raw)) {
+			return $raw;
+		}
+		if (is_int($raw)) {
+			return $raw !== 0;
+		}
+		$normalized = strtolower(trim((string) $raw));
+		if (in_array($normalized, array('true', '1', 'yes', 'on'), true)) {
+			return true;
+		}
+		if (in_array($normalized, array('false', '0', 'no', 'off'), true)) {
+			return false;
+		}
+		return null;
+	}
+
+	/**
+	 * Normalizes a team value to 'team_a' or 'team_b'.
+	 * Accepts: 0, 1, 'a', 'b', 'red', 'blue', 'team_a', 'team_b'.
+	 * Returns null for unrecognized values.
+	 *
+	 * @param string $team
+	 * @return string|null
+	 */
+	private function normalizeTeamValue($team) {
+		$normalized = strtolower(trim((string) $team));
+		$teamAValues = array('0', 'a', 'red', 'team_a');
+		$teamBValues = array('1', 'b', 'blue', 'team_b');
+		if (in_array($normalized, $teamAValues, true)) {
+			return 'team_a';
+		}
+		if (in_array($normalized, $teamBValues, true)) {
+			return 'team_b';
+		}
+		return null;
 	}
 }

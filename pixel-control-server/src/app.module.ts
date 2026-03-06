@@ -17,6 +17,10 @@ import { PlayersReadModule } from './players/players-read.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StatsReadModule } from './stats/stats-read.module';
 import { StatusModule } from './status/status.module';
+import { AdminPlayersModule } from './admin-players/admin-players.module';
+import { AdminTeamsModule } from './admin-teams/admin-teams.module';
+import { VetoDraftProxyModule } from './veto-draft-proxy/veto-draft-proxy.module';
+import { VetoDraftModule } from './veto-draft/veto-draft.module';
 
 @Module({
   imports: [
@@ -35,6 +39,10 @@ import { StatusModule } from './status/status.module';
     AdminMapsModule,
     AdminWarmupPauseModule,
     AdminMatchModule,
+    VetoDraftProxyModule,
+    VetoDraftModule,
+    AdminPlayersModule,
+    AdminTeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

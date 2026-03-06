@@ -243,9 +243,9 @@ Team values: `0`, `1`, `red`, `blue`, `team_a`, `team_b`, `a`, `b` (normalized t
 
 | Method | Endpoint                                                     | Body           | Description         | Dev Status | Priority |
 | ------ | ------------------------------------------------------------ | -------------- | ------------------- | ---------- | -------- |
-| `POST` | `/v1/servers/:serverLogin/players/:login/force-team`         | `{ team }`     | Force to team       | Todo 🛑    | P4.6     |
-| `POST` | `/v1/servers/:serverLogin/players/:login/force-play`         | —              | Force to play       | Todo 🛑    | P4.7     |
-| `POST` | `/v1/servers/:serverLogin/players/:login/force-spec`         | —              | Force to spectator  | Todo 🛑    | P4.8     |
+| `POST` | `/v1/servers/:serverLogin/players/:login/force-team`         | `{ team }`     | Force to team       | Done ✅    | P4.6     |
+| `POST` | `/v1/servers/:serverLogin/players/:login/force-play`         | —              | Force to play       | Done ✅    | P4.7     |
+| `POST` | `/v1/servers/:serverLogin/players/:login/force-spec`         | —              | Force to spectator  | Done ✅    | P4.8     |
 | `GET`  | `/v1/servers/:serverLogin/players`                           | —              | List players (from plugin telemetry) | Done ✅    | P2.1     |
 
 #### Auth Management
@@ -314,11 +314,11 @@ Aliases: `team.policy.status` → `team.policy.get`; `team.assign` → `team.ros
 
 | Method | Endpoint                                                    | Body                            | Description           | Dev Status | Priority |
 | ------ | ----------------------------------------------------------- | ------------------------------- | --------------------- | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/teams/policy`                     | —                               | Get team policy       | Todo 🛑    | P4.10    |
-| `PUT`  | `/v1/servers/:serverLogin/teams/policy`                     | `{ enabled, switch_lock? }`     | Set team policy       | Todo 🛑    | P4.9     |
-| `POST` | `/v1/servers/:serverLogin/teams/roster`                     | `{ target_login, team }`        | Assign to roster      | Todo 🛑    | P4.11    |
-| `DELETE`| `/v1/servers/:serverLogin/teams/roster/:login`             | —                               | Unassign from roster  | Todo 🛑    | P4.12    |
-| `GET`  | `/v1/servers/:serverLogin/teams/roster`                     | —                               | List roster           | Todo 🛑    | P4.13    |
+| `GET`  | `/v1/servers/:serverLogin/teams/policy`                     | —                               | Get team policy       | Done ✅    | P4.10    |
+| `PUT`  | `/v1/servers/:serverLogin/teams/policy`                     | `{ enabled, switch_lock? }`     | Set team policy       | Done ✅    | P4.9     |
+| `POST` | `/v1/servers/:serverLogin/teams/roster`                     | `{ target_login, team }`        | Assign to roster      | Done ✅    | P4.11    |
+| `DELETE`| `/v1/servers/:serverLogin/teams/roster/:login`             | —                               | Unassign from roster  | Done ✅    | P4.12    |
+| `GET`  | `/v1/servers/:serverLogin/teams/roster`                     | —                               | List roster           | Done ✅    | P4.13    |
 
 #### Match / Series Configuration
 
@@ -533,11 +533,11 @@ Cancels the active veto/draft session.
 
 | Method | Endpoint                                        | Body                                                                 | Description        | Dev Status | Priority |
 | ------ | ----------------------------------------------- | -------------------------------------------------------------------- | ------------------ | ---------- | -------- |
-| `GET`  | `/v1/servers/:serverLogin/veto/status`          | —                                                                    | Get veto state     | Todo 🛑    | P4.1     |
-| `POST` | `/v1/servers/:serverLogin/veto/ready`           | —                                                                    | Arm ready gate     | Todo 🛑    | P4.2     |
-| `POST` | `/v1/servers/:serverLogin/veto/start`           | `{ mode, duration_seconds?, captain_a?, captain_b?, best_of?, ... }` | Start session      | Todo 🛑    | P4.3     |
-| `POST` | `/v1/servers/:serverLogin/veto/action`          | `{ actor_login, operation?, map, ... }`                              | Submit vote/action | Todo 🛑    | P4.4     |
-| `POST` | `/v1/servers/:serverLogin/veto/cancel`          | `{ reason? }`                                                        | Cancel session     | Todo 🛑    | P4.5     |
+| `GET`  | `/v1/servers/:serverLogin/veto/status`          | —                                                                    | Get veto state     | Done ✅    | P4.1     |
+| `POST` | `/v1/servers/:serverLogin/veto/ready`           | —                                                                    | Arm ready gate     | Done ✅    | P4.2     |
+| `POST` | `/v1/servers/:serverLogin/veto/start`           | `{ mode, duration_seconds?, captain_a?, captain_b?, best_of?, ... }` | Start session      | Done ✅    | P4.3     |
+| `POST` | `/v1/servers/:serverLogin/veto/action`          | `{ actor_login, operation?, map, ... }`                              | Submit vote/action | Done ✅    | P4.4     |
+| `POST` | `/v1/servers/:serverLogin/veto/cancel`          | `{ reason? }`                                                        | Cancel session     | Done ✅    | P4.5     |
 
 ---
 
@@ -1240,9 +1240,9 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `PUT`    | `.../votes/ratio`                           | `vote.set_ratio`    | Votes        | Todo 🛑    | P5.11     |
 | `POST`   | `.../votes/custom`                          | `vote.custom_start` | Votes        | Todo 🛑    | P5.12     |
 | `PUT`    | `.../votes/policy`                          | `vote.policy.set`   | Votes        | Todo 🛑    | P5.14     |
-| `POST`   | `.../players/:login/force-team`             | `player.force_team` | Players      | Todo 🛑    | P4.6      |
-| `POST`   | `.../players/:login/force-play`             | `player.force_play` | Players      | Todo 🛑    | P4.7      |
-| `POST`   | `.../players/:login/force-spec`             | `player.force_spec` | Players      | Todo 🛑    | P4.8      |
+| `POST`   | `.../players/:login/force-team`             | `player.force_team` | Players      | Done ✅    | P4.6      |
+| `POST`   | `.../players/:login/force-play`             | `player.force_play` | Players      | Done ✅    | P4.7      |
+| `POST`   | `.../players/:login/force-spec`             | `player.force_spec` | Players      | Done ✅    | P4.8      |
 | `POST`   | `.../players/:login/auth`                   | `auth.grant`        | Auth         | Todo 🛑    | P5.1      |
 | `DELETE`  | `.../players/:login/auth`                  | `auth.revoke`       | Auth         | Todo 🛑    | P5.2      |
 | `POST`   | `.../whitelist/enable`                      | `whitelist.enable`  | Whitelist    | Todo 🛑    | P5.3      |
@@ -1251,16 +1251,16 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `DELETE`  | `.../whitelist/:login`                     | `whitelist.remove`  | Whitelist    | Todo 🛑    | P5.6      |
 | `DELETE`  | `.../whitelist`                            | `whitelist.clean`   | Whitelist    | Todo 🛑    | P5.8      |
 | `POST`   | `.../whitelist/sync`                        | `whitelist.sync`    | Whitelist    | Todo 🛑    | P5.9      |
-| `PUT`    | `.../teams/policy`                          | `team.policy.set`   | Teams        | Todo 🛑    | P4.9      |
-| `POST`   | `.../teams/roster`                          | `team.roster.assign`| Teams        | Todo 🛑    | P4.11     |
-| `DELETE`  | `.../teams/roster/:login`                  | `team.roster.unassign` | Teams     | Todo 🛑    | P4.12     |
+| `PUT`    | `.../teams/policy`                          | `team.policy.set`   | Teams        | Done ✅    | P4.9      |
+| `POST`   | `.../teams/roster`                          | `team.roster.assign`| Teams        | Done ✅    | P4.11     |
+| `DELETE`  | `.../teams/roster/:login`                  | `team.roster.unassign` | Teams     | Done ✅    | P4.12     |
 | `PUT`    | `.../match/best-of`                         | `match.bo.set`      | Match        | Done ✅    | P3.11     |
 | `PUT`    | `.../match/maps-score`                      | `match.maps.set`    | Match        | Done ✅    | P3.13     |
 | `PUT`    | `.../match/round-score`                     | `match.score.set`   | Match        | Done ✅    | P3.15     |
-| `POST`   | `.../veto/ready`                            | VetoDraft.Ready     | Veto         | Todo 🛑    | P4.2      |
-| `POST`   | `.../veto/start`                            | VetoDraft.Start     | Veto         | Todo 🛑    | P4.3      |
-| `POST`   | `.../veto/action`                           | VetoDraft.Action    | Veto         | Todo 🛑    | P4.4      |
-| `POST`   | `.../veto/cancel`                           | VetoDraft.Cancel    | Veto         | Todo 🛑    | P4.5      |
+| `POST`   | `.../veto/ready`                            | VetoDraft.Ready     | Veto         | Done ✅    | P4.2      |
+| `POST`   | `.../veto/start`                            | VetoDraft.Start     | Veto         | Done ✅    | P4.3      |
+| `POST`   | `.../veto/action`                           | VetoDraft.Action    | Veto         | Done ✅    | P4.4      |
+| `POST`   | `.../veto/cancel`                           | VetoDraft.Cancel    | Veto         | Done ✅    | P4.5      |
 
 ## 4.2 Link Management Endpoints
 
@@ -1301,13 +1301,13 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | `GET`  | `.../lifecycle/map-rotation`                | lifecycle        | Map rotation + veto state             | Done ✅    | P2.8     |
 | `GET`  | `.../lifecycle/aggregate-stats`             | lifecycle        | Latest aggregate stats                | Done ✅    | P2.9     |
 | `GET`  | `.../votes/policy`                          | connectivity     | Current vote policy                   | Todo 🛑    | P5.13    |
-| `GET`  | `.../teams/policy`                          | connectivity     | Current team policy                   | Todo 🛑    | P4.10    |
-| `GET`  | `.../teams/roster`                          | connectivity     | Current roster                        | Todo 🛑    | P4.13    |
+| `GET`  | `.../teams/policy`                          | connectivity     | Current team policy                   | Done ✅    | P4.10    |
+| `GET`  | `.../teams/roster`                          | connectivity     | Current roster                        | Done ✅    | P4.13    |
 | `GET`  | `.../whitelist`                             | connectivity     | Current whitelist                     | Todo 🛑    | P5.7     |
 | `GET`  | `.../match/best-of`                         | connectivity     | Best-of configuration                 | Done ✅    | P3.12    |
 | `GET`  | `.../match/maps-score`                      | connectivity     | Maps score state                      | Done ✅    | P3.14    |
 | `GET`  | `.../match/round-score`                     | connectivity     | Round score state                     | Done ✅    | P3.16    |
-| `GET`  | `.../veto/status`                           | veto             | Veto/draft session state              | Todo 🛑    | P4.1     |
+| `GET`  | `.../veto/status`                           | veto             | Veto/draft session state              | Done ✅    | P4.1     |
 | `GET`  | `.../mode`                                  | mode             | Current game mode + events            | Done ✅    | P2.12    |
 
 ## 4.4 Ingestion Endpoints (plugin → server, internal)
