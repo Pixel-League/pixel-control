@@ -6,6 +6,25 @@ use ManiaControl\Players\Player;
 
 trait PlayerContinuityCorrelationTrait {
 
+	/** @var array Admin action contexts for correlation (populated by removed Admin Control subsystem — kept as empty stub) */
+	private $recentAdminActionContexts = array();
+
+	/** @var int Window in seconds for admin action correlation */
+	private $adminCorrelationWindowSeconds = 30;
+
+	private function pruneRecentAdminActionContexts() {
+		if (empty($this->recentAdminActionContexts)) {
+			return;
+		}
+		$cutoff = time() - $this->adminCorrelationWindowSeconds;
+		$this->recentAdminActionContexts = array_values(array_filter(
+			$this->recentAdminActionContexts,
+			function ($ctx) use ($cutoff) {
+				return is_array($ctx) && isset($ctx['observed_at']) && (int) $ctx['observed_at'] >= $cutoff;
+			}
+		));
+	}
+
 	private function nextPlayerTransitionSequence() {
 		$this->playerTransitionSequence++;
 		return $this->playerTransitionSequence;

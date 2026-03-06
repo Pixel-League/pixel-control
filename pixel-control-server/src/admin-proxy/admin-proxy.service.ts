@@ -142,13 +142,24 @@ export class AdminProxyService {
     }
 
     // 5. Parse and validate the plugin response.
-    const raw = socketResult.data as RawPluginResponse;
+    // ManiaControl CommunicationManager wraps responses in CommunicationAnswer: {error, data}.
+    // The actual plugin payload is inside .data.
+    const communicationAnswer = socketResult.data as {
+      error?: boolean;
+      data?: unknown;
+    };
 
-    if (raw?.error === true) {
+    if (communicationAnswer?.error === true) {
+      const errorMsg =
+        typeof communicationAnswer.data === 'string'
+          ? communicationAnswer.data
+          : 'Plugin communication error';
       throw new BadGatewayException(
-        `Plugin communication error for action '${actionName}'`,
+        `Plugin communication error for action '${actionName}': ${errorMsg}`,
       );
     }
+
+    const raw = (communicationAnswer?.data ?? communicationAnswer) as RawPluginResponse;
 
     const response: AdminActionResponse = {
       action_name: raw?.action_name ?? actionName,

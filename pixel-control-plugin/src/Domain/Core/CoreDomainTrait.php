@@ -154,6 +154,7 @@ trait CoreDomainTrait {
 		$settingManager->initSetting($this, self::SETTING_QUEUE_MAX_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_QUEUE_MAX_SIZE, 'PIXEL_CONTROL_QUEUE_MAX_SIZE', 2000, 1));
 		$settingManager->initSetting($this, self::SETTING_DISPATCH_BATCH_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1));
 		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1));
+		$settingManager->initSetting($this, self::SETTING_WHITELIST_CHECK_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_WHITELIST_CHECK_INTERVAL_SECONDS, 'PIXEL_CONTROL_WHITELIST_CHECK_INTERVAL_SECONDS', 10, 1));
 	}
 
 	private function initializeEventPipeline() {
@@ -233,7 +234,10 @@ trait CoreDomainTrait {
 		$timerManager->registerTimerListening($this, 'handleDispatchTimerTick', 1000);
 		$timerManager->registerTimerListening($this, 'handleHeartbeatTimerTick', $this->heartbeatIntervalSeconds * 1000);
 
-		Logger::log('[PixelControl] Timers registered: dispatch=1s, heartbeat=' . $this->heartbeatIntervalSeconds . 's.');
+		$whitelistCheckInterval = $this->resolveRuntimeIntSetting(self::SETTING_WHITELIST_CHECK_INTERVAL_SECONDS, 'PIXEL_CONTROL_WHITELIST_CHECK_INTERVAL_SECONDS', 10, 1);
+		$timerManager->registerTimerListening($this, 'handleWhitelistCheckTimerTick', $whitelistCheckInterval * 1000);
+
+		Logger::log('[PixelControl] Timers registered: dispatch=1s, heartbeat=' . $this->heartbeatIntervalSeconds . 's, whitelist_check=' . $whitelistCheckInterval . 's.');
 	}
 
 	private function resolveRuntimeStringSetting($settingName, $environmentVariableName, $fallback) {

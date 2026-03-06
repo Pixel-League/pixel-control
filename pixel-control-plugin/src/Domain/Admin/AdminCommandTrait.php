@@ -74,6 +74,14 @@ trait AdminCommandTrait {
 	}
 
 	/**
+	 * Called every N seconds (configurable via SETTING_WHITELIST_CHECK_INTERVAL_SECONDS).
+	 * Kicks any connected player not present on the whitelist when it is enabled.
+	 */
+	public function handleWhitelistCheckTimerTick() {
+		$this->enforceWhitelist();
+	}
+
+	/**
 	 * Handles an incoming PixelControl.Admin.ExecuteAction communication request.
 	 * Called by ManiaControl CommunicationManager.
 	 *
@@ -295,7 +303,7 @@ trait AdminCommandTrait {
 				'message'     => "Map with UID '{$mapUid}' not found in the server map pool.",
 			);
 		}
-		$this->maniaControl->getMapManager()->getMapActions()->skipToMap($map);
+		$this->maniaControl->getMapManager()->getMapActions()->skipToMapByUid($mapUid);
 		return array(
 			'action_name' => 'map.jump',
 			'success'     => true,
@@ -327,7 +335,7 @@ trait AdminCommandTrait {
 				'message'     => "Map with UID '{$mapUid}' not found in the server map pool.",
 			);
 		}
-		$this->maniaControl->getMapManager()->addMapToQueue($map);
+		$this->maniaControl->getMapManager()->getMapQueue()->serverAddMapToMapQueue($mapUid);
 		return array(
 			'action_name' => 'map.queue',
 			'success'     => true,
@@ -350,7 +358,7 @@ trait AdminCommandTrait {
 				'message'     => 'Missing or invalid mx_id parameter.',
 			);
 		}
-		$this->maniaControl->getMapManager()->addMapFromMx((int) $mxId);
+		$this->maniaControl->getMapManager()->addMapFromMx((int) $mxId, null);
 		return array(
 			'action_name' => 'map.add',
 			'success'     => true,
@@ -382,7 +390,7 @@ trait AdminCommandTrait {
 				'message'     => "Map with UID '{$mapUid}' not found in the server map pool.",
 			);
 		}
-		$this->maniaControl->getMapManager()->removeMap(null, $map->fileName, false, true);
+		$this->maniaControl->getMapManager()->removeMap(null, $map->uid, false, true);
 		return array(
 			'action_name' => 'map.remove',
 			'success'     => true,
@@ -869,12 +877,13 @@ trait AdminCommandTrait {
 
 	private function handleWhitelistEnable($parameters) {
 		$this->whitelistEnabled = true;
+		$kicked = $this->enforceWhitelist();
 		return array(
 			'action_name' => 'whitelist.enable',
 			'success'     => true,
 			'code'        => 'whitelist_enabled',
 			'message'     => 'Server whitelist enabled.',
-			'details'     => array('enabled' => true),
+			'details'     => array('enabled' => true, 'kicked' => $kicked),
 		);
 	}
 
@@ -934,6 +943,16 @@ trait AdminCommandTrait {
 			);
 		}
 		array_splice($this->whitelist, $index, 1);
+		$kicked = false;
+		if ($this->whitelistEnabled) {
+			$player = $this->maniaControl->getPlayerManager()->getPlayer($targetLogin);
+			if ($player !== null) {
+				$this->maniaControl->getPlayerManager()->getPlayerActions()->kickPlayer(
+					null, $targetLogin, 'Removed from server whitelist.', false
+				);
+				$kicked = true;
+			}
+		}
 		return array(
 			'action_name' => 'whitelist.remove',
 			'success'     => true,
@@ -941,6 +960,7 @@ trait AdminCommandTrait {
 			'message'     => "Player '{$targetLogin}' removed from whitelist.",
 			'details'     => array(
 				'target_login' => $targetLogin,
+				'kicked'       => $kicked,
 				'whitelist'    => $this->whitelist,
 			),
 		);
@@ -963,22 +983,48 @@ trait AdminCommandTrait {
 	private function handleWhitelistClean($parameters) {
 		$previousCount = count($this->whitelist);
 		$this->whitelist = array();
+		$kicked = $this->enforceWhitelist();
 		return array(
 			'action_name' => 'whitelist.clean',
 			'success'     => true,
 			'code'        => 'whitelist_cleaned',
 			'message'     => 'Whitelist cleared.',
-			'details'     => array('previous_count' => $previousCount),
+			'details'     => array('previous_count' => $previousCount, 'kicked' => $kicked),
 		);
 	}
 
 	private function handleWhitelistSync($parameters) {
+		$kicked = $this->enforceWhitelist();
 		return array(
 			'action_name' => 'whitelist.sync',
 			'success'     => true,
 			'code'        => 'whitelist_synced',
 			'message'     => 'Whitelist synchronized with server runtime.',
+			'details'     => array('kicked' => $kicked, 'whitelist' => $this->whitelist),
 		);
+	}
+
+	/**
+	 * Kicks all connected players not on the whitelist.
+	 * No-op if whitelist is disabled.
+	 *
+	 * @return array List of kicked logins.
+	 */
+	private function enforceWhitelist() {
+		$kicked = array();
+		if (!$this->whitelistEnabled) {
+			return $kicked;
+		}
+		$players = $this->maniaControl->getPlayerManager()->getPlayers();
+		foreach ($players as $player) {
+			if (!in_array($player->login, $this->whitelist, true)) {
+				$this->maniaControl->getPlayerManager()->getPlayerActions()->kickPlayer(
+					null, $player->login, 'Not on server whitelist.', false
+				);
+				$kicked[] = $player->login;
+			}
+		}
+		return $kicked;
 	}
 
 	// ─── Vote management handlers (P5.10--P5.14) ─────────────────────────────────

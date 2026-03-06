@@ -24,31 +24,32 @@ export interface SocketCommandResult {
 export class ManiaControlSocketClient {
   private readonly logger = new Logger(ManiaControlSocketClient.name);
 
-  /**
-   * Encrypts a plaintext string using AES-192-CBC with the socket password as key.
-   */
-  private encrypt(plaintext: string, password: string): string {
+  private deriveKey(password: string): Buffer {
     // Key must be exactly 24 bytes for AES-192. Pad or truncate.
     const key = Buffer.alloc(24, 0);
     Buffer.from(password, 'utf8').copy(key, 0, 0, Math.min(password.length, 24));
-    const iv = Buffer.from(ENCRYPTION_IV, 'utf8');
-    const cipher = crypto.createCipheriv(ENCRYPTION_METHOD, key, iv);
-    const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
-    return encrypted.toString('base64');
+    return key;
   }
 
   /**
-   * Decrypts a base64-encoded AES-192-CBC ciphertext using the socket password as key.
+   * Encrypts a plaintext string using AES-192-CBC with the socket password as key.
+   * Returns raw binary Buffer (matching PHP openssl_encrypt with OPENSSL_RAW_DATA).
    */
-  private decrypt(ciphertext: string, password: string): string {
-    const key = Buffer.alloc(24, 0);
-    Buffer.from(password, 'utf8').copy(key, 0, 0, Math.min(password.length, 24));
+  private encrypt(plaintext: string, password: string): Buffer {
+    const key = this.deriveKey(password);
+    const iv = Buffer.from(ENCRYPTION_IV, 'utf8');
+    const cipher = crypto.createCipheriv(ENCRYPTION_METHOD, key, iv);
+    return Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  }
+
+  /**
+   * Decrypts raw binary AES-192-CBC ciphertext using the socket password as key.
+   */
+  private decrypt(ciphertext: Buffer, password: string): string {
+    const key = this.deriveKey(password);
     const iv = Buffer.from(ENCRYPTION_IV, 'utf8');
     const decipher = crypto.createDecipheriv(ENCRYPTION_METHOD, key, iv);
-    const decrypted = Buffer.concat([
-      decipher.update(Buffer.from(ciphertext, 'base64')),
-      decipher.final(),
-    ]);
+    const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
     return decrypted.toString('utf8');
   }
 
@@ -67,11 +68,13 @@ export class ManiaControlSocketClient {
   ): Promise<SocketCommandResult> {
     const payload = JSON.stringify({ method, data });
     const encrypted = this.encrypt(payload, password);
-    const frame = `${encrypted.length}\n${encrypted}`;
+    // Frame: "<byte_length>\n<raw_binary>" — matches PHP CommunicationManager protocol.
+    const header = Buffer.from(`${encrypted.length}\n`, 'utf8');
+    const frame = Buffer.concat([header, encrypted]);
 
     return new Promise<SocketCommandResult>((resolve) => {
       let settled = false;
-      let buffer = '';
+      let buffer = Buffer.alloc(0);
       let connectTimer: ReturnType<typeof setTimeout> | null = null;
       let readTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -112,22 +115,22 @@ export class ManiaControlSocketClient {
       });
 
       socket.on('data', (chunk: Buffer) => {
-        buffer += chunk.toString('utf8');
-        // Check if we have a complete frame: <length>\n<data>
-        const newlineIdx = buffer.indexOf('\n');
+        buffer = Buffer.concat([buffer, chunk]);
+        // Check if we have a complete frame: <length>\n<raw_binary_data>
+        const newlineIdx = buffer.indexOf(0x0a); // '\n'
         if (newlineIdx === -1) return;
 
-        const lengthStr = buffer.substring(0, newlineIdx);
+        const lengthStr = buffer.subarray(0, newlineIdx).toString('utf8');
         const expectedLength = parseInt(lengthStr, 10);
         if (isNaN(expectedLength)) {
           settle({ error: true, data: { code: 'protocol_error', message: 'Invalid length prefix' } });
           return;
         }
 
-        const payload = buffer.substring(newlineIdx + 1);
-        if (payload.length < expectedLength) return; // Wait for more data.
+        const dataStart = newlineIdx + 1;
+        if (buffer.length - dataStart < expectedLength) return; // Wait for more data.
 
-        const encryptedResponse = payload.substring(0, expectedLength);
+        const encryptedResponse = buffer.subarray(dataStart, dataStart + expectedLength);
         let responseText: string;
         try {
           responseText = this.decrypt(encryptedResponse, password);

@@ -27,4 +27,6 @@ services:
     environment:
       DATABASE_URL: "postgresql://pixel:pixel@postgres:5432/pixel_control?schema=public"
       ONLINE_THRESHOLD_SECONDS: ${ONLINE_THRESHOLD_SECONDS:-360}
+      MC_SOCKET_HOST: host.docker.internal
+      MC_SOCKET_PASSWORD: pixeltest123
 

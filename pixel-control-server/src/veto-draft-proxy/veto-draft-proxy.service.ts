@@ -85,8 +85,10 @@ export class VetoDraftProxyService {
         mode: 'link_bearer',
         token: server.linkToken ?? '',
       },
-      ...(data ?? {}),
     };
+    if (data !== undefined && Object.keys(data).length > 0) {
+      payload['parameters'] = data;
+    }
 
     // 3. Send via socket client.
     let socketResult: { error: boolean; data: unknown };
@@ -113,13 +115,23 @@ export class VetoDraftProxyService {
     }
 
     // 5. Parse and validate the plugin response.
-    const raw = socketResult.data as RawVetoDraftResponse;
+    // ManiaControl CommunicationManager wraps responses in CommunicationAnswer: {error, data}.
+    const communicationAnswer = socketResult.data as {
+      error?: boolean;
+      data?: unknown;
+    };
 
-    if (raw?.error === true) {
+    if (communicationAnswer?.error === true) {
+      const errorMsg =
+        typeof communicationAnswer.data === 'string'
+          ? communicationAnswer.data
+          : 'Plugin communication error';
       throw new BadGatewayException(
-        `Plugin communication error for VetoDraft.${methodSuffix}`,
+        `Plugin communication error for VetoDraft.${methodSuffix}: ${errorMsg}`,
       );
     }
+
+    const raw = (communicationAnswer?.data ?? communicationAnswer) as RawVetoDraftResponse;
 
     // 6. Map auth error codes to HTTP exceptions.
     if (!raw?.success && raw?.code && AUTH_ERROR_CODES.has(raw.code)) {

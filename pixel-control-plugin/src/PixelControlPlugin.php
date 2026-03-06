@@ -55,6 +55,7 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	const SETTING_QUEUE_MAX_SIZE = 'Pixel Control Queue Max Size';
 	const SETTING_DISPATCH_BATCH_SIZE = 'Pixel Control Dispatch Batch Size';
 	const SETTING_HEARTBEAT_INTERVAL_SECONDS = 'Pixel Control Heartbeat Interval Seconds';
+	const SETTING_WHITELIST_CHECK_INTERVAL_SECONDS = 'Pixel Control Whitelist Check Interval Seconds';
 	/** @var ManiaControl|null $maniaControl */
 	private $maniaControl = null;
 	/** @var CallbackRegistry|null $callbackRegistry */

@@ -90,6 +90,7 @@ services:
       - "${PIXEL_SM_P2P_PORT}:${PIXEL_SM_P2P_PORT}/tcp"
       - "${PIXEL_SM_P2P_PORT}:${PIXEL_SM_P2P_PORT}/udp"
       - "${PIXEL_SM_XMLRPC_PORT}:${PIXEL_SM_XMLRPC_PORT}/tcp"
+      - "31501:31501/tcp"
     healthcheck:
       test: ["CMD-SHELL", "/opt/pixel-sm/scripts/healthcheck.sh"]
       interval: 5s
