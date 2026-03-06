@@ -156,9 +156,26 @@ trait AdminCommandTrait {
 			), false);
 		}
 
+		// Actions that mutate persistent state — trigger a push after successful execution.
+		$stateMutatingActions = array(
+			'match.bo.set', 'match.maps.set', 'match.score.set',
+			'team.policy.set', 'team.roster.assign', 'team.roster.unassign',
+			'whitelist.enable', 'whitelist.disable', 'whitelist.add',
+			'whitelist.remove', 'whitelist.clean', 'whitelist.sync',
+			'vote.set_ratio', 'vote.policy.set',
+		);
+
 		$handlerMethod = $actionMap[$action];
 		try {
 			$result = $this->$handlerMethod($parameters);
+
+			// Push state snapshot after any state-mutating action that succeeded.
+			if (in_array($action, $stateMutatingActions, true)
+				&& isset($result['success']) && $result['success'] === true
+			) {
+				$this->pushStateAfterCommand();
+			}
+
 			return new CommunicationAnswer($result, false);
 		} catch (\Exception $e) {
 			Logger::logError("[PixelControl] Admin action '{$action}' threw: " . $e->getMessage());

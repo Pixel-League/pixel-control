@@ -119,7 +119,7 @@ bash scripts/replay-extended-telemetry-wave4.sh
 ## CI / Release
 - **No CI configured** (no `.github/workflows/`, no `.gitlab-ci.yml`).
 - No release/versioning process defined yet.
-- Current active branch: `feat/p5-backlog` (P0–P5 + Elite enrichment + API Test UI — not yet merged into `main`).
+- Current active branch: `feat/plugin-state-sync` (branched from `feat/p5-backlog`; Plugin State Sync — all 10 phases done).
 
 ## Gotchas
 - **Apple Silicon**: set `PIXEL_SM_RUNTIME_PLATFORM=linux/amd64` — game binaries are x86.
@@ -139,3 +139,8 @@ bash scripts/replay-extended-telemetry-wave4.sh
 - **P4 UI pages**: `AdminVetoDraft` (/admin/veto), `AdminPlayerManagement` (/admin/players), `AdminTeamControl` (/admin/teams). New API client: `src/api/veto.ts`.
 - **P5 UI pages**: `AdminAuthManagement` (/admin/auth), `AdminWhitelistManagement` (/admin/whitelist), `AdminVoteManagement` (/admin/votes). P5 functions added to `src/api/admin.ts`.
 - **Test counts (P5 complete)**: 394 server unit tests, 109 PHP plugin tests, 39 PHP files lint clean. UI: 107 modules, zero build errors.
+- **State Sync (PLAN-PLUGIN-STATE-SYNC)**: `ServerStateModule` (GET/POST /v1/servers/:serverLogin/state), `StateSyncTrait.php` (blocking restore on load, async push after commands). Server: 405 unit tests, 2 pre-existing failures unrelated to this plan. PHP: 123 tests, 41 files lint clean. Smoke: 30/30 assertions pass.
+- **State Sync DTO structure**: `state_version` (string), `captured_at` (number), `admin` (`current_best_of`, `team_maps_score`, `team_round_score`, `team_policy_enabled`, `team_switch_lock`, `team_roster`, `whitelist_enabled`, `whitelist`, `vote_policy`, `vote_ratios`), `veto_draft` (`session`, `matchmaking_ready_armed`, `votes`).
+- **State sync auth**: POST /state validates `Authorization: Bearer <linkToken>` header. GET /state has no auth.
+- **Prisma JSON type cast**: Use `snapshot as unknown as Prisma.InputJsonValue` when storing DTO objects in `Json` columns.
+- **Docker API port conflict**: When running local dev server AND Docker compose, both may bind port 3000. Stop Docker API container with `docker compose stop api` to isolate local dev server.

@@ -44,6 +44,7 @@ trait CoreDomainTrait {
 		$this->initializeSettings();
 		$this->initializeSourceSequence();
 		$this->initializeEventPipeline();
+		$this->syncStateOnLoad();
 		$this->callbackRegistry = new CallbackRegistry();
 		$this->callbackRegistry->register($maniaControl, $this);
 		$this->registerAdminCommandListener();
@@ -155,6 +156,7 @@ trait CoreDomainTrait {
 		$settingManager->initSetting($this, self::SETTING_DISPATCH_BATCH_SIZE, $this->resolveRuntimeIntSetting(self::SETTING_DISPATCH_BATCH_SIZE, 'PIXEL_CONTROL_DISPATCH_BATCH_SIZE', 3, 1));
 		$settingManager->initSetting($this, self::SETTING_HEARTBEAT_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_HEARTBEAT_INTERVAL_SECONDS, 'PIXEL_CONTROL_HEARTBEAT_INTERVAL_SECONDS', 120, 1));
 		$settingManager->initSetting($this, self::SETTING_WHITELIST_CHECK_INTERVAL_SECONDS, $this->resolveRuntimeIntSetting(self::SETTING_WHITELIST_CHECK_INTERVAL_SECONDS, 'PIXEL_CONTROL_WHITELIST_CHECK_INTERVAL_SECONDS', 10, 1));
+		$settingManager->initSetting($this, self::SETTING_STATE_SYNC_ENABLED, $this->resolveRuntimeBoolSetting(self::SETTING_STATE_SYNC_ENABLED, 'PIXEL_CONTROL_STATE_SYNC_ENABLED', true));
 	}
 
 	private function initializeEventPipeline() {

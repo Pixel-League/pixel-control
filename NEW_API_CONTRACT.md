@@ -1317,3 +1317,55 @@ All endpoints are scoped under `/v1/servers/:serverLogin/` where `:serverLogin` 
 | Method | Endpoint                               | Description                                                                                   | Dev Status | Priority  |
 | ------ | -------------------------------------- | --------------------------------------------------------------------------------------------- | ---------- | --------- |
 | `POST` | `/v1/plugin/events`                    | Unified ingestion: all categories (connectivity, lifecycle, combat, player, mode, batch)      | Done ✅    | P0.5+P1   |
+
+## 4.5 Server State Sync Endpoints (plugin ↔ server, state persistence)
+
+Enables the plugin to persist and restore its in-memory runtime state across ManiaControl restarts.
+
+- **Plugin calls `GET` on load** (blocking synchronous cURL) to restore state before accepting commands.
+- **Plugin calls `POST` after every state-mutating admin command** (async, fire-and-forget) to persist the latest snapshot.
+- Both endpoints require `Authorization: Bearer <linkToken>` matching the server's stored `linkToken`.
+- State is stored as a single JSON blob per server (upserted on write, one row per server).
+
+| Method | Endpoint                            | Description                                                         | Dev Status | Priority  |
+| ------ | ----------------------------------- | ------------------------------------------------------------------- | ---------- | --------- |
+| `GET`  | `/v1/servers/:serverLogin/state`    | Get persisted plugin state snapshot (null if none saved yet)        | Done ✅    | P6.1      |
+| `POST` | `/v1/servers/:serverLogin/state`    | Save/replace plugin state snapshot (requires link_bearer auth)      | Done ✅    | P6.2      |
+
+### State Schema Version 1.0
+
+The JSON body for `POST /v1/servers/:serverLogin/state`:
+
+```json
+{
+  "state_version": "1.0",
+  "captured_at": 1741276800,
+  "admin": {
+    "current_best_of": 3,
+    "team_maps_score": { "team_a": 0, "team_b": 0 },
+    "team_round_score": { "team_a": 0, "team_b": 0 },
+    "team_policy_enabled": false,
+    "team_switch_lock": false,
+    "team_roster": {},
+    "whitelist_enabled": false,
+    "whitelist": [],
+    "vote_policy": "default",
+    "vote_ratios": {}
+  },
+  "veto_draft": {
+    "session": null,
+    "matchmaking_ready_armed": false,
+    "votes": {}
+  }
+}
+```
+
+Response for `GET`:
+```json
+{ "state": { /* snapshot above, or null */ }, "updated_at": "2026-03-06T00:00:00.000Z" }
+```
+
+Response for `POST`:
+```json
+{ "saved": true, "updated_at": "2026-03-06T00:00:00.000Z" }
+```

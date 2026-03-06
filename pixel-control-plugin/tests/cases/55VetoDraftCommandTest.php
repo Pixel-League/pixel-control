@@ -73,14 +73,24 @@ class FakeManiaControlForVetoDraft {
 class VetoDraftCommandTestHarness {
 	use PixelControl\Domain\Admin\AdminCommandTrait;
 	use PixelControl\Domain\VetoDraft\VetoDraftCommandTrait;
+	use PixelControl\Domain\StateSync\StateSyncTrait;
 
-	const SETTING_LINK_TOKEN = 'Pixel Control Link Token';
+	const SETTING_LINK_TOKEN             = 'Pixel Control Link Token';
+	const SETTING_API_BASE_URL           = 'Pixel Control API Base URL';
+	const SETTING_LINK_SERVER_URL        = 'Pixel Control Link Server URL';
+	const SETTING_STATE_SYNC_ENABLED     = 'Pixel Control State Sync Enabled';
 
 	public $maniaControl;
 
 	public function __construct($settingValues = array()) {
 		$this->maniaControl = new FakeManiaControlForVetoDraft($settingValues);
 	}
+
+	/** No-op in tests -- prevents actual HTTP calls. */
+	private function pushStateToServer($serverLogin, array $snapshot) {}
+
+	/** No-op in tests -- prevents actual HTTP calls. */
+	private function fetchStateFromServer($serverLogin) { return null; }
 
 	public function callStatus($data) {
 		return $this->handleVetoDraftStatus($data);

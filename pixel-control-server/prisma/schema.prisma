@@ -30,8 +30,21 @@ model Server {
 
   connectivityEvents ConnectivityEvent[]
   events             Event[]
+  serverState        ServerState?
 
   @@map("servers")
+}
+
+model ServerState {
+  id        String   @id @default(uuid())
+  serverId  String   @unique @map("server_id")
+  state     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@map("server_states")
 }
 
 model Event {

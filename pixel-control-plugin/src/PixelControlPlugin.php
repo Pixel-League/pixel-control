@@ -23,6 +23,7 @@ use PixelControl\Domain\Lifecycle\LifecycleDomainTrait;
 use PixelControl\Domain\Match\MatchDomainTrait;
 use PixelControl\Domain\Pipeline\PipelineDomainTrait;
 use PixelControl\Domain\Player\PlayerDomainTrait;
+use PixelControl\Domain\StateSync\StateSyncTrait;
 
 class PixelControlPlugin implements CallbackListener, TimerListener, CommandListener, CommunicationListener, Plugin {
 	use CoreDomainTrait;
@@ -35,6 +36,7 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	use PipelineDomainTrait;
 	use AdminCommandTrait;
 	use VetoDraftCommandTrait;
+	use StateSyncTrait;
 
 	const ID = 100001;
 	const VERSION = '0.1.0-dev';
@@ -56,6 +58,7 @@ class PixelControlPlugin implements CallbackListener, TimerListener, CommandList
 	const SETTING_DISPATCH_BATCH_SIZE = 'Pixel Control Dispatch Batch Size';
 	const SETTING_HEARTBEAT_INTERVAL_SECONDS = 'Pixel Control Heartbeat Interval Seconds';
 	const SETTING_WHITELIST_CHECK_INTERVAL_SECONDS = 'Pixel Control Whitelist Check Interval Seconds';
+	const SETTING_STATE_SYNC_ENABLED = 'Pixel Control State Sync Enabled';
 	/** @var ManiaControl|null $maniaControl */
 	private $maniaControl = null;
 	/** @var CallbackRegistry|null $callbackRegistry */

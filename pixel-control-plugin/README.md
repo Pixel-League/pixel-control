@@ -135,6 +135,32 @@ Implemented via `VetoDraftCommandTrait` (`src/Domain/VetoDraft/VetoDraftCommandT
 - Ready token is consumed on successful start.
 - No automatic re-arm after cycle completion.
 
+## State Sync
+
+Plugin state is persisted to the server on every mutating admin/veto command and restored from the server on plugin load, ensuring no state loss across ManiaControl restarts.
+
+### Restore on load
+
+During `plugin.load()`, `syncStateOnLoad()` is called. It performs a blocking GET request to `GET /v1/servers/:serverLogin/state` (via `file_get_contents()` with a 5-second timeout). If a non-null snapshot is returned, `restoreStateFromSnapshot()` applies it to the in-memory state of `AdminCommandTrait` and `VetoDraftCommandTrait`.
+
+### Push after command
+
+After any successful mutating admin action (`handleAdminExecuteAction`) or veto-draft command (`handleVetoDraftReady`, `handleVetoDraftStart`, `handleVetoDraftAction`, `handleVetoDraftCancel`), `pushStateAfterCommand()` is called. It builds a snapshot via `buildStateSnapshot()` and sends it asynchronously via `AsyncHttpRequest.postData()` to `POST /v1/servers/:serverLogin/state`.
+
+### State fields persisted
+
+**Admin state** (`admin` key): `match_bo`, `match_maps`, `match_score`, `team_policy_enabled`, `team_switch_lock`, `team_roster`, `whitelist_enabled`, `whitelist`, `vote_policy`, `vote_ratios`.
+
+**Veto/draft state** (`veto_draft` key): `session_active`, `session_mode`, `session_steps`, `matchmaking_ready_armed`, `veto_draft_votes`, `captain_a`, `captain_b`.
+
+### Configuration
+
+- `PIXEL_CONTROL_STATE_SYNC_ENABLED` env var (default: `true`) — set to `false` to disable state sync entirely.
+- ManiaControl setting: `Pixel Control State Sync Enabled` (runtime override, checked after env var).
+- Snapshot format version: `"state_version": "1.0"`.
+
+Implemented via `StateSyncTrait` (`src/Domain/StateSync/StateSyncTrait.php`). Wired in `CoreDomainTrait.load()` after `initializeEventPipeline()` via `syncStateOnLoad()`.
+
 ## Script reference
 
 All commands below are launched from repository root unless noted.

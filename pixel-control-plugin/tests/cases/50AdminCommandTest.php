@@ -34,15 +34,23 @@ class FakeClientForAdmin {
 	}
 }
 
+class FakePlayerManagerForAdmin {
+	public function getPlayers() {
+		return array();
+	}
+}
+
 class FakeManiaControlForAdmin {
 	public $settingManager;
 	public $server;
 	public $client;
+	public $playerManager;
 
 	public function __construct($settingValues = array()) {
 		$this->settingManager = new FakeSettingManager($settingValues);
 		$this->server = new FakeServer();
 		$this->client = new FakeClientForAdmin();
+		$this->playerManager = new FakePlayerManagerForAdmin();
 	}
 
 	public function getSettingManager() {
@@ -60,18 +68,32 @@ class FakeManiaControlForAdmin {
 	public function getClient() {
 		return $this->client;
 	}
+
+	public function getPlayerManager() {
+		return $this->playerManager;
+	}
 }
 
 class AdminCommandTestHarness {
 	use PixelControl\Domain\Admin\AdminCommandTrait;
+	use PixelControl\Domain\StateSync\StateSyncTrait;
 
-	const SETTING_LINK_TOKEN = 'Pixel Control Link Token';
+	const SETTING_LINK_TOKEN             = 'Pixel Control Link Token';
+	const SETTING_API_BASE_URL           = 'Pixel Control API Base URL';
+	const SETTING_LINK_SERVER_URL        = 'Pixel Control Link Server URL';
+	const SETTING_STATE_SYNC_ENABLED     = 'Pixel Control State Sync Enabled';
 
 	public $maniaControl;
 
 	public function __construct($settingValues = array()) {
 		$this->maniaControl = new FakeManiaControlForAdmin($settingValues);
 	}
+
+	/** No-op in tests -- prevents actual HTTP calls. */
+	private function pushStateToServer($serverLogin, array $snapshot) {}
+
+	/** No-op in tests -- prevents actual HTTP calls. */
+	private function fetchStateFromServer($serverLogin) { return null; }
 
 	public function callHandleAdminExecuteAction($data) {
 		return $this->handleAdminExecuteAction($data);

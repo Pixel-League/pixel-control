@@ -160,6 +160,7 @@ trait VetoDraftCommandTrait {
 		}
 
 		$this->matchmakingReadyArmed = true;
+		$this->pushStateAfterCommand();
 
 		return new CommunicationAnswer(array(
 			'success' => true,
@@ -209,10 +210,17 @@ trait VetoDraftCommandTrait {
 		$mapCount = count($mapPool);
 
 		if ($mode === 'matchmaking_vote') {
-			return $this->startMatchmakingSession($parameters, $mapPool, $mapCount);
+			$answer = $this->startMatchmakingSession($parameters, $mapPool, $mapCount);
+		} else {
+			$answer = $this->startTournamentSession($parameters, $mapPool, $mapCount);
 		}
 
-		return $this->startTournamentSession($parameters, $mapPool, $mapCount);
+		// Push state snapshot after a successful session start.
+		if (isset($answer->data['success']) && $answer->data['success'] === true) {
+			$this->pushStateAfterCommand();
+		}
+
+		return $answer;
 	}
 
 	/**
@@ -464,10 +472,17 @@ trait VetoDraftCommandTrait {
 		$session = &$this->vetoDraftSession;
 
 		if ($session['mode'] === 'matchmaking_vote') {
-			return $this->applyMatchmakingVote($actorLogin, $mapUid, $parameters, $session);
+			$answer = $this->applyMatchmakingVote($actorLogin, $mapUid, $parameters, $session);
+		} else {
+			$answer = $this->applyTournamentAction($actorLogin, $mapUid, $session);
 		}
 
-		return $this->applyTournamentAction($actorLogin, $mapUid, $session);
+		// Push state snapshot after a successful action.
+		if (isset($answer->data['success']) && $answer->data['success'] === true) {
+			$this->pushStateAfterCommand();
+		}
+
+		return $answer;
 	}
 
 	/**
@@ -635,6 +650,7 @@ trait VetoDraftCommandTrait {
 		$this->matchmakingReadyArmed = false;
 
 		Logger::log('[PixelControl] VetoDraft session cancelled (mode=' . $mode . ').');
+		$this->pushStateAfterCommand();
 
 		return new CommunicationAnswer(array(
 			'success' => true,

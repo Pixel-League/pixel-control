@@ -24,6 +24,7 @@ import { VetoDraftModule } from './veto-draft/veto-draft.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { AdminWhitelistModule } from './admin-whitelist/admin-whitelist.module';
 import { AdminVotesModule } from './admin-votes/admin-votes.module';
+import { ServerStateModule } from './server-state/server-state.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { AdminVotesModule } from './admin-votes/admin-votes.module';
     AdminAuthModule,
     AdminWhitelistModule,
     AdminVotesModule,
+    ServerStateModule,
   ],
   controllers: [AppController],
   providers: [AppService],
