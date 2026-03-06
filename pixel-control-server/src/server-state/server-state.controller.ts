@@ -30,11 +30,13 @@ export class ServerStateController {
     summary: 'Get persisted plugin state snapshot',
     description:
       'Returns the most recently saved plugin state snapshot for the server. ' +
-      'Returns { state: null, updated_at: null } if no snapshot has been saved yet. ' +
-      'Always returns 200 — null state is not an error.',
+      'Falls back to linked template config if no saved state exists. ' +
+      'Returns { state: null, updated_at: null, source: "default" } if neither state nor template exist. ' +
+      'The "source" field indicates whether the state came from a saved snapshot ("saved"), ' +
+      'a linked config template ("template"), or is the default null state ("default").',
   })
   @ApiParam({ name: 'serverLogin', description: 'Server login (unique identifier)', example: 'pixel-elite-1.server.local' })
-  @ApiResponse({ status: 200, description: 'State returned (may be null if no prior save).' })
+  @ApiResponse({ status: 200, description: 'State returned (may be null if no prior save and no template).' })
   @ApiResponse({ status: 404, description: 'Server not found.' })
   @Get(':serverLogin/state')
   @HttpCode(200)
@@ -75,5 +77,24 @@ export class ServerStateController {
       : authorizationHeader;
 
     return this.serverStateService.saveState(serverLogin, body, bearerToken);
+  }
+
+  // ─── POST apply-template ─────────────────────────────────────────────────
+
+  @ApiOperation({
+    summary: 'Apply linked config template as server state',
+    description:
+      'Takes the linked template config, wraps it in a full state snapshot envelope, ' +
+      'and saves it as the server\'s persisted state (upsert). ' +
+      'Returns 400 if the server has no linked template.',
+  })
+  @ApiParam({ name: 'serverLogin', description: 'Server login (unique identifier)', example: 'pixel-elite-1.server.local' })
+  @ApiResponse({ status: 200, description: 'Template applied as server state.' })
+  @ApiResponse({ status: 400, description: 'Server has no linked config template.' })
+  @ApiResponse({ status: 404, description: 'Server not found.' })
+  @Post(':serverLogin/state/apply-template')
+  @HttpCode(200)
+  applyTemplate(@Param('serverLogin') serverLogin: string) {
+    return this.serverStateService.applyTemplate(serverLogin);
   }
 }

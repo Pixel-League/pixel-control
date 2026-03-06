@@ -25,6 +25,7 @@ import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { AdminWhitelistModule } from './admin-whitelist/admin-whitelist.module';
 import { AdminVotesModule } from './admin-votes/admin-votes.module';
 import { ServerStateModule } from './server-state/server-state.module';
+import { ConfigTemplateModule } from './config-template/config-template.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { ServerStateModule } from './server-state/server-state.module';
     AdminWhitelistModule,
     AdminVotesModule,
     ServerStateModule,
+    ConfigTemplateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -15,24 +15,39 @@ model HealthCheck {
 }
 
 model Server {
-  id            String    @id @default(uuid())
-  serverLogin   String    @unique @map("server_login")
-  serverName    String?   @map("server_name")
-  linkToken     String?   @map("link_token")
-  linked        Boolean   @default(false)
-  gameMode      String?   @map("game_mode")
-  titleId       String?   @map("title_id")
-  pluginVersion String?   @map("plugin_version")
-  lastHeartbeat DateTime? @map("last_heartbeat")
-  online        Boolean   @default(false)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id               String    @id @default(uuid())
+  serverLogin      String    @unique @map("server_login")
+  serverName       String?   @map("server_name")
+  linkToken        String?   @map("link_token")
+  linked           Boolean   @default(false)
+  gameMode         String?   @map("game_mode")
+  titleId          String?   @map("title_id")
+  pluginVersion    String?   @map("plugin_version")
+  lastHeartbeat    DateTime? @map("last_heartbeat")
+  online           Boolean   @default(false)
+  configTemplateId String?   @map("config_template_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
+  configTemplate     ConfigTemplate?     @relation(fields: [configTemplateId], references: [id])
   connectivityEvents ConnectivityEvent[]
   events             Event[]
   serverState        ServerState?
 
   @@map("servers")
+}
+
+model ConfigTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  config      Json
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  servers Server[]
+
+  @@map("config_templates")
 }
 
 model ServerState {

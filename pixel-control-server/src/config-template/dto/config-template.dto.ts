@@ -12,10 +12,11 @@ import {
 } from 'class-validator';
 
 // ---------------------------------------------------------------------------
-// Nested DTO: admin runtime state
+// AdminConfigDto — mirrors AdminStateDto from server-state/dto/server-state.dto.ts
+// Kept as a separate class to avoid circular dependency issues.
 // ---------------------------------------------------------------------------
 
-export class AdminStateDto {
+export class AdminConfigDto {
   @ApiProperty({ description: 'Current best-of setting', example: 3 })
   @IsNumber()
   current_best_of!: number;
@@ -59,59 +60,71 @@ export class AdminStateDto {
 }
 
 // ---------------------------------------------------------------------------
-// Nested DTO: veto-draft session state
+// Create DTO
 // ---------------------------------------------------------------------------
 
-export class VetoDraftStateDto {
-  @ApiPropertyOptional({ description: 'Active veto/draft session data, or null when idle', example: null })
-  @IsOptional()
-  session!: Record<string, unknown> | null;
-
-  @ApiProperty({ description: 'Whether the matchmaking ready gate has been armed', example: false })
-  @IsBoolean()
-  matchmaking_ready_armed!: boolean;
-
-  @ApiProperty({ description: 'Matchmaking votes map: actor_login -> map_uid', example: {} })
-  @IsObject()
-  votes!: Record<string, string>;
-}
-
-// ---------------------------------------------------------------------------
-// Top-level snapshot DTO (POST /servers/:serverLogin/state body)
-// ---------------------------------------------------------------------------
-
-export class ServerStateSnapshotDto {
-  @ApiProperty({ description: 'State schema version', example: '1.0' })
+export class CreateConfigTemplateDto {
+  @ApiProperty({ description: 'Template name (unique)', example: 'Elite Standard' })
   @IsString()
   @IsNotEmpty()
-  state_version!: string;
+  name!: string;
 
-  @ApiProperty({ description: 'Unix timestamp when snapshot was captured', example: 1741276800 })
-  @IsNumber()
-  captured_at!: number;
+  @ApiPropertyOptional({ description: 'Optional description', example: 'Default Elite tournament configuration' })
+  @IsString()
+  @IsOptional()
+  description?: string;
 
-  @ApiProperty({ type: AdminStateDto, description: 'Admin runtime state' })
+  @ApiProperty({ type: AdminConfigDto, description: 'Full admin configuration' })
   @ValidateNested()
-  @Type(() => AdminStateDto)
-  admin!: AdminStateDto;
-
-  @ApiProperty({ type: VetoDraftStateDto, description: 'Veto/draft session state' })
-  @ValidateNested()
-  @Type(() => VetoDraftStateDto)
-  veto_draft!: VetoDraftStateDto;
+  @Type(() => AdminConfigDto)
+  config!: AdminConfigDto;
 }
 
 // ---------------------------------------------------------------------------
-// Response shapes
+// Update DTO
 // ---------------------------------------------------------------------------
 
-export interface GetStateResponse {
-  state: Record<string, unknown> | null;
-  updated_at: string | null;
-  source: 'saved' | 'template' | 'default';
+export class UpdateConfigTemplateDto {
+  @ApiPropertyOptional({ description: 'Template name (unique)', example: 'Elite Standard v2' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ description: 'Optional description' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ type: AdminConfigDto, description: 'Full admin configuration' })
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => AdminConfigDto)
+  config?: AdminConfigDto;
 }
 
-export interface SaveStateResponse {
-  saved: boolean;
+// ---------------------------------------------------------------------------
+// Link DTO
+// ---------------------------------------------------------------------------
+
+export class LinkServerToTemplateDto {
+  @ApiProperty({ description: 'Template ID to link', example: 'uuid-of-template' })
+  @IsString()
+  @IsNotEmpty()
+  template_id!: string;
+}
+
+// ---------------------------------------------------------------------------
+// Response interfaces
+// ---------------------------------------------------------------------------
+
+export interface ConfigTemplateResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  config: Record<string, unknown>;
+  server_count: number;
+  created_at: string;
   updated_at: string;
 }
+
+export type ConfigTemplateListResponse = ConfigTemplateResponse[];

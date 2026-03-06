@@ -1329,8 +1329,9 @@ Enables the plugin to persist and restore its in-memory runtime state across Man
 
 | Method | Endpoint                            | Description                                                         | Dev Status | Priority  |
 | ------ | ----------------------------------- | ------------------------------------------------------------------- | ---------- | --------- |
-| `GET`  | `/v1/servers/:serverLogin/state`    | Get persisted plugin state snapshot (null if none saved yet)        | Done ✅    | P6.1      |
+| `GET`  | `/v1/servers/:serverLogin/state`    | Get plugin state snapshot (falls back to linked template config)    | Done ✅    | P6.1      |
 | `POST` | `/v1/servers/:serverLogin/state`    | Save/replace plugin state snapshot (requires link_bearer auth)      | Done ✅    | P6.2      |
+| `POST` | `/v1/servers/:serverLogin/state/apply-template` | Apply linked template config as server saved state       | Done ✅    | P6.3      |
 
 ### State Schema Version 1.0
 
@@ -1362,10 +1363,73 @@ The JSON body for `POST /v1/servers/:serverLogin/state`:
 
 Response for `GET`:
 ```json
-{ "state": { /* snapshot above, or null */ }, "updated_at": "2026-03-06T00:00:00.000Z" }
+{ "state": { /* snapshot above, or null */ }, "updated_at": "2026-03-06T00:00:00.000Z", "source": "saved" }
 ```
+
+The `source` field indicates where the returned state came from:
+- `"saved"` — a persisted state snapshot exists for this server.
+- `"template"` — no saved state, but a config template is linked; the template config is wrapped in a snapshot envelope.
+- `"default"` — neither saved state nor template exist; `state` is `null`.
 
 Response for `POST`:
 ```json
 { "saved": true, "updated_at": "2026-03-06T00:00:00.000Z" }
 ```
+
+Response for `POST /state/apply-template`:
+```json
+{ "applied": true, "template_id": "uuid", "template_name": "Elite Standard", "updated_at": "2026-03-06T00:00:00.000Z" }
+```
+
+## 4.6 Configuration Template Endpoints
+
+Reusable admin configuration templates that can be linked to servers. When a server has a linked template and no saved state, `GET /state` transparently returns the template config as fallback.
+
+Templates store a complete `AdminStateDto` structure (10 fields: `current_best_of`, `team_maps_score`, `team_round_score`, `team_policy_enabled`, `team_switch_lock`, `team_roster`, `whitelist_enabled`, `whitelist`, `vote_policy`, `vote_ratios`).
+
+### Template CRUD
+
+| Method   | Endpoint                        | Description                                               | Dev Status | Priority |
+| -------- | ------------------------------- | --------------------------------------------------------- | ---------- | -------- |
+| `POST`   | `/v1/config-templates`          | Create a configuration template (201)                     | Done ✅    | P6.4     |
+| `GET`    | `/v1/config-templates`          | List all configuration templates                          | Done ✅    | P6.5     |
+| `GET`    | `/v1/config-templates/:id`      | Get a single template by ID (404 if not found)            | Done ✅    | P6.6     |
+| `PUT`    | `/v1/config-templates/:id`      | Update a template (404, 409 on name conflict)             | Done ✅    | P6.7     |
+| `DELETE` | `/v1/config-templates/:id`      | Delete a template (409 if servers still linked, 404)      | Done ✅    | P6.8     |
+
+**Template response shape:**
+```json
+{
+  "id": "uuid",
+  "name": "Elite Standard",
+  "description": "Default Elite tournament configuration",
+  "config": {
+    "current_best_of": 3,
+    "team_maps_score": { "team_a": 0, "team_b": 0 },
+    "team_round_score": { "team_a": 0, "team_b": 0 },
+    "team_policy_enabled": false,
+    "team_switch_lock": false,
+    "team_roster": {},
+    "whitelist_enabled": false,
+    "whitelist": [],
+    "vote_policy": "default",
+    "vote_ratios": {}
+  },
+  "server_count": 2,
+  "created_at": "2026-03-06T00:00:00.000Z",
+  "updated_at": "2026-03-06T00:00:00.000Z"
+}
+```
+
+### Server-Template Association
+
+| Method   | Endpoint                                         | Description                                     | Dev Status | Priority |
+| -------- | ------------------------------------------------ | ----------------------------------------------- | ---------- | -------- |
+| `PUT`    | `/v1/servers/:serverLogin/config-template`        | Link server to a template                       | Done ✅    | P6.9     |
+| `DELETE` | `/v1/servers/:serverLogin/config-template`        | Unlink server from template                     | Done ✅    | P6.10    |
+| `GET`    | `/v1/servers/:serverLogin/config-template`        | Get linked template for server (or null)        | Done ✅    | P6.11    |
+
+**Link request body:** `{ "template_id": "uuid" }`
+**Link response:** `{ "linked": true, "template_id": "uuid", "template_name": "Elite Standard" }`
+**Unlink response:** `{ "unlinked": true }`
+**Get response:** `{ "template": { /* ConfigTemplateResponse */ } | null }`
