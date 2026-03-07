@@ -1,0 +1,23 @@
+// Pixel MatchMaking — Prisma schema
+// Dedicated PostgreSQL database for the matchmaking platform.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// ManiaPlanet user persisted after first OAuth login.
+model User {
+  id        String   @id @default(cuid())
+  login     String   @unique // ManiaPlanet login (immutable, primary identifier)
+  nickname  String            // ManiaPlanet display name
+  path      String?           // Geographic zone (e.g., "World|Europe|France")
+  role      String   @default("player") // player | moderator | admin | superadmin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

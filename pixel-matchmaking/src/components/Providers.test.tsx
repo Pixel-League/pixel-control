@@ -1,6 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { Providers } from './Providers';
+
+// Mock SessionProvider to avoid network calls in tests
+vi.mock('next-auth/react', () => ({
+  SessionProvider: ({ children }: { children: ReactNode }) => children,
+  useSession: () => ({ data: null, status: 'unauthenticated' }),
+  signOut: vi.fn(),
+}));
 
 describe('Providers', () => {
   it('renders children without crashing', () => {
