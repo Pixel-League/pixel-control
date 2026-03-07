@@ -1,8 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
 import { ThemeProvider } from '@pixel-series/design-system-neumorphic';
 import { SessionProvider } from 'next-auth/react';
 import { AppTopNav } from './AppTopNav';
+import messages from '../../messages/fr.json';
 
 // Mock Next.js navigation
 vi.mock('next/navigation', () => ({
@@ -11,16 +13,19 @@ vi.mock('next/navigation', () => ({
     push: vi.fn(),
     replace: vi.fn(),
     prefetch: vi.fn(),
+    refresh: vi.fn(),
   }),
 }));
 
-function renderWithProviders(ui: React.ReactElement) {
+function renderWithProviders(ui: React.ReactElement, session: Parameters<typeof SessionProvider>[0]['session'] = null) {
   return render(
-    <SessionProvider session={null}>
-      <ThemeProvider defaultTheme="dark">
-        {ui}
-      </ThemeProvider>
-    </SessionProvider>,
+    <NextIntlClientProvider locale="fr" messages={messages}>
+      <SessionProvider session={session}>
+        <ThemeProvider defaultTheme="dark">
+          {ui}
+        </ThemeProvider>
+      </SessionProvider>
+    </NextIntlClientProvider>,
   );
 }
 
@@ -68,15 +73,9 @@ describe('AppTopNav', () => {
       expires: new Date(Date.now() + 86400000).toISOString(),
     };
 
-    render(
-      <SessionProvider session={mockSession}>
-        <ThemeProvider defaultTheme="dark">
-          <AppTopNav />
-        </ThemeProvider>
-      </SessionProvider>,
-    );
+    renderWithProviders(<AppTopNav />, mockSession);
 
     expect(screen.getByText('TestPlayer')).toBeInTheDocument();
-    expect(screen.getByText('Deconnexion')).toBeInTheDocument();
+    expect(screen.getByText('Déconnexion')).toBeInTheDocument();
   });
 });

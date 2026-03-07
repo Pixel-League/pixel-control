@@ -1,36 +1,39 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Card, Badge } from '@pixel-series/design-system-neumorphic';
 
 export default function ProfilePage() {
+  const t = useTranslations('profile');
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">
         <h1 className="font-display text-4xl uppercase tracking-display">
-          Mon Profil
+          {t('title')}
         </h1>
         <p className="font-body text-px-label tracking-wide-body">
-          Gerez votre profil et consultez vos statistiques.
+          {t('subtitle')}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card
-          title="Statistiques"
-          description="Vos performances en matchmaking : victoires, defaites, ratio et ELO."
-          badge={<Badge variant="primary">Stats</Badge>}
+          title={t('stats.title')}
+          description={t('stats.description')}
+          badge={<Badge variant="primary">{t('stats.badge')}</Badge>}
         >
           <div className="text-center py-4 text-px-label">
-            <p className="font-body text-sm">Connectez-vous pour voir vos statistiques.</p>
+            <p className="font-body text-sm">{t('stats.loginRequired')}</p>
           </div>
         </Card>
         <Card
-          title="Parametres"
-          description="Configurez vos preferences de jeu et votre profil public."
-          badge={<Badge variant="warning">Bientot</Badge>}
+          title={t('settings.title')}
+          description={t('settings.description')}
+          badge={<Badge variant="warning">{t('settings.badge')}</Badge>}
         >
           <div className="text-center py-4 text-px-label">
-            <p className="font-body text-sm">Authentification requise.</p>
+            <p className="font-body text-sm">{t('settings.loginRequired')}</p>
           </div>
         </Card>
       </div>

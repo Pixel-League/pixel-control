@@ -1,34 +1,37 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Card, Badge } from '@pixel-series/design-system-neumorphic';
 
 export default function AdminPage() {
+  const t = useTranslations('admin');
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">
         <h1 className="font-display text-4xl uppercase tracking-display">
-          Administration
+          {t('title')}
         </h1>
         <p className="font-body text-px-label tracking-wide-body">
-          Panneau d'administration de la plateforme Pixel MatchMaking.
+          {t('subtitle')}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card
-          title="Serveurs"
-          description="Gerez les serveurs de jeu connectes a la plateforme."
-          badge={<Badge variant="primary">Admin</Badge>}
+          title={t('servers.title')}
+          description={t('servers.description')}
+          badge={<Badge variant="primary">{t('servers.badge')}</Badge>}
         />
         <Card
-          title="Joueurs"
-          description="Consultez et gerez les comptes joueurs enregistres."
-          badge={<Badge variant="primary">Admin</Badge>}
+          title={t('players.title')}
+          description={t('players.description')}
+          badge={<Badge variant="primary">{t('players.badge')}</Badge>}
         />
         <Card
-          title="Matchmaking"
-          description="Configurez les parametres du systeme de matchmaking."
-          badge={<Badge variant="warning">Bientot</Badge>}
+          title={t('matchmaking.title')}
+          description={t('matchmaking.description')}
+          badge={<Badge variant="warning">{t('matchmaking.badge')}</Badge>}
         />
       </div>
     </div>

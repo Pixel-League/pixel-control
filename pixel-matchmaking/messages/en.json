@@ -1,0 +1,127 @@
+{
+  "common": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "loading": "Loading...",
+    "goHome": "Back to home",
+    "retry": "Retry",
+    "comingSoon": "Coming soon"
+  },
+  "metadata": {
+    "title": "Pixel MatchMaking",
+    "description": "Competitive matchmaking platform for ShootMania"
+  },
+  "nav": {
+    "home": "Home",
+    "play": "Play",
+    "leaderboard": "Leaderboard",
+    "profile": "Profile",
+    "admin": "Admin"
+  },
+  "home": {
+    "title": "Pixel MatchMaking",
+    "subtitle": "Competitive matchmaking platform for ShootMania",
+    "badgeFoundation": "Foundation",
+    "badgeOnline": "Online",
+    "matchmaking": {
+      "title": "Matchmaking",
+      "description": "Find a competitive match in seconds. Automatic queue and skill-based matchmaking.",
+      "button": "Play"
+    },
+    "leaderboard": {
+      "title": "Leaderboard",
+      "description": "Track your progress and compare yourself to the best players in the community.",
+      "button": "View leaderboard"
+    }
+  },
+  "play": {
+    "title": "Play",
+    "subtitle": "Join a competitive match or create your own lobby.",
+    "quickMatch": {
+      "title": "Quick Match",
+      "description": "Automatically find a match with players at your skill level.",
+      "badge": "Ranked",
+      "button": "Find a match"
+    },
+    "customLobby": {
+      "title": "Custom Lobby",
+      "description": "Create a private lobby and invite your friends for a custom game.",
+      "badge": "Coming soon",
+      "button": "Create a lobby"
+    }
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "subtitle": "The best ShootMania players in the community.",
+    "general": {
+      "title": "Global Leaderboard",
+      "description": "The leaderboard will be available once the matchmaking system is active.",
+      "badge": "Coming soon",
+      "empty": "No leaderboard data available."
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your profile and view your statistics.",
+    "stats": {
+      "title": "Statistics",
+      "description": "Your matchmaking performance: wins, losses, ratio, and ELO.",
+      "badge": "Stats",
+      "loginRequired": "Sign in to view your statistics."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Configure your game preferences and public profile.",
+      "badge": "Coming soon",
+      "loginRequired": "Authentication required."
+    }
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Pixel MatchMaking platform administration panel.",
+    "servers": {
+      "title": "Servers",
+      "description": "Manage game servers connected to the platform.",
+      "badge": "Admin"
+    },
+    "players": {
+      "title": "Players",
+      "description": "View and manage registered player accounts.",
+      "badge": "Admin"
+    },
+    "matchmaking": {
+      "title": "Matchmaking",
+      "description": "Configure matchmaking system parameters.",
+      "badge": "Coming soon"
+    }
+  },
+  "auth": {
+    "title": "Sign In",
+    "subtitle": "Sign in with your ManiaPlanet account to access the platform.",
+    "ssoTitle": "ManiaPlanet SSO",
+    "ssoDescription": "Use your ManiaPlanet account to sign in to Pixel MatchMaking.",
+    "button": "Sign in with ManiaPlanet",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create a ManiaPlanet account",
+    "errorTitle": "Authentication error",
+    "errors": {
+      "OAuthCallbackError": "Error connecting with ManiaPlanet. Please try again.",
+      "OAuthSignin": "Unable to start OAuth connection. Check the configuration.",
+      "OAuthAccountNotLinked": "This account is already linked to another sign-in method.",
+      "AccessDenied": "Access denied. You do not have permission to sign in.",
+      "default": "An error occurred during sign-in. Please try again."
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you are looking for does not exist or has been moved.",
+      "code": "404"
+    },
+    "serverError": {
+      "title": "Server error",
+      "description": "An unexpected error occurred. Please try again.",
+      "code": "500"
+    }
+  }
+}

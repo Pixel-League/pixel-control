@@ -2,22 +2,25 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { TopNav, Button } from '@pixel-series/design-system-neumorphic';
 import type { TopNavLink } from '@pixel-series/design-system-neumorphic';
-import { buildTopNavLinks } from '@/lib/navigation';
+import { NAV_ITEMS } from '@/lib/navigation';
+import { LanguageSelector } from '@/components/LanguageSelector';
 
 export function AppTopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status } = useSession();
-  const links = buildTopNavLinks(pathname);
+  const tNav = useTranslations('nav');
+  const tCommon = useTranslations('common');
 
-  const navLinks: TopNavLink[] = links.map((link) => ({
-    ...link,
+  const navLinks: TopNavLink[] = NAV_ITEMS.map((item) => ({
+    label: tNav(item.translationKey),
+    href: item.href,
+    active: pathname === item.href,
     onClick: () => {
-      if (link.href) {
-        router.push(link.href);
-      }
+      router.push(item.href);
     },
   }));
 
@@ -38,17 +41,21 @@ export function AppTopNav() {
           size="sm"
           onClick={() => signOut({ callbackUrl: '/' })}
         >
-          Deconnexion
+          {tCommon('logout')}
         </Button>
+        <LanguageSelector />
       </div>
     ) : (
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => router.push('/auth/signin')}
-      >
-        Se connecter
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => router.push('/auth/signin')}
+        >
+          {tCommon('login')}
+        </Button>
+        <LanguageSelector />
+      </div>
     );
 
   return (

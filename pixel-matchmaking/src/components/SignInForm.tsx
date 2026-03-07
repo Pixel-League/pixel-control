@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Card, Button, Alert } from '@pixel-series/design-system-neumorphic';
 import { signInWithManiaPlanet } from '@/lib/auth/actions';
 
@@ -8,57 +9,47 @@ interface SignInFormProps {
   error?: string;
 }
 
-/** Map Auth.js error codes to user-friendly messages. */
-function getErrorMessage(error: string): string {
-  switch (error) {
-    case 'OAuthCallbackError':
-      return 'Erreur lors de la connexion avec ManiaPlanet. Veuillez reessayer.';
-    case 'OAuthSignin':
-      return 'Impossible de demarrer la connexion OAuth. Verifiez la configuration.';
-    case 'OAuthAccountNotLinked':
-      return 'Ce compte est deja lie a un autre mode de connexion.';
-    case 'AccessDenied':
-      return 'Acces refuse. Vous n\'avez pas la permission de vous connecter.';
-    default:
-      return 'Une erreur est survenue lors de la connexion. Veuillez reessayer.';
-  }
-}
-
 export function SignInForm({ callbackUrl, error }: SignInFormProps) {
+  const t = useTranslations('auth');
+
+  const errorMessage = error
+    ? t.has(`errors.${error}`) ? t(`errors.${error}`) : t('errors.default')
+    : undefined;
+
   return (
     <div className="w-full max-w-md space-y-6">
       <div className="text-center space-y-2">
         <h1 className="font-display text-5xl uppercase tracking-display">
-          Connexion
+          {t('title')}
         </h1>
         <p className="font-body text-px-label tracking-wide-body">
-          Connectez-vous avec votre compte ManiaPlanet pour acceder a la plateforme.
+          {t('subtitle')}
         </p>
       </div>
 
-      {error && (
-        <Alert variant="error" title="Erreur d'authentification">
-          {getErrorMessage(error)}
+      {errorMessage && (
+        <Alert variant="error" title={t('errorTitle')}>
+          {errorMessage}
         </Alert>
       )}
 
-      <Card title="ManiaPlanet SSO" description="Utilisez votre compte ManiaPlanet pour vous connecter a Pixel MatchMaking.">
+      <Card title={t('ssoTitle')} description={t('ssoDescription')}>
         <form action={() => signInWithManiaPlanet(callbackUrl)}>
           <Button type="submit" size="lg" className="w-full">
-            Se connecter avec ManiaPlanet
+            {t('button')}
           </Button>
         </form>
       </Card>
 
       <p className="text-center text-sm text-px-label tracking-wide-body">
-        Pas encore de compte ?{' '}
+        {t('noAccount')}{' '}
         <a
           href="https://www.maniaplanet.com/account/register"
           target="_blank"
           rel="noopener noreferrer"
           className="text-px-primary hover:text-px-primary-light underline"
         >
-          Creer un compte ManiaPlanet
+          {t('createAccount')}
         </a>
       </p>
     </div>

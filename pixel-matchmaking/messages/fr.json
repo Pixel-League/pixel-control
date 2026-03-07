@@ -1,0 +1,127 @@
+{
+  "common": {
+    "login": "Se connecter",
+    "logout": "Déconnexion",
+    "loading": "Chargement...",
+    "goHome": "Retour à l'accueil",
+    "retry": "Réessayer",
+    "comingSoon": "Bientôt"
+  },
+  "metadata": {
+    "title": "Pixel MatchMaking",
+    "description": "Plateforme de matchmaking compétitif pour ShootMania"
+  },
+  "nav": {
+    "home": "Accueil",
+    "play": "Jouer",
+    "leaderboard": "Classement",
+    "profile": "Profil",
+    "admin": "Admin"
+  },
+  "home": {
+    "title": "Pixel MatchMaking",
+    "subtitle": "Plateforme de matchmaking compétitif pour ShootMania",
+    "badgeFoundation": "Foundation",
+    "badgeOnline": "Online",
+    "matchmaking": {
+      "title": "Matchmaking",
+      "description": "Trouvez un match compétitif en quelques secondes. File d'attente automatique et matchmaking par niveau.",
+      "button": "Jouer"
+    },
+    "leaderboard": {
+      "title": "Classement",
+      "description": "Suivez votre progression et comparez-vous aux meilleurs joueurs de la communauté.",
+      "button": "Voir le classement"
+    }
+  },
+  "play": {
+    "title": "Jouer",
+    "subtitle": "Rejoignez une partie compétitive ou créez votre propre lobby.",
+    "quickMatch": {
+      "title": "Matchmaking rapide",
+      "description": "Trouvez automatiquement un match avec des joueurs de votre niveau.",
+      "badge": "Ranked",
+      "button": "Rechercher un match"
+    },
+    "customLobby": {
+      "title": "Lobby personnalisé",
+      "description": "Créez un lobby privé et invitez vos amis pour une partie personnalisée.",
+      "badge": "Bientôt",
+      "button": "Créer un lobby"
+    }
+  },
+  "leaderboard": {
+    "title": "Classement",
+    "subtitle": "Les meilleurs joueurs de la communauté ShootMania.",
+    "general": {
+      "title": "Classement général",
+      "description": "Le classement sera disponible une fois le système de matchmaking actif.",
+      "badge": "Bientôt",
+      "empty": "Aucune donnée de classement disponible."
+    }
+  },
+  "profile": {
+    "title": "Mon Profil",
+    "subtitle": "Gérez votre profil et consultez vos statistiques.",
+    "stats": {
+      "title": "Statistiques",
+      "description": "Vos performances en matchmaking : victoires, défaites, ratio et ELO.",
+      "badge": "Stats",
+      "loginRequired": "Connectez-vous pour voir vos statistiques."
+    },
+    "settings": {
+      "title": "Paramètres",
+      "description": "Configurez vos préférences de jeu et votre profil public.",
+      "badge": "Bientôt",
+      "loginRequired": "Authentification requise."
+    }
+  },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Panneau d'administration de la plateforme Pixel MatchMaking.",
+    "servers": {
+      "title": "Serveurs",
+      "description": "Gérez les serveurs de jeu connectés à la plateforme.",
+      "badge": "Admin"
+    },
+    "players": {
+      "title": "Joueurs",
+      "description": "Consultez et gérez les comptes joueurs enregistrés.",
+      "badge": "Admin"
+    },
+    "matchmaking": {
+      "title": "Matchmaking",
+      "description": "Configurez les paramètres du système de matchmaking.",
+      "badge": "Bientôt"
+    }
+  },
+  "auth": {
+    "title": "Connexion",
+    "subtitle": "Connectez-vous avec votre compte ManiaPlanet pour accéder à la plateforme.",
+    "ssoTitle": "ManiaPlanet SSO",
+    "ssoDescription": "Utilisez votre compte ManiaPlanet pour vous connecter à Pixel MatchMaking.",
+    "button": "Se connecter avec ManiaPlanet",
+    "noAccount": "Pas encore de compte ?",
+    "createAccount": "Créer un compte ManiaPlanet",
+    "errorTitle": "Erreur d'authentification",
+    "errors": {
+      "OAuthCallbackError": "Erreur lors de la connexion avec ManiaPlanet. Veuillez réessayer.",
+      "OAuthSignin": "Impossible de démarrer la connexion OAuth. Vérifiez la configuration.",
+      "OAuthAccountNotLinked": "Ce compte est déjà lié à un autre mode de connexion.",
+      "AccessDenied": "Accès refusé. Vous n'avez pas la permission de vous connecter.",
+      "default": "Une erreur est survenue lors de la connexion. Veuillez réessayer."
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page introuvable",
+      "description": "La page que vous recherchez n'existe pas ou a été déplacée.",
+      "code": "404"
+    },
+    "serverError": {
+      "title": "Erreur serveur",
+      "description": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+      "code": "500"
+    }
+  }
+}

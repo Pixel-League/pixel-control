@@ -1,36 +1,39 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Button, Card, Badge } from '@pixel-series/design-system-neumorphic';
 
 export default function Home() {
+  const t = useTranslations('home');
+
   return (
     <div className="space-y-8">
       <div className="text-center space-y-4">
         <h1 className="font-display text-5xl uppercase tracking-display">
-          Pixel MatchMaking
+          {t('title')}
         </h1>
         <p className="font-body text-px-label tracking-wide-body text-lg">
-          Plateforme de matchmaking competitif pour ShootMania
+          {t('subtitle')}
         </p>
       </div>
 
       <div className="flex justify-center gap-4">
-        <Badge variant="primary">Foundation</Badge>
-        <Badge variant="success">Online</Badge>
+        <Badge variant="primary">{t('badgeFoundation')}</Badge>
+        <Badge variant="success">{t('badgeOnline')}</Badge>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         <Card
-          title="Matchmaking"
-          description="Trouvez un match competitif en quelques secondes. File d'attente automatique et matchmaking par niveau."
+          title={t('matchmaking.title')}
+          description={t('matchmaking.description')}
         >
-          <Button>Jouer</Button>
+          <Button>{t('matchmaking.button')}</Button>
         </Card>
         <Card
-          title="Classement"
-          description="Suivez votre progression et comparez-vous aux meilleurs joueurs de la communaute."
+          title={t('leaderboard.title')}
+          description={t('leaderboard.description')}
         >
-          <Button variant="secondary">Voir le classement</Button>
+          <Button variant="secondary">{t('leaderboard.button')}</Button>
         </Card>
       </div>
     </div>
