@@ -20,7 +20,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body className="bg-nm-dark text-px-white font-body antialiased">
+      <body className="font-body antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <AppTopNav />

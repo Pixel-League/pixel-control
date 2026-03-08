@@ -1,8 +1,18 @@
 'use client';
 
 import { SessionProvider } from 'next-auth/react';
-import { ThemeProvider } from '@pixel-series/design-system-neumorphic';
+import { ThemeProvider, useTheme } from '@pixel-series/design-system-neumorphic';
 import type { ReactNode } from 'react';
+
+function ThemedRoot({ children }: { children: ReactNode }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  return (
+    <div className={`min-h-screen ${isDark ? 'bg-nm-dark text-px-white' : 'bg-nm-light text-px-offblack'}`}>
+      {children}
+    </div>
+  );
+}
 
 interface ProvidersProps {
   children: ReactNode;
@@ -14,7 +24,7 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <SessionProvider>
       <ThemeProvider defaultTheme="dark">
-        {content}
+        <ThemedRoot>{content}</ThemedRoot>
       </ThemeProvider>
     </SessionProvider>
   );
