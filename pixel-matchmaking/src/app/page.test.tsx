@@ -1,10 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TestProviders } from '@/shared/test/intl-wrapper';
 import Home from './page';
 
+const mockPush = vi.fn();
+
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: mockPush }),
   usePathname: () => '/',
   useSearchParams: () => ({ get: () => null }),
 }));
@@ -32,5 +34,19 @@ describe('Home page', () => {
     render(<TestProviders><Home /></TestProviders>);
     expect(screen.getByText('Matchmaking')).toBeInTheDocument();
     expect(screen.getByText('Classement')).toBeInTheDocument();
+  });
+
+  it('Jouer button navigates to /play', () => {
+    render(<TestProviders><Home /></TestProviders>);
+    const playButton = screen.getByRole('button', { name: 'Jouer' });
+    fireEvent.click(playButton);
+    expect(mockPush).toHaveBeenCalledWith('/play');
+  });
+
+  it('Voir le classement button navigates to /leaderboard', () => {
+    render(<TestProviders><Home /></TestProviders>);
+    const leaderboardButton = screen.getByRole('button', { name: 'Voir le classement' });
+    fireEvent.click(leaderboardButton);
+    expect(mockPush).toHaveBeenCalledWith('/leaderboard');
   });
 });
