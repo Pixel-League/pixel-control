@@ -53,11 +53,11 @@ function typographyToken(
 }
 
 const displayTypography = {
-  huge: typographyToken('--px-type-display-huge', 'display', '64px', 700, '100px', '3px', 'uppercase'),
-  large: typographyToken('--px-type-display-large', 'display', '56px', 700, '100px', '3px', 'uppercase'),
-  medium: typographyToken('--px-type-display-medium', 'display', '48px', 700, '100px', '3px', 'uppercase'),
-  small: typographyToken('--px-type-display-small', 'display', '36px', 700, '100px', '3px', 'uppercase'),
-  xSmall: typographyToken('--px-type-display-x-small', 'display', '24px', 700, '100px', '3px', 'uppercase'),
+  huge: typographyToken('--px-type-display-huge', 'display', '64px', 700, '100px', '1px', 'uppercase'),
+  large: typographyToken('--px-type-display-large', 'display', '56px', 700, '100px', '1px', 'uppercase'),
+  medium: typographyToken('--px-type-display-medium', 'display', '48px', 700, '100px', '1px', 'uppercase'),
+  small: typographyToken('--px-type-display-small', 'display', '36px', 700, '100px', '1px', 'uppercase'),
+  xSmall: typographyToken('--px-type-display-x-small', 'display', '24px', 700, '100px', '1px', 'uppercase'),
 } as const;
 
 const textTypography = {
@@ -86,11 +86,11 @@ const uiTypography = {
 
 export const typography = {
   fontFamilies: {
-    display: "'Karantina', cursive",
+    display: "'Plus Jakarta Sans', sans-serif",
     body: "'Poppins', sans-serif",
   },
   letterSpacing: {
-    display: '3px',
+    display: '1px',
     body: '0.75px',
     text: '0.05em',
     overline: '1px',
@@ -155,14 +155,14 @@ export const radii = {
 
 export const shadows = {
   neumorphic: {
-    raisedDark: '4px 4px 10px #000000, -4px -4px 10px #2A2A2A',
+    raisedDark: '2px 2px 10px #000000, -2px -2px 10px #2A2A2A',
     insetDark: 'inset 5px 5px 10px #000000, inset -5px -5px 10px #2A2A2A',
     flatDark: '2px 2px 5px #000000, -2px -2px 5px #2A2A2A',
-    buttonDark: '4px 4px 10px #000000, -4px -4px 10px #2A2A2A',
-    raisedLight: '4px 4px 10px #CDD5E0, -4px -4px 10px #FFFFFF',
+    buttonDark: '2px 2px 10px #000000, -2px -2px 10px #2A2A2A',
+    raisedLight: '2px 2px 10px #CDD5E0, -2px -2px 10px #FFFFFF',
     insetLight: 'inset 5px 5px 10px #CDD5E0, inset -5px -5px 10px #FFFFFF',
     flatLight: '2px 2px 5px #CDD5E0, -2px -2px 5px #FFFFFF',
-    buttonLight: '4px 4px 10px #CDD5E0, -4px -4px 10px #FFFFFF',
+    buttonLight: '2px 2px 10px #CDD5E0, -2px -2px 10px #FFFFFF',
   },
   focus: {
     primaryDark:

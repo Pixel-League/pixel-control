@@ -28,11 +28,11 @@ const config: Config = {
         'nm-light-s': '#E6E4EB',
       },
       fontFamily: {
-        display: ['Karantina', 'cursive'],
+        display: ['Plus Jakarta Sans', 'sans-serif'],
         body: ['Poppins', 'sans-serif'],
       },
       letterSpacing: {
-        display: '3px',
+        display: '1px',
         'wide-body': '0.75px',
       },
       borderRadius: {
@@ -43,14 +43,14 @@ const config: Config = {
         lg: '0px',
       },
       boxShadow: {
-        'nm-raised-d': '4px 4px 10px #000000, -4px -4px 10px #2A2A2A',
+        'nm-raised-d': '2px 2px 10px #000000, -2px -2px 10px #2A2A2A',
         'nm-inset-d': 'inset 5px 5px 10px #000000, inset -5px -5px 10px #2A2A2A',
         'nm-flat-d': '2px 2px 5px #000000, -2px -2px 5px #2A2A2A',
-        'nm-btn-d': '4px 4px 10px #000000, -4px -4px 10px #2A2A2A',
-        'nm-raised-l': '4px 4px 10px #CDD5E0, -4px -4px 10px #FFFFFF',
+        'nm-btn-d': '2px 2px 10px #000000, -2px -2px 10px #2A2A2A',
+        'nm-raised-l': '2px 2px 10px #CDD5E0, -2px -2px 10px #FFFFFF',
         'nm-inset-l': 'inset 5px 5px 10px #CDD5E0, inset -5px -5px 10px #FFFFFF',
         'nm-flat-l': '2px 2px 5px #CDD5E0, -2px -2px 5px #FFFFFF',
-        'nm-btn-l': '4px 4px 10px #CDD5E0, -4px -4px 10px #FFFFFF',
+        'nm-btn-l': '2px 2px 10px #CDD5E0, -2px -2px 10px #FFFFFF',
       },
       keyframes: {
         'fade-slide-up': {
