@@ -8,7 +8,7 @@ import { useThemeOptional, type Theme } from '@/context/ThemeContext';
 import { cn } from '@/utils/cn';
 
 export interface DropdownMenuItem {
-  label: string;
+  label: ReactNode;
   onClick?: () => void;
   disabled?: boolean;
   danger?: boolean;
@@ -106,7 +106,7 @@ export function DropdownMenu({
 
             return (
               <button
-                key={item.label}
+                key={i}
                 type="button"
                 role="menuitem"
                 disabled={item.disabled}

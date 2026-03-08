@@ -1,7 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Card, Badge, Button } from '@pixel-series/design-system-neumorphic';
+import { QuickMatchCard } from '@/features/matchmaking/components/QuickMatchCard';
+import { CustomLobbyCard } from '@/features/matchmaking/components/CustomLobbyCard';
 
 export default function PlayPage() {
   const t = useTranslations('play');
@@ -18,20 +19,8 @@ export default function PlayPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card
-          title={t('quickMatch.title')}
-          description={t('quickMatch.description')}
-          badge={<Badge variant="primary">{t('quickMatch.badge')}</Badge>}
-        >
-          <Button>{t('quickMatch.button')}</Button>
-        </Card>
-        <Card
-          title={t('customLobby.title')}
-          description={t('customLobby.description')}
-          badge={<Badge variant="warning">{t('customLobby.badge')}</Badge>}
-        >
-          <Button variant="secondary" disabled>{t('customLobby.button')}</Button>
-        </Card>
+        <QuickMatchCard />
+        <CustomLobbyCard />
       </div>
     </div>
   );

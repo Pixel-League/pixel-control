@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { ThemeProvider } from '@pixel-series/design-system-neumorphic';
 import { LanguageSelector } from './LanguageSelector';
-import messages from '../../messages/fr.json';
+import messages from '../../../messages/fr.json';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -14,7 +14,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-vi.mock('@/i18n/actions', () => ({
+vi.mock('@/shared/i18n/actions', () => ({
   setLocale: vi.fn(),
 }));
 

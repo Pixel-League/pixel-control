@@ -9,6 +9,12 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    server: {
+      deps: {
+        // tm-text ships ESM with extension-less imports — force Vitest to bundle it
+        inline: ['tm-text'],
+      },
+    },
   },
   resolve: {
     alias: {

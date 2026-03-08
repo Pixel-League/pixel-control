@@ -1,10 +1,12 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button, Card, Badge } from '@pixel-series/design-system-neumorphic';
 
 export default function Home() {
   const t = useTranslations('home');
+  const router = useRouter();
 
   return (
     <div className="space-y-8">
@@ -27,13 +29,13 @@ export default function Home() {
           title={t('matchmaking.title')}
           description={t('matchmaking.description')}
         >
-          <Button>{t('matchmaking.button')}</Button>
+          <Button onClick={() => router.push('/play')}>{t('matchmaking.button')}</Button>
         </Card>
         <Card
           title={t('leaderboard.title')}
           description={t('leaderboard.description')}
         >
-          <Button variant="secondary">{t('leaderboard.button')}</Button>
+          <Button variant="secondary" onClick={() => router.push('/leaderboard')}>{t('leaderboard.button')}</Button>
         </Card>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { SignInForm } from "@/components/SignInForm";
+import { SignInForm } from "@/features/auth/components/SignInForm";
 
 interface SignInPageProps {
   searchParams: Promise<{

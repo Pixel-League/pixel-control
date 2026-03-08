@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { ThemeProvider } from '@pixel-series/design-system-neumorphic';
 import { SessionProvider } from 'next-auth/react';
 import { AppTopNav } from './AppTopNav';
-import messages from '../../messages/fr.json';
+import messages from '../../../../messages/fr.json';
 
 // Mock Next.js navigation
 vi.mock('next/navigation', () => ({
@@ -16,6 +16,13 @@ vi.mock('next/navigation', () => ({
     prefetch: vi.fn(),
     refresh: vi.fn(),
   }),
+}));
+
+// Mock UserMenu to isolate AppTopNav from dropdown internals
+vi.mock('@/features/navigation/components/UserMenu', () => ({
+  UserMenu: ({ nickname, login }: { nickname: string; login: string }) => (
+    <div data-testid="user-menu" data-nickname={nickname} data-login={login} />
+  ),
 }));
 
 function renderWithProviders(ui: React.ReactElement, session: Parameters<typeof SessionProvider>[0]['session'] = null) {
@@ -62,7 +69,7 @@ describe('AppTopNav', () => {
     expect(screen.getByText('Se connecter')).toBeInTheDocument();
   });
 
-  it('shows user nickname when logged in', () => {
+  it('renders UserMenu with correct props when logged in', () => {
     const mockSession = {
       user: {
         name: 'TestPlayer',
@@ -76,7 +83,28 @@ describe('AppTopNav', () => {
 
     renderWithProviders(<AppTopNav />, mockSession);
 
-    expect(screen.getByText('TestPlayer')).toBeInTheDocument();
-    expect(screen.getByText('Déconnexion')).toBeInTheDocument();
+    const userMenu = screen.getByTestId('user-menu');
+    expect(userMenu).toBeInTheDocument();
+    expect(userMenu).toHaveAttribute('data-nickname', 'TestPlayer');
+    expect(userMenu).toHaveAttribute('data-login', 'testplayer');
+  });
+
+  it('renders UserMenu with formatted nickname props when ManiaPlanet codes present', () => {
+    const mockSession = {
+      user: {
+        name: '$fffTestPlayer',
+        login: 'testplayer',
+        nickname: '$fffTestPlayer',
+        path: 'World|Europe|France',
+        role: 'player',
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    };
+
+    renderWithProviders(<AppTopNav />, mockSession);
+
+    const userMenu = screen.getByTestId('user-menu');
+    expect(userMenu).toBeInTheDocument();
+    expect(userMenu).toHaveAttribute('data-nickname', '$fffTestPlayer');
   });
 });

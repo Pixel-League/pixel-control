@@ -41,7 +41,10 @@
       "title": "Matchmaking rapide",
       "description": "Trouvez automatiquement un match avec des joueurs de votre niveau.",
       "badge": "Ranked",
-      "button": "Rechercher un match"
+      "button": "Rechercher un match",
+      "searching": "Recherche en cours...",
+      "cancelSearch": "Annuler la recherche",
+      "queueCount": "{count, plural, =0 {Aucun joueur en file} one {1 joueur en file} other {# joueurs en file}}"
     },
     "customLobby": {
       "title": "Lobby personnalisé",
@@ -67,13 +70,15 @@
       "title": "Statistiques",
       "description": "Vos performances en matchmaking : victoires, défaites, ratio et ELO.",
       "badge": "Stats",
-      "loginRequired": "Connectez-vous pour voir vos statistiques."
+      "loginRequired": "Connectez-vous pour voir vos statistiques.",
+      "empty": "Vos statistiques apparaîtront ici après vos premiers matchs."
     },
     "settings": {
       "title": "Paramètres",
       "description": "Configurez vos préférences de jeu et votre profil public.",
       "badge": "Bientôt",
-      "loginRequired": "Authentification requise."
+      "loginRequired": "Authentification requise.",
+      "empty": "La configuration du profil sera disponible prochainement."
     }
   },
   "admin": {

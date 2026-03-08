@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { locales, defaultLocale } from './config';
-import frMessages from '../../messages/fr.json';
-import enMessages from '../../messages/en.json';
+import frMessages from '../../../messages/fr.json';
+import enMessages from '../../../messages/en.json';
 
 describe('i18n config', () => {
   it('has fr and en locales', () => {

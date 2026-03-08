@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { TestProviders } from '@/test/intl-wrapper';
+import { TestProviders } from '@/shared/test/intl-wrapper';
 import NotFound from './not-found';
 import ErrorPage from './error';
 import Loading from './loading';

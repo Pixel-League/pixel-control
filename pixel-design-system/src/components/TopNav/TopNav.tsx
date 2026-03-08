@@ -32,7 +32,7 @@ export function TopNav({
     <nav
       aria-label="Top navigation"
       className={cn(
-        'flex items-center justify-between px-6 py-3',
+        'relative flex items-center px-6 py-3',
         isDark
           ? 'bg-nm-dark shadow-nm-raised-d border border-white/[0.08]'
           : 'bg-nm-light shadow-nm-raised-l border border-black/[0.08]',
@@ -42,9 +42,9 @@ export function TopNav({
       {/* Brand */}
       <div className="flex items-center gap-3 shrink-0">{brand}</div>
 
-      {/* Links */}
+      {/* Links — absolutely centered relative to the full nav width */}
       {links.length > 0 ? (
-        <div className="flex items-center gap-4 font-body text-xs tracking-wide-body uppercase">
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 font-body text-xs tracking-wide-body uppercase">
           {links.map((link) => (
             <a
               key={link.label}
@@ -69,7 +69,7 @@ export function TopNav({
       ) : null}
 
       {/* Actions */}
-      {actions ? <div className="flex items-center gap-3 shrink-0">{actions}</div> : null}
+      {actions ? <div className="flex items-center gap-3 shrink-0 ml-auto">{actions}</div> : null}
     </nav>
   );
 }

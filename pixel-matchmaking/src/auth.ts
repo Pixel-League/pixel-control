@@ -1,5 +1,5 @@
 import NextAuth from "next-auth";
-import { authConfig } from "@/lib/auth/auth.config";
+import { authConfig } from "@/features/auth/lib/auth.config";
 
 /**
  * Single export point for Auth.js v5.

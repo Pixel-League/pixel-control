@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import { isProtectedRoute } from "@/lib/auth/routes";
+import { isProtectedRoute } from "@/features/auth/lib/routes";
 
 /**
  * Route protection middleware using Auth.js v5.

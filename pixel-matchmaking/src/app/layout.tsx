@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
-import { Providers } from '@/components/Providers';
-import { AppTopNav } from '@/components/AppTopNav';
+import { Providers } from '@/features/auth/components/Providers';
+import { AppTopNav } from '@/features/navigation/components/AppTopNav';
 import './globals.css';
 
 export const metadata: Metadata = {

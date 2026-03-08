@@ -1,7 +1,7 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { ThemeProvider } from '@pixel-series/design-system-neumorphic';
 import { SessionProvider } from 'next-auth/react';
-import messages from '../../messages/fr.json';
+import messages from '../../../messages/fr.json';
 
 /**
  * Wraps a component with all required providers for testing.

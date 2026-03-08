@@ -1,12 +1,13 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { TopNav, Button } from '@pixel-series/design-system-neumorphic';
 import type { TopNavLink } from '@pixel-series/design-system-neumorphic';
-import { NAV_ITEMS } from '@/lib/navigation';
-import { LanguageSelector } from '@/components/LanguageSelector';
+import { NAV_ITEMS } from '@/shared/lib/navigation';
+import { LanguageSelector } from '@/shared/components/LanguageSelector';
+import { UserMenu } from '@/features/navigation/components/UserMenu';
 
 export function AppTopNav() {
   const pathname = usePathname();
@@ -38,16 +39,10 @@ export function AppTopNav() {
 
   const authActions = session?.user ? (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-body text-px-label tracking-wide-body">
-        {session.user.nickname ?? session.user.name}
-      </span>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => signOut({ callbackUrl: '/' })}
-      >
-        {tCommon('logout')}
-      </Button>
+      <UserMenu
+        nickname={session.user.nickname ?? session.user.name ?? ''}
+        login={session.user.login ?? ''}
+      />
       <LanguageSelector />
     </div>
   ) : (

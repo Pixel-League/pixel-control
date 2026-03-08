@@ -4,8 +4,8 @@ import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { Button } from '@pixel-series/design-system-neumorphic';
-import { setLocale } from '@/i18n/actions';
-import { type Locale, locales } from '@/i18n/config';
+import { setLocale } from '@/shared/i18n/actions';
+import { type Locale, locales } from '@/shared/i18n/config';
 
 const LOCALE_LABELS: Record<Locale, string> = {
   fr: 'FR',

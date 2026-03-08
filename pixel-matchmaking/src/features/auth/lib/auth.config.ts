@@ -1,6 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
-import ManiaPlanet from "@/lib/auth/maniaplanet-provider";
-import { prisma } from "@/lib/prisma";
+import ManiaPlanet from "@/features/auth/lib/maniaplanet-provider";
+import { prisma } from "@/shared/lib/prisma";
 
 /**
  * Auth.js v5 configuration for Pixel MatchMaking.

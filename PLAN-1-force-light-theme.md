@@ -21,7 +21,7 @@
 
 - [Done] Phase 1 - Remove system preference detection, force light theme
 - [Done] Phase 2 - QA in Chrome
-- [In progress] Phase 3 - Tests, build, commit
+- [Done] Phase 3 - Tests, build, commit
 
 ### Phase 1 - Remove system preference detection, force light theme
 
@@ -56,7 +56,7 @@
 
 - [Done] P3.1 - Run pixel-matchmaking tests — expect 108/108
 - [Done] P3.2 - Run pixel-matchmaking build — expect zero errors
-- [In progress] P3.3 - Commit all changes on `feat/pm-sdk-i18n`
+- [Done] P3.3 - Commit all changes on `feat/pm-sdk-i18n`
 
 ## Success criteria
 

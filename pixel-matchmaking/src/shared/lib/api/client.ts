@@ -1,5 +1,5 @@
 import { PixelControlApi } from './generated';
-import { config } from '@/lib/config';
+import { config } from '@/shared/lib/config';
 
 /**
  * Pre-configured Pixel Control API client instance.

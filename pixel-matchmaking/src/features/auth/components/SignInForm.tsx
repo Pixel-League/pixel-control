@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Card, Button, Alert } from '@pixel-series/design-system-neumorphic';
-import { signInWithManiaPlanet } from '@/lib/auth/actions';
+import { signInWithManiaPlanet } from '@/features/auth/lib/actions';
 
 interface SignInFormProps {
   callbackUrl: string;

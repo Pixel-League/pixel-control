@@ -7,7 +7,7 @@ describe('SDK generation', () => {
   const generatedDir = resolve(__dirname, 'generated');
 
   it('generation script exists', () => {
-    const scriptPath = resolve(__dirname, '../../../scripts/generate-sdk.sh');
+    const scriptPath = resolve(__dirname, '../../../../scripts/generate-sdk.sh');
     expect(existsSync(scriptPath)).toBe(true);
   });
 

@@ -20,7 +20,7 @@
 - [Done] Phase 1 - CSS layer: native `prefers-color-scheme` for page background
 - [Done] Phase 2 - DS layer: synchronous theme initialisation (no flash for components)
 - [Done] Phase 3 - App layer: cleanup and SSR hygiene
-- [In progress] Phase 4 - Tests, build, commit
+- [Done] Phase 4 - Tests, build, commit
 
 ### Phase 1 - CSS layer: native `prefers-color-scheme` for page background
 
@@ -54,7 +54,7 @@
 
 - [Done] P4.1 - Run pixel-matchmaking tests (`npm test -- --run`) — expect 108/108 green
 - [Done] P4.2 - Run pixel-matchmaking build (`npm run build`) — expect zero errors
-- [In progress] P4.3 - Commit on `feat/pm-sdk-i18n` with all changed files
+- [Done] P4.3 - Commit on `feat/pm-sdk-i18n` with all changed files
 
 ## Success criteria
 

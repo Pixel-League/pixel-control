@@ -1,10 +1,13 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { Card, Badge } from '@pixel-series/design-system-neumorphic';
+import { StatsCard } from '@/features/profile/components/StatsCard';
+import { SettingsCard } from '@/features/profile/components/SettingsCard';
 
 export default function ProfilePage() {
   const t = useTranslations('profile');
+  const { data: session } = useSession();
 
   return (
     <div className="space-y-8">
@@ -18,24 +21,8 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card
-          title={t('stats.title')}
-          description={t('stats.description')}
-          badge={<Badge variant="primary">{t('stats.badge')}</Badge>}
-        >
-          <div className="text-center py-4 text-px-label">
-            <p className="font-body text-sm">{t('stats.loginRequired')}</p>
-          </div>
-        </Card>
-        <Card
-          title={t('settings.title')}
-          description={t('settings.description')}
-          badge={<Badge variant="warning">{t('settings.badge')}</Badge>}
-        >
-          <div className="text-center py-4 text-px-label">
-            <p className="font-body text-sm">{t('settings.loginRequired')}</p>
-          </div>
-        </Card>
+        <StatsCard user={session?.user} />
+        <SettingsCard user={session?.user} />
       </div>
     </div>
   );
