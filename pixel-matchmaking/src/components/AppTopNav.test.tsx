@@ -9,6 +9,7 @@ import messages from '../../messages/fr.json';
 // Mock Next.js navigation
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
+  useSearchParams: () => ({ get: () => null }),
   useRouter: () => ({
     push: vi.fn(),
     replace: vi.fn(),
