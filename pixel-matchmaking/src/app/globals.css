@@ -4,15 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Native theme: applied before any JS runs — zero flash */
+/* Always light theme — dark mode support deferred */
 body {
-  background-color: #121212; /* nm-dark */
-  color: #ffffff; /* px-white */
-}
-
-@media (prefers-color-scheme: light) {
-  body {
-    background-color: #f0f2f5; /* nm-light */
-    color: #14142b; /* px-offblack */
-  }
+  background-color: #f0f2f5; /* nm-light */
+  color: #14142b; /* px-offblack */
 }

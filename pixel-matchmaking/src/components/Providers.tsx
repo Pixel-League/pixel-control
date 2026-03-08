@@ -13,7 +13,7 @@ export function Providers({ children }: ProvidersProps) {
   const content = children as any;
   return (
     <SessionProvider>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="light">
         {content}
       </ThemeProvider>
     </SessionProvider>
