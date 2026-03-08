@@ -24,12 +24,13 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children, defaultTheme = 'dark' }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(defaultTheme);
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return defaultTheme;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    setThemeState(mq.matches ? 'dark' : 'light');
-
     const handler = (e: MediaQueryListEvent) => {
       setThemeState(e.matches ? 'dark' : 'light');
     };

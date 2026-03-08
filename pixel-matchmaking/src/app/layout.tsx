@@ -19,7 +19,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <body className="font-body antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
