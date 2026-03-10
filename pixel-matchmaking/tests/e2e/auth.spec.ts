@@ -7,8 +7,15 @@ test.describe('Authentication', () => {
     await expect(page.getByText('Se connecter avec ManiaPlanet')).toBeVisible();
   });
 
-  test('/play redirects to signin when unauthenticated', async ({ page }) => {
-    await page.goto('/play');
+  test('/ is publicly accessible without authentication', async ({ page }) => {
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page).not.toHaveURL(/\/auth\/signin/);
+  });
+
+  test('unauthenticated: clicking search button on homepage redirects to signin', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /rechercher un match/i }).click();
     await expect(page).toHaveURL(/\/auth\/signin/);
   });
 

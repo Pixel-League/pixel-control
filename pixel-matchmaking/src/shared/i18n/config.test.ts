@@ -31,9 +31,9 @@ describe('translation files', () => {
   });
 
   it('FR messages contain correct accents', () => {
-    expect(frMessages.home.subtitle).toContain('compétitif');
-    expect(frMessages.play.subtitle).toContain('compétitive');
-    expect(frMessages.play.customLobby.description).toContain('Créez');
+    expect(frMessages.play.subtitle).toContain('compétitif');
+    expect(frMessages.play.searchButton).toContain('Rechercher');
+    expect(frMessages.play.ongoingMatches.title).toBe('Matchs en cours');
     expect(frMessages.profile.subtitle).toContain('Gérez');
     expect(frMessages.profile.stats.description).toContain('défaites');
     expect(frMessages.profile.settings.title).toBe('Paramètres');

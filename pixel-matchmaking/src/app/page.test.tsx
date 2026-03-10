@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { configure } from 'mobx';
 import { TestProviders } from '@/shared/test/intl-wrapper';
-import Home from './page';
+
+configure({ enforceActions: 'never' });
 
 const mockPush = vi.fn();
 
@@ -11,42 +13,120 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({ get: () => null }),
 }));
 
-describe('Home page', () => {
+// Default: unauthenticated session
+let mockSession: ReturnType<typeof vi.fn> = vi.fn(() => ({
+  data: null,
+  status: 'unauthenticated',
+}));
+
+vi.mock('next-auth/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next-auth/react')>();
+  return {
+    ...actual,
+    useSession: () => mockSession(),
+  };
+});
+
+vi.mock('@/features/matchmaking/store/matchmakingStore', () => ({
+  matchmakingStore: {
+    searching: false,
+    queueCount: null,
+    startSearch: vi.fn().mockResolvedValue(undefined),
+    cancelSearch: vi.fn().mockResolvedValue(undefined),
+    updateQueueCount: vi.fn(),
+  },
+}));
+
+import { matchmakingStore } from '@/features/matchmaking/store/matchmakingStore';
+import Home from './page';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  (matchmakingStore as { searching: boolean; queueCount: number | null }).searching = false;
+  (matchmakingStore as { searching: boolean; queueCount: number | null }).queueCount = null;
+  mockSession = vi.fn(() => ({ data: null, status: 'unauthenticated' }));
+});
+
+describe('Home page (matchmaking hub)', () => {
   it('renders the main heading', () => {
     render(<TestProviders><Home /></TestProviders>);
-    expect(screen.getByText('Pixel MatchMaking')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
   });
 
-  it('renders the description text', () => {
+  it('renders the search button', () => {
     render(<TestProviders><Home /></TestProviders>);
-    expect(
-      screen.getByText(/Plateforme de matchmaking compétitif/),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /rechercher un match/i })).toBeInTheDocument();
   });
 
-  it('renders DS badges', () => {
+  it('renders the ongoing matches section heading', () => {
     render(<TestProviders><Home /></TestProviders>);
-    expect(screen.getByText('Foundation')).toBeInTheDocument();
-    expect(screen.getByText('Online')).toBeInTheDocument();
+    expect(screen.getByText(/matchs en cours/i)).toBeInTheDocument();
   });
 
-  it('renders DS cards with titles', () => {
+  it('renders 3 ongoing match cards', () => {
     render(<TestProviders><Home /></TestProviders>);
-    expect(screen.getByText('Matchmaking')).toBeInTheDocument();
-    expect(screen.getByText('Classement')).toBeInTheDocument();
+    // Each card has a map name as its title (h3)
+    expect(screen.getByText('Stadium A1')).toBeInTheDocument();
+    expect(screen.getByText('Canyon Rush')).toBeInTheDocument();
+    expect(screen.getByText('Valley Core')).toBeInTheDocument();
   });
 
-  it('Jouer button navigates to /play', () => {
+  it('shows team names in match cards', () => {
     render(<TestProviders><Home /></TestProviders>);
-    const playButton = screen.getByRole('button', { name: 'Jouer' });
-    fireEvent.click(playButton);
-    expect(mockPush).toHaveBeenCalledWith('/play');
+    expect(screen.getByText('Pixel Strikers')).toBeInTheDocument();
+    expect(screen.getByText('Neon Wolves')).toBeInTheDocument();
   });
 
-  it('Voir le classement button navigates to /leaderboard', () => {
+  it('unauthenticated: search button redirects to signin', () => {
     render(<TestProviders><Home /></TestProviders>);
-    const leaderboardButton = screen.getByRole('button', { name: 'Voir le classement' });
-    fireEvent.click(leaderboardButton);
-    expect(mockPush).toHaveBeenCalledWith('/leaderboard');
+    fireEvent.click(screen.getByRole('button', { name: /rechercher un match/i }));
+    expect(mockPush).toHaveBeenCalledWith('/auth/signin');
+    expect(matchmakingStore.startSearch).not.toHaveBeenCalled();
+  });
+
+  it('authenticated: search button calls startSearch', () => {
+    mockSession = vi.fn(() => ({
+      data: { user: { login: 'testlogin', nickname: 'TestPlayer' } },
+      status: 'authenticated',
+    }));
+
+    render(<TestProviders><Home /></TestProviders>);
+    fireEvent.click(screen.getByRole('button', { name: /rechercher un match/i }));
+    expect(matchmakingStore.startSearch).toHaveBeenCalledWith('testlogin');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('shows searching state when store.searching is true', () => {
+    (matchmakingStore as { searching: boolean }).searching = true;
+
+    render(<TestProviders><Home /></TestProviders>);
+    expect(screen.getByText(/recherche en cours/i)).toBeInTheDocument();
+  });
+
+  it('shows queue count when searching and queueCount is set', () => {
+    (matchmakingStore as { searching: boolean; queueCount: number }).searching = true;
+    (matchmakingStore as { searching: boolean; queueCount: number }).queueCount = 5;
+
+    render(<TestProviders><Home /></TestProviders>);
+    expect(screen.getByText(/joueurs en file/i)).toBeInTheDocument();
+  });
+
+  it('shows cancel button when searching', () => {
+    (matchmakingStore as { searching: boolean }).searching = true;
+
+    render(<TestProviders><Home /></TestProviders>);
+    expect(screen.getByRole('button', { name: /annuler la recherche/i })).toBeInTheDocument();
+  });
+
+  it('authenticated + searching: cancel button calls cancelSearch', () => {
+    mockSession = vi.fn(() => ({
+      data: { user: { login: 'testlogin', nickname: 'TestPlayer' } },
+      status: 'authenticated',
+    }));
+    (matchmakingStore as { searching: boolean }).searching = true;
+
+    render(<TestProviders><Home /></TestProviders>);
+    fireEvent.click(screen.getByRole('button', { name: /annuler la recherche/i }));
+    expect(matchmakingStore.cancelSearch).toHaveBeenCalledWith('testlogin');
   });
 });

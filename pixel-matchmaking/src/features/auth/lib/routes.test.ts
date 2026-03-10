@@ -7,10 +7,13 @@ import {
 } from "./routes";
 
 describe("PROTECTED_PREFIXES", () => {
-  it("contains /play, /me, /admin", () => {
-    expect(PROTECTED_PREFIXES).toContain("/play");
+  it("contains /me and /admin", () => {
     expect(PROTECTED_PREFIXES).toContain("/me");
     expect(PROTECTED_PREFIXES).toContain("/admin");
+  });
+
+  it("does not contain /play (homepage is now public)", () => {
+    expect(PROTECTED_PREFIXES).not.toContain("/play");
   });
 });
 
@@ -37,12 +40,16 @@ describe("PUBLIC_ROUTES", () => {
 });
 
 describe("isProtectedRoute", () => {
-  it("returns true for /play", () => {
-    expect(isProtectedRoute("/play")).toBe(true);
+  it("returns false for / (homepage is public)", () => {
+    expect(isProtectedRoute("/")).toBe(false);
   });
 
-  it("returns true for /play/queue", () => {
-    expect(isProtectedRoute("/play/queue")).toBe(true);
+  it("returns false for /play (route no longer exists, not protected)", () => {
+    expect(isProtectedRoute("/play")).toBe(false);
+  });
+
+  it("returns false for /play/queue", () => {
+    expect(isProtectedRoute("/play/queue")).toBe(false);
   });
 
   it("returns true for /me", () => {
@@ -59,10 +66,6 @@ describe("isProtectedRoute", () => {
 
   it("returns true for /admin/users", () => {
     expect(isProtectedRoute("/admin/users")).toBe(true);
-  });
-
-  it("returns false for /", () => {
-    expect(isProtectedRoute("/")).toBe(false);
   });
 
   it("returns false for /leaderboard", () => {
@@ -105,10 +108,6 @@ describe("isPublicRoute", () => {
 
   it("returns true for /api/auth/callback/maniaplanet", () => {
     expect(isPublicRoute("/api/auth/callback/maniaplanet")).toBe(true);
-  });
-
-  it("returns false for /play", () => {
-    expect(isPublicRoute("/play")).toBe(false);
   });
 
   it("returns false for /me", () => {

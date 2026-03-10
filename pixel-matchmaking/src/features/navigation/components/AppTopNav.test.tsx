@@ -25,6 +25,13 @@ vi.mock('@/features/navigation/components/UserMenu', () => ({
   ),
 }));
 
+// Mock useDevMode to control dev/production mode in tests
+vi.mock('@/shared/hooks/useDevMode', () => ({
+  useDevMode: vi.fn(() => false),
+}));
+
+import { useDevMode } from '@/shared/hooks/useDevMode';
+
 function renderWithProviders(ui: React.ReactElement, session: Parameters<typeof SessionProvider>[0]['session'] = null) {
   return render(
     <NextIntlClientProvider locale="fr" messages={messages}>
@@ -43,19 +50,29 @@ describe('AppTopNav', () => {
     expect(screen.getByText('PIXEL MATCHMAKING')).toBeInTheDocument();
   });
 
-  it('renders all navigation links', () => {
+  it('renders only "Jouer" link in production mode (devMode=false)', () => {
+    vi.mocked(useDevMode).mockReturnValue(false);
     renderWithProviders(<AppTopNav />);
-    expect(screen.getByText('Accueil')).toBeInTheDocument();
+    expect(screen.getByText('Jouer')).toBeInTheDocument();
+    expect(screen.queryByText('Classement')).not.toBeInTheDocument();
+    expect(screen.queryByText('Profil')).not.toBeInTheDocument();
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument();
+  });
+
+  it('renders dev nav items when devMode=true', () => {
+    vi.mocked(useDevMode).mockReturnValue(true);
+    renderWithProviders(<AppTopNav />);
     expect(screen.getByText('Jouer')).toBeInTheDocument();
     expect(screen.getByText('Classement')).toBeInTheDocument();
     expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.getByText('Admin')).toBeInTheDocument();
   });
 
-  it('marks the home link as active when pathname is /', () => {
+  it('marks the play/home link as active when pathname is /', () => {
+    vi.mocked(useDevMode).mockReturnValue(false);
     renderWithProviders(<AppTopNav />);
-    const homeLink = screen.getByText('Accueil');
-    expect(homeLink).toHaveAttribute('aria-current', 'page');
+    const playLink = screen.getByText('Jouer');
+    expect(playLink).toHaveAttribute('aria-current', 'page');
   });
 
   it('renders the top navigation landmark', () => {

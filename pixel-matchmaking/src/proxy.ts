@@ -5,7 +5,7 @@ import { isProtectedRoute } from "@/features/auth/lib/routes";
 /**
  * Route protection middleware using Auth.js v5.
  *
- * Protected routes: /play, /me, /me/*, /admin, /admin/*
+ * Protected routes: /me, /me/*, /admin, /admin/*
  * Public routes: /, /leaderboard, /player/*, /matches, /auth/*, /api/auth/*
  *
  * Unauthenticated users on protected routes are redirected to /auth/signin

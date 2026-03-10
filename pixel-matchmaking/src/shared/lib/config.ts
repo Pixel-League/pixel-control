@@ -8,6 +8,9 @@ export const config = {
   /** Pixel Control Server API base URL (public, available client-side) */
   apiUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/v1',
 
+  /** Enable developer-only features (hidden pages in nav, etc.) */
+  devMode: process.env.NEXT_PUBLIC_DEV_MODE === 'true',
+
   /** Auth.js v5 — ManiaPlanet OAuth2 (server-only) */
   auth: {
     secret: process.env.AUTH_SECRET ?? '',

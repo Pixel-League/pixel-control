@@ -18,25 +18,11 @@
     "profile": "Profil",
     "admin": "Admin"
   },
-  "home": {
-    "title": "Pixel MatchMaking",
-    "subtitle": "Plateforme de matchmaking compétitif pour ShootMania",
-    "badgeFoundation": "Foundation",
-    "badgeOnline": "Online",
-    "matchmaking": {
-      "title": "Matchmaking",
-      "description": "Trouvez un match compétitif en quelques secondes. File d'attente automatique et matchmaking par niveau.",
-      "button": "Jouer"
-    },
-    "leaderboard": {
-      "title": "Classement",
-      "description": "Suivez votre progression et comparez-vous aux meilleurs joueurs de la communauté.",
-      "button": "Voir le classement"
-    }
-  },
   "play": {
     "title": "Jouer",
-    "subtitle": "Rejoignez une partie compétitive ou créez votre propre lobby.",
+    "subtitle": "Trouvez un match compétitif en quelques secondes.",
+    "searchButton": "Rechercher un match",
+    "loginRequired": "Connectez-vous pour jouer",
     "quickMatch": {
       "title": "Matchmaking rapide",
       "description": "Trouvez automatiquement un match avec des joueurs de votre niveau.",
@@ -46,11 +32,12 @@
       "cancelSearch": "Annuler la recherche",
       "queueCount": "{count, plural, =0 {Aucun joueur en file} one {1 joueur en file} other {# joueurs en file}}"
     },
-    "customLobby": {
-      "title": "Lobby personnalisé",
-      "description": "Créez un lobby privé et invitez vos amis pour une partie personnalisée.",
-      "badge": "Bientôt",
-      "button": "Créer un lobby"
+    "ongoingMatches": {
+      "title": "Matchs en cours",
+      "empty": "Aucun match en cours",
+      "map": "Map",
+      "mode": "Mode",
+      "duration": "Durée"
     }
   },
   "leaderboard": {

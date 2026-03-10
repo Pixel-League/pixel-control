@@ -5,7 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { TopNav, Button } from '@pixel-series/design-system-neumorphic';
 import type { TopNavLink } from '@pixel-series/design-system-neumorphic';
-import { NAV_ITEMS } from '@/shared/lib/navigation';
+import { NAV_ITEMS, DEV_NAV_ITEMS } from '@/shared/lib/navigation';
+import { useDevMode } from '@/shared/hooks/useDevMode';
 import { LanguageSelector } from '@/shared/components/LanguageSelector';
 import { UserMenu } from '@/features/navigation/components/UserMenu';
 
@@ -16,13 +17,16 @@ export function AppTopNav() {
   const { data: session, status } = useSession();
   const tNav = useTranslations('nav');
   const tCommon = useTranslations('common');
+  const devMode = useDevMode();
 
   // When redirected to sign-in, use callbackUrl to keep the intended page active
   const activePath = pathname === '/auth/signin'
     ? searchParams.get('callbackUrl') ?? pathname
     : pathname;
 
-  const navLinks: TopNavLink[] = NAV_ITEMS.map((item) => ({
+  const allNavItems = devMode ? [...NAV_ITEMS, ...DEV_NAV_ITEMS] : NAV_ITEMS;
+
+  const navLinks: TopNavLink[] = allNavItems.map((item) => ({
     label: tNav(item.translationKey),
     href: item.href,
     active: activePath === item.href,

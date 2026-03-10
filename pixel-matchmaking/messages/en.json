@@ -18,25 +18,11 @@
     "profile": "Profile",
     "admin": "Admin"
   },
-  "home": {
-    "title": "Pixel MatchMaking",
-    "subtitle": "Competitive matchmaking platform for ShootMania",
-    "badgeFoundation": "Foundation",
-    "badgeOnline": "Online",
-    "matchmaking": {
-      "title": "Matchmaking",
-      "description": "Find a competitive match in seconds. Automatic queue and skill-based matchmaking.",
-      "button": "Play"
-    },
-    "leaderboard": {
-      "title": "Leaderboard",
-      "description": "Track your progress and compare yourself to the best players in the community.",
-      "button": "View leaderboard"
-    }
-  },
   "play": {
     "title": "Play",
-    "subtitle": "Join a competitive match or create your own lobby.",
+    "subtitle": "Find a competitive match in seconds.",
+    "searchButton": "Search for a match",
+    "loginRequired": "Sign in to play",
     "quickMatch": {
       "title": "Quick Match",
       "description": "Automatically find a match with players at your skill level.",
@@ -46,11 +32,12 @@
       "cancelSearch": "Cancel search",
       "queueCount": "{count, plural, =0 {No players in queue} one {1 player in queue} other {# players in queue}}"
     },
-    "customLobby": {
-      "title": "Custom Lobby",
-      "description": "Create a private lobby and invite your friends for a custom game.",
-      "badge": "Coming soon",
-      "button": "Create a lobby"
+    "ongoingMatches": {
+      "title": "Ongoing matches",
+      "empty": "No ongoing matches",
+      "map": "Map",
+      "mode": "Mode",
+      "duration": "Duration"
     }
   },
   "leaderboard": {

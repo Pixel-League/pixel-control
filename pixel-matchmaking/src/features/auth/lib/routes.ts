@@ -3,7 +3,7 @@
  */
 
 /** Route prefixes that require authentication. */
-export const PROTECTED_PREFIXES = ["/play", "/me", "/admin"];
+export const PROTECTED_PREFIXES = ["/me", "/admin"];
 
 /** Public routes that are always accessible. */
 export const PUBLIC_ROUTES = [
